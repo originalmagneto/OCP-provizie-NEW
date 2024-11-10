@@ -1,11 +1,19 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useInvoices } from "../context/InvoiceContext";
-import { LogOut, Trash2, AlertTriangle, GripHorizontal } from "lucide-react";
+import {
+  LogOut,
+  Trash2,
+  AlertTriangle,
+  GripHorizontal,
+  HelpCircle,
+} from "lucide-react";
 import InvoiceForm from "./InvoiceForm";
 import InvoiceList from "./InvoiceList";
 import QuarterlyCommissions from "./QuarterlyCommissions";
 import QuarterlyPaymentTracker from "./QuarterlyPaymentTracker";
+import HowItWorks from "./HowItWorks";
+import Tour from "./Tour";
 import GridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -42,12 +50,14 @@ interface DraggableCardProps {
   title?: string;
   children: React.ReactNode;
   className?: string;
+  id?: string;
 }
 
-function DraggableCard({ title, children, className }: DraggableCardProps) {
+function DraggableCard({ title, children, className, id }: DraggableCardProps) {
   return (
     <div
       className={`bg-white rounded-lg shadow-sm ${className} h-full overflow-hidden`}
+      id={id}
     >
       {title && (
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
@@ -114,8 +124,8 @@ export default function Dashboard() {
   const { user, logout } = useAuth();
   const { resetAllData } = useInvoices();
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
 
-  // Load layout from localStorage or use default
   const [layout, setLayout] = useState(() => {
     const savedLayout = localStorage.getItem("dashboardLayout");
     return savedLayout
@@ -160,7 +170,13 @@ export default function Dashboard() {
 
   return (
     <div className={`min-h-screen ${firmTheme.secondary}`}>
-      <header className="bg-white shadow-sm">
+      <Tour />
+      <HowItWorks
+        isOpen={showHowItWorks}
+        onClose={() => setShowHowItWorks(false)}
+      />
+
+      <header className="bg-white shadow-sm dashboard-header">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
@@ -172,6 +188,13 @@ export default function Dashboard() {
               <span className="text-sm text-gray-500">
                 Welcome, {user.name}
               </span>
+              <button
+                onClick={() => setShowHowItWorks(true)}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-600 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                <HelpCircle className="h-4 w-4 mr-2" />
+                How It Works
+              </button>
               <button
                 onClick={() => setShowResetConfirmation(true)}
                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
@@ -209,37 +232,44 @@ export default function Dashboard() {
             compactType="vertical"
             containerPadding={[0, 0]}
           >
-            <div key="invoiceForm" className="grid-item">
+            <div key="invoiceForm" className="grid-item invoice-form">
               <DraggableCard
                 title="New Invoice"
                 className={`${firmTheme.border} ${firmTheme.secondary}`}
+                id="invoice-form"
               >
                 <InvoiceForm />
               </DraggableCard>
             </div>
 
-            <div key="invoiceList" className="grid-item">
+            <div key="invoiceList" className="grid-item invoice-list">
               <DraggableCard
                 title="Invoices"
                 className={`${firmTheme.border} ${firmTheme.secondary}`}
+                id="invoice-list"
               >
                 <InvoiceList />
               </DraggableCard>
             </div>
 
-            <div key="quarterlyCommissions" className="grid-item">
+            <div
+              key="quarterlyCommissions"
+              className="grid-item quarterly-overview"
+            >
               <DraggableCard
                 title="Quarterly Overview"
                 className={`${firmTheme.border} ${firmTheme.secondary}`}
+                id="quarterly-overview"
               >
                 <QuarterlyCommissions />
               </DraggableCard>
             </div>
 
-            <div key="quarterlyPayments" className="grid-item">
+            <div key="quarterlyPayments" className="grid-item payment-tracker">
               <DraggableCard
                 title="Payment Tracker"
                 className={`${firmTheme.border} ${firmTheme.secondary}`}
+                id="payment-tracker"
               >
                 <QuarterlyPaymentTracker />
               </DraggableCard>
