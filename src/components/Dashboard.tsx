@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useInvoices } from "../context/InvoiceContext";
+import { useYear } from "../context/YearContext";
 import {
   LogOut,
   Trash2,
@@ -12,6 +13,8 @@ import InvoiceForm from "./InvoiceForm";
 import InvoiceList from "./InvoiceList";
 import QuarterlyCommissions from "./QuarterlyCommissions";
 import QuarterlyPaymentTracker from "./QuarterlyPaymentTracker";
+import YearSelector from "./year-management/YearSelector";
+import AnnualOverview from "./year-management/AnnualOverview";
 import HowItWorks from "./HowItWorks";
 import Tour from "./Tour";
 import GridLayout from "react-grid-layout";
@@ -123,6 +126,7 @@ function ResetConfirmationModal({
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const { resetAllData } = useInvoices();
+  const { currentYear, availableYears, yearlyStats, setYear } = useYear();
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [isTourRunning, setIsTourRunning] = useState(false);
@@ -223,7 +227,16 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 sm:px-0">
+        <div className="px-4 sm:px-0 space-y-6">
+          {/* Year Management Components */}
+          <YearSelector
+            currentYear={currentYear}
+            availableYears={availableYears}
+            yearlyStats={yearlyStats}
+            onYearChange={setYear}
+          />
+          <AnnualOverview />
+
           <GridLayout
             className="layout"
             layout={layout}
