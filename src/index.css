@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Grid Layout Styles */
+.layout {
+    position: relative;
+    transition: height 200ms ease;
+}
+
+.react-grid-layout {
+    position: relative;
+    transition: height 200ms ease;
+}
+
+.react-grid-item {
+    transition: all 200ms ease;
+    transition-property: left, top, width, height;
+}
+
+.react-grid-item.cssTransforms {
+    transition-property: transform, width, height;
+}
+
+.react-grid-item.resizing {
+    z-index: 2;
+    will-change: width, height;
+}
+
+.react-grid-item.react-draggable-dragging {
+    transition: none;
+    z-index: 3;
+    will-change: transform;
+}
+
+.react-grid-item.react-grid-placeholder {
+    background: rgba(63, 81, 181, 0.2);
+    border: 2px dashed #3f51b5;
+    border-radius: 0.5rem;
+    opacity: 0.5;
+    transition-duration: 100ms;
+    z-index: 1;
+    user-select: none;
+}
+
+/* Resize Handle Styles */
+.react-resizable-handle {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    bottom: 0;
+    right: 0;
+    background: none;
+    padding: 0 3px 3px 0;
+    cursor: se-resize;
+}
+
+.react-resizable-handle::after {
+    content: "";
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid rgba(0, 0, 0, 0.2);
+    border-bottom: 2px solid rgba(0, 0, 0, 0.2);
+}
+
+/* Grid Item Styles */
+.grid-item {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.grid-item > div {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Dragging Styles */
+.cursor-move {
+    cursor: move;
+}
+
+/* Override default styles to prevent content overflow */
+.react-grid-item.react-grid-placeholder {
+    background-color: rgba(63, 81, 181, 0.1);
+    border: 2px dashed #3f51b5;
+    opacity: 0.5;
+}
+
+.react-grid-item > .react-resizable-handle.react-resizable-handle-se {
+    bottom: 5px;
+    right: 5px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1280px) {
+    .react-grid-layout {
+        width: 100% !important;
+    }
+}
+
+/* Custom scrollbar for overflow content */
+.overflow-auto {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.overflow-auto::-webkit-scrollbar {
+    width: 6px;
+}
+
+.overflow-auto::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
