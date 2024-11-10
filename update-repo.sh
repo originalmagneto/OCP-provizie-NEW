@@ -3,7 +3,16 @@
 # Colors for better visibility
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
+
+echo -e "${BLUE}🔄 Starting update and deployment process...${NC}"
+
+# Check if netlify-cli is installed
+if ! command -v netlify &> /dev/null; then
+    echo -e "${YELLOW}Installing netlify-cli...${NC}"
+    npm install -g netlify-cli
+fi
 
 echo -e "${BLUE}🔍 Checking for changes...${NC}"
 CHANGES=$(git status --porcelain)
@@ -93,4 +102,16 @@ echo -e "\n${BLUE}Pushing changes to GitHub...${NC}"
 git push origin main
 git push origin "v$NEW_VERSION"
 
-echo -e "\n${GREEN}✅ Successfully updated repository to version $NEW_VERSION${NC}"
+# Build the project
+echo -e "\n${BLUE}Building project...${NC}"
+npm run build
+
+# Deploy to Netlify
+echo -e "\n${BLUE}Deploying to Netlify...${NC}"
+netlify deploy --prod
+
+echo -e "\n${GREEN}✅ Successfully updated repository to version $NEW_VERSION and deployed to Netlify${NC}"
+
+# Open the Netlify dashboard
+echo -e "\n${BLUE}Opening Netlify dashboard...${NC}"
+netlify open
