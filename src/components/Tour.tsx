@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import Joyride, { CallBackProps, Status, Step } from "react-joyride";
+import Joyride, {
+  CallBackProps,
+  Step,
+  ACTIONS,
+  EVENTS,
+  STATUS,
+} from "react-joyride";
 
 const steps: Step[] = [
   {
@@ -42,8 +48,9 @@ export default function Tour() {
   }, []);
 
   const handleJoyrideCallback = (data: CallBackProps) => {
-    const { status } = data;
-    if ([Status.FINISHED, Status.SKIPPED].includes(status)) {
+    const { status, type } = data;
+
+    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
       setRun(false);
     }
   };
@@ -60,7 +67,27 @@ export default function Tour() {
         options: {
           primaryColor: "#4F46E5",
           textColor: "#111827",
+          zIndex: 1000,
         },
+        tooltip: {
+          padding: 20,
+        },
+        buttonNext: {
+          backgroundColor: "#4F46E5",
+        },
+        buttonBack: {
+          marginRight: 10,
+        },
+        beacon: {
+          display: "none",
+        },
+      }}
+      locale={{
+        back: "Previous",
+        close: "Close",
+        last: "Finish",
+        next: "Next",
+        skip: "Skip tour",
       }}
     />
   );
