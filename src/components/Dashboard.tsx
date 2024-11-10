@@ -125,6 +125,7 @@ export default function Dashboard() {
   const { resetAllData } = useInvoices();
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
+  const [isTourRunning, setIsTourRunning] = useState(false);
 
   const [layout, setLayout] = useState(() => {
     const savedLayout = localStorage.getItem("dashboardLayout");
@@ -170,10 +171,17 @@ export default function Dashboard() {
 
   return (
     <div className={`min-h-screen ${firmTheme.secondary}`}>
-      <Tour />
+      <Tour
+        isRunning={isTourRunning}
+        onTourEnd={() => setIsTourRunning(false)}
+      />
       <HowItWorks
         isOpen={showHowItWorks}
         onClose={() => setShowHowItWorks(false)}
+        onStartTour={() => {
+          setShowHowItWorks(false);
+          setTimeout(() => setIsTourRunning(true), 400);
+        }}
       />
 
       <header className="bg-white shadow-sm dashboard-header">
@@ -232,7 +240,7 @@ export default function Dashboard() {
             compactType="vertical"
             containerPadding={[0, 0]}
           >
-            <div key="invoiceForm" className="grid-item invoice-form">
+            <div key="invoiceForm" className="grid-item">
               <DraggableCard
                 title="New Invoice"
                 className={`${firmTheme.border} ${firmTheme.secondary}`}
@@ -242,7 +250,7 @@ export default function Dashboard() {
               </DraggableCard>
             </div>
 
-            <div key="invoiceList" className="grid-item invoice-list">
+            <div key="invoiceList" className="grid-item">
               <DraggableCard
                 title="Invoices"
                 className={`${firmTheme.border} ${firmTheme.secondary}`}
@@ -252,10 +260,7 @@ export default function Dashboard() {
               </DraggableCard>
             </div>
 
-            <div
-              key="quarterlyCommissions"
-              className="grid-item quarterly-overview"
-            >
+            <div key="quarterlyCommissions" className="grid-item">
               <DraggableCard
                 title="Quarterly Overview"
                 className={`${firmTheme.border} ${firmTheme.secondary}`}
@@ -265,7 +270,7 @@ export default function Dashboard() {
               </DraggableCard>
             </div>
 
-            <div key="quarterlyPayments" className="grid-item payment-tracker">
+            <div key="quarterlyPayments" className="grid-item">
               <DraggableCard
                 title="Payment Tracker"
                 className={`${firmTheme.border} ${firmTheme.secondary}`}

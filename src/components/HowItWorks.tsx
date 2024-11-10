@@ -1,14 +1,23 @@
-// src/components/HowItWorks.tsx
 import React from "react";
 import { X } from "lucide-react";
 
 interface HowItWorksProps {
   isOpen: boolean;
   onClose: () => void;
+  onStartTour: () => void;
 }
 
-export default function HowItWorks({ isOpen, onClose }: HowItWorksProps) {
+export default function HowItWorks({
+  isOpen,
+  onClose,
+  onStartTour,
+}: HowItWorksProps) {
   if (!isOpen) return null;
+
+  const handleStartTour = () => {
+    onClose();
+    onStartTour();
+  };
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -94,11 +103,7 @@ export default function HowItWorks({ isOpen, onClose }: HowItWorksProps) {
           {/* Start Tour Button */}
           <div className="mt-8 flex justify-center">
             <button
-              onClick={() => {
-                onClose();
-                // Start the tour
-                window.dispatchEvent(new Event("START_TOUR"));
-              }}
+              onClick={handleStartTour}
               className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
             >
               Take an Interactive Tour
