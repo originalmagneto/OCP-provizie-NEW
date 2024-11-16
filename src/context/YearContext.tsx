@@ -18,6 +18,14 @@ interface YearContextType {
 
 const YearContext = createContext<YearContextType | undefined>(undefined);
 
+export function useYear() {
+  const context = useContext(YearContext);
+  if (context === undefined) {
+    throw new Error("useYear must be used within a YearProvider");
+  }
+  return context;
+}
+
 export function YearProvider({ children }: { children: React.ReactNode }) {
   const { invoices } = useInvoices();
   const [currentYear, setCurrentYear] = useState(() => {
@@ -30,13 +38,9 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
     const years = invoices.map((invoice) =>
       new Date(invoice.date).getFullYear(),
     );
-    return Array.from(
-      new Set([
-        ...years,
-        currentYear, // Always include current year
-        currentYear + 1, // Allow planning for next year
-      ]),
-    ).sort((a, b) => b - a); // Sort descending
+    return Array.from(new Set([...years, currentYear, currentYear + 1])).sort(
+      (a, b) => b - a,
+    );
   }, [invoices, currentYear]);
 
   // Calculate yearly statistics
@@ -65,7 +69,6 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
         0,
       );
 
-      // Calculate year-over-year growth
       const previousYear = year - 1;
       const previousYearInvoices = invoices.filter(
         (invoice) => new Date(invoice.date).getFullYear() === previousYear,
@@ -74,6 +77,7 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
         (sum, inv) => sum + inv.amount,
         0,
       );
+
       const yearOverYearGrowth =
         previousRevenue === 0
           ? 100
@@ -90,7 +94,6 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
     return stats;
   }, [invoices, availableYears]);
 
-  // Save selected year to localStorage
   useEffect(() => {
     localStorage.setItem("selectedYear", currentYear.toString());
   }, [currentYear]);
@@ -113,12 +116,4 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
       {children}
     </YearContext.Provider>
   );
-}
-
-export function useYear() {
-  const context = useContext(YearContext);
-  if (context === undefined) {
-    throw new Error("useYear must be used within a YearProvider");
-  }
-  return context;
 }

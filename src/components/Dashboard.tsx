@@ -1,33 +1,94 @@
-import React from "react";
+import React, { useState } from "react";
+import { Disclosure, Transition } from "@headlessui/react";
 import { useAuth } from "../context/AuthContext";
-import { ChevronDown } from "lucide-react";
-import { Disclosure } from "@headlessui/react";
+import { useInvoices } from "../context/InvoiceContext";
+import { useYear } from "../context/YearContext";
+import {
+  LogOut,
+  Trash2,
+  AlertTriangle,
+  GripHorizontal,
+  HelpCircle,
+  ChevronDown,
+} from "lucide-react";
 import InvoiceForm from "./InvoiceForm";
 import InvoiceList from "./InvoiceList";
 import QuarterlySnapshot from "./QuarterlySnapshot";
 import UnpaidInvoicesList from "./UnpaidInvoicesList";
 import DashboardCharts from "./DashboardCharts";
+import type { FirmType } from "../types";
+
+const firmThemes = {
+  SKALLARS: {
+    primary: "bg-purple-100",
+    secondary: "bg-purple-50",
+    text: "text-purple-600",
+    border: "border-purple-200",
+    light: "text-purple-500",
+    accent: "#9333ea", // purple-600
+  },
+  MKMs: {
+    primary: "bg-blue-100",
+    secondary: "bg-blue-50",
+    text: "text-blue-600",
+    border: "border-blue-200",
+    light: "text-blue-500",
+    accent: "#2563eb", // blue-600
+  },
+  Contax: {
+    primary: "bg-yellow-100",
+    secondary: "bg-yellow-50",
+    text: "text-yellow-600",
+    border: "border-yellow-200",
+    light: "text-yellow-500",
+    accent: "#d97706", // yellow-600
+  },
+} as const;
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
+  const { resetAllData } = useInvoices();
+  const [showResetConfirmation, setShowResetConfirmation] = useState(false);
 
   if (!user) return null;
 
+  const firmTheme = firmThemes[user.firm as FirmType];
+
+  const handleReset = () => {
+    resetAllData();
+    setShowResetConfirmation(false);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen ${firmTheme.secondary}`}>
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <h1 className="text-2xl font-semibold text-gray-900">
-              {user.firm} Dashboard
-            </h1>
-            <button
-              onClick={logout}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
-            >
-              Sign Out
-            </button>
+            <div className="flex items-center">
+              <h1 className={`text-2xl font-semibold ${firmTheme.text}`}>
+                {user.firm} Commission Dashboard
+              </h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-500">
+                Welcome, {user.name}
+              </span>
+              <button
+                onClick={() => setShowResetConfirmation(true)}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Reset Data
+              </button>
+              <button
+                onClick={logout}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -71,24 +132,67 @@ export default function Dashboard() {
           <Disclosure>
             {({ open }) => (
               <>
-                <Disclosure.Button className="flex justify-between w-full px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
-                  <span className="font-medium text-gray-900">
-                    View Detailed Analytics
-                  </span>
+                <Disclosure.Button className="flex w-full justify-between rounded-lg bg-gray-100 px-4 py-2 text-left text-sm font-medium hover:bg-gray-200 focus:outline-none focus-visible:ring focus-visible:ring-indigo-500 focus-visible:ring-opacity-75">
+                  <span>View Detailed Analytics</span>
                   <ChevronDown
                     className={`${
                       open ? "transform rotate-180" : ""
-                    } w-5 h-5 text-gray-500`}
+                    } h-5 w-5 text-gray-500 transition-transform duration-200`}
                   />
                 </Disclosure.Button>
-                <Disclosure.Panel className="mt-4">
-                  <DashboardCharts />
-                </Disclosure.Panel>
+                <Transition
+                  enter="transition duration-100 ease-out"
+                  enterFrom="transform scale-95 opacity-0"
+                  enterTo="transform scale-100 opacity-100"
+                  leave="transition duration-75 ease-out"
+                  leaveFrom="transform scale-100 opacity-100"
+                  leaveTo="transform scale-95 opacity-0"
+                >
+                  <Disclosure.Panel className="mt-4">
+                    <DashboardCharts />
+                  </Disclosure.Panel>
+                </Transition>
               </>
             )}
           </Disclosure>
         </div>
       </main>
+
+      {/* Reset Confirmation Modal */}
+      {showResetConfirmation && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3 text-center">
+              <div className="flex items-center justify-center text-red-500 mb-4">
+                <AlertTriangle size={48} />
+              </div>
+              <h3 className="text-lg leading-6 font-medium text-gray-900">
+                Reset All Data
+              </h3>
+              <div className="mt-2 px-7 py-3">
+                <p className="text-sm text-gray-500">
+                  Are you sure you want to reset all data? This action cannot be
+                  undone and will delete all invoices and commission records.
+                </p>
+              </div>
+              <div className="flex justify-center space-x-4 mt-4">
+                <button
+                  onClick={() => setShowResetConfirmation(false)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleReset}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md"
+                >
+                  Reset All Data
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
