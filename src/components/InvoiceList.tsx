@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
+import { useYear, isInQuarter } from "../context/YearContext";
 import {
   Search,
   Filter,
@@ -40,30 +41,28 @@ const firmThemes = {
 interface FilterState {
   search: string;
   status: "all" | "paid" | "unpaid";
-  dateRange: "all" | "thisMonth" | "lastMonth" | "thisQuarter" | "lastQuarter";
   firm: "all" | FirmType;
 }
 
 interface InvoiceCardProps {
   invoice: any;
-  onTogglePaid: () => void;
-  onDelete: () => void;
-  onEdit: () => void;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  onTogglePaid: () => void;
+  onDelete: () => void;
+  userFirm: FirmType;
 }
 
 function InvoiceCard({
   invoice,
-  onTogglePaid,
-  onDelete,
-  onEdit,
   isExpanded,
   onToggleExpand,
+  onTogglePaid,
+  onDelete,
+  userFirm,
 }: InvoiceCardProps) {
-  const { user } = useAuth();
   const theme = firmThemes[invoice.invoicedByFirm];
-  const isUsersFirm = user?.firm === invoice.invoicedByFirm;
+  const isUsersFirm = userFirm === invoice.invoicedByFirm;
   const commission = (invoice.amount * invoice.commissionPercentage) / 100;
 
   return (
@@ -105,10 +104,7 @@ function InvoiceCard({
           <div className="flex items-center space-x-4">
             <div className="text-right">
               <div className="font-medium text-gray-900">
-                {new Intl.NumberFormat("de-DE", {
-                  style: "currency",
-                  currency: "EUR",
-                }).format(invoice.amount)}
+                {formatCurrency(invoice.amount)}
               </div>
               <div className="text-sm text-gray-500">
                 {invoice.commissionPercentage}% commission
@@ -119,10 +115,18 @@ function InvoiceCard({
               {isUsersFirm && (
                 <>
                   <button
-                    onClick={onEdit}
-                    className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                    onClick={onTogglePaid}
+                    className={`p-1 rounded ${
+                      invoice.isPaid
+                        ? "text-green-600 hover:bg-green-50"
+                        : "text-amber-600 hover:bg-amber-50"
+                    }`}
                   >
-                    <Edit2 className="h-4 w-4" />
+                    {invoice.isPaid ? (
+                      <CheckCircle className="h-4 w-4" />
+                    ) : (
+                      <Clock className="h-4 w-4" />
+                    )}
                   </button>
                   <button
                     onClick={onDelete}
@@ -169,10 +173,7 @@ function InvoiceCard({
               <div>
                 <span className="text-gray-500">Commission Amount:</span>
                 <span className="ml-2 font-medium">
-                  {new Intl.NumberFormat("de-DE", {
-                    style: "currency",
-                    currency: "EUR",
-                  }).format(commission)}
+                  {formatCurrency(commission)}
                 </span>
               </div>
               <div>
@@ -186,17 +187,6 @@ function InvoiceCard({
                 </span>
               </div>
             </div>
-
-            {isUsersFirm && !invoice.isPaid && (
-              <div className="mt-4">
-                <button
-                  onClick={onTogglePaid}
-                  className="w-full py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                >
-                  Mark as Paid
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -204,99 +194,13 @@ function InvoiceCard({
   );
 }
 
-function FilterBar({
-  filters,
-  onFilterChange,
-}: {
-  filters: FilterState;
-  onFilterChange: (filters: FilterState) => void;
-}) {
-  return (
-    <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
-      <div className="flex flex-col sm:flex-row gap-4">
-        {/* Search */}
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <input
-              type="text"
-              placeholder="Search invoices..."
-              value={filters.search}
-              onChange={(e) =>
-                onFilterChange({ ...filters, search: e.target.value })
-              }
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-        </div>
-
-        {/* Status Filter */}
-        <div className="sm:w-40">
-          <select
-            value={filters.status}
-            onChange={(e) =>
-              onFilterChange({
-                ...filters,
-                status: e.target.value as FilterState["status"],
-              })
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            <option value="all">All Status</option>
-            <option value="paid">Paid</option>
-            <option value="unpaid">Unpaid</option>
-          </select>
-        </div>
-
-        {/* Date Range Filter */}
-        <div className="sm:w-48">
-          <select
-            value={filters.dateRange}
-            onChange={(e) =>
-              onFilterChange({
-                ...filters,
-                dateRange: e.target.value as FilterState["dateRange"],
-              })
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            <option value="all">All Time</option>
-            <option value="thisMonth">This Month</option>
-            <option value="lastMonth">Last Month</option>
-            <option value="thisQuarter">This Quarter</option>
-            <option value="lastQuarter">Last Quarter</option>
-          </select>
-        </div>
-
-        {/* Firm Filter */}
-        <div className="sm:w-40">
-          <select
-            value={filters.firm}
-            onChange={(e) =>
-              onFilterChange({
-                ...filters,
-                firm: e.target.value as FilterState["firm"],
-              })
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            <option value="all">All Firms</option>
-            <option value="SKALLARS">SKALLARS</option>
-            <option value="MKMs">MKMs</option>
-            <option value="Contax">Contax</option>
-          </select>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function InvoiceList() {
   const { invoices, updateInvoice, deleteInvoice } = useInvoices();
+  const { user } = useAuth();
+  const { currentYear, currentQuarter } = useYear();
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     status: "all",
-    dateRange: "all",
     firm: "all",
   });
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -304,6 +208,12 @@ export default function InvoiceList() {
   const filteredInvoices = useMemo(() => {
     return invoices
       .filter((invoice) => {
+        // Quarter filter
+        const invoiceDate = new Date(invoice.date);
+        if (!isInQuarter(invoiceDate, currentYear, currentQuarter)) {
+          return false;
+        }
+
         // Search filter
         if (
           filters.search &&
@@ -321,85 +231,109 @@ export default function InvoiceList() {
         }
 
         // Firm filter
-        if (
-          filters.firm !== "all" &&
-          invoice.invoicedByFirm !== filters.firm &&
-          invoice.referredByFirm !== filters.firm
-        ) {
-          return false;
+        if (filters.firm !== "all") {
+          return (
+            invoice.invoicedByFirm === filters.firm ||
+            invoice.referredByFirm === filters.firm
+          );
         }
 
-        // Date range filter
-        const invoiceDate = new Date(invoice.date);
-        const now = new Date();
-
-        switch (filters.dateRange) {
-          case "thisMonth":
-            const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-            return invoiceDate >= thisMonth;
-
-          case "lastMonth":
-            const lastMonth = new Date(
-              now.getFullYear(),
-              now.getMonth() - 1,
-              1,
-            );
-            const thisMonthStart = new Date(
-              now.getFullYear(),
-              now.getMonth(),
-              1,
-            );
-            return invoiceDate >= lastMonth && invoiceDate < thisMonthStart;
-
-          case "thisQuarter":
-            const thisQuarter = new Date(
-              now.getFullYear(),
-              Math.floor(now.getMonth() / 3) * 3,
-              1,
-            );
-            return invoiceDate >= thisQuarter;
-
-          case "lastQuarter":
-            const lastQuarter = new Date(
-              now.getFullYear(),
-              Math.floor(now.getMonth() / 3) * 3 - 3,
-              1,
-            );
-            const thisQuarterStart = new Date(
-              now.getFullYear(),
-              Math.floor(now.getMonth() / 3) * 3,
-              1,
-            );
-            return invoiceDate >= lastQuarter && invoiceDate < thisQuarterStart;
-
-          default:
-            return true;
-        }
+        return true;
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [invoices, filters]);
+  }, [invoices, filters, currentYear, currentQuarter]);
 
-  const toggleExpanded = (id: string) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
+  if (!user) return null;
 
   return (
     <div>
-      <FilterBar filters={filters} onFilterChange={setFilters} />
+      {/* Filter Bar */}
+      <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Search */}
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search invoices..."
+                value={filters.search}
+                onChange={(e) =>
+                  setFilters({ ...filters, search: e.target.value })
+                }
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+          </div>
 
+          {/* Status Filter */}
+          <div className="sm:w-40">
+            <select
+              value={filters.status}
+              onChange={(e) =>
+                setFilters({
+                  ...filters,
+                  status: e.target.value as FilterState["status"],
+                })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="all">All Status</option>
+              <option value="paid">Paid</option>
+              <option value="unpaid">Unpaid</option>
+            </select>
+          </div>
+
+          {/* Firm Filter */}
+          <div className="sm:w-40">
+            <select
+              value={filters.firm}
+              onChange={(e) =>
+                setFilters({
+                  ...filters,
+                  firm: e.target.value as FilterState["firm"],
+                })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="all">All Firms</option>
+              <option value="SKALLARS">SKALLARS</option>
+              <option value="MKMs">MKMs</option>
+              <option value="Contax">Contax</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Quarter Info */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="text-sm text-gray-500">
+          Showing invoices for Q{currentQuarter} {currentYear}
+        </div>
+        <div className="text-sm text-gray-500">
+          {filteredInvoices.length} invoice
+          {filteredInvoices.length !== 1 ? "s" : ""}
+        </div>
+      </div>
+
+      {/* Invoice List */}
       <div className="space-y-4">
         {filteredInvoices.map((invoice) => (
           <InvoiceCard
             key={invoice.id}
             invoice={invoice}
+            isExpanded={expandedIds.has(invoice.id)}
+            onToggleExpand={() => {
+              setExpandedIds((prev) => {
+                const next = new Set(prev);
+                if (next.has(invoice.id)) {
+                  next.delete(invoice.id);
+                } else {
+                  next.add(invoice.id);
+                }
+                return next;
+              });
+            }}
             onTogglePaid={() =>
               updateInvoice(invoice.id, { isPaid: !invoice.isPaid })
             }
@@ -410,12 +344,7 @@ export default function InvoiceList() {
                 deleteInvoice(invoice.id);
               }
             }}
-            onEdit={() => {
-              // Handle edit - You'll need to implement this
-              console.log("Edit invoice:", invoice.id);
-            }}
-            isExpanded={expandedIds.has(invoice.id)}
-            onToggleExpand={() => toggleExpanded(invoice.id)}
+            userFirm={user.firm}
           />
         ))}
 
@@ -426,11 +355,18 @@ export default function InvoiceList() {
               No invoices found
             </h3>
             <p className="mt-1 text-sm text-gray-500">
-              Try adjusting your filters or search terms
+              Try adjusting your filters or changing the quarter
             </p>
           </div>
         )}
       </div>
     </div>
   );
+}
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: "EUR",
+  }).format(amount);
 }

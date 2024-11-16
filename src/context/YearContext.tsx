@@ -3,6 +3,7 @@ import { useInvoices } from "./InvoiceContext";
 
 interface YearContextType {
   currentYear: number;
+  currentQuarter: number;
   availableYears: number[];
   yearlyStats: Record<
     number,
@@ -14,23 +15,24 @@ interface YearContextType {
     }
   >;
   setYear: (year: number) => void;
+  setQuarter: (quarter: number) => void;
+  selectYearAndQuarter: (year: number, quarter: number) => void;
 }
 
 const YearContext = createContext<YearContextType | undefined>(undefined);
-
-export function useYear() {
-  const context = useContext(YearContext);
-  if (context === undefined) {
-    throw new Error("useYear must be used within a YearProvider");
-  }
-  return context;
-}
 
 export function YearProvider({ children }: { children: React.ReactNode }) {
   const { invoices } = useInvoices();
   const [currentYear, setCurrentYear] = useState(() => {
     const savedYear = localStorage.getItem("selectedYear");
     return savedYear ? parseInt(savedYear) : new Date().getFullYear();
+  });
+
+  const [currentQuarter, setCurrentQuarter] = useState(() => {
+    const savedQuarter = localStorage.getItem("selectedQuarter");
+    return savedQuarter
+      ? parseInt(savedQuarter)
+      : Math.floor(new Date().getMonth() / 3) + 1;
   });
 
   // Calculate available years from invoices
@@ -94,13 +96,29 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
     return stats;
   }, [invoices, availableYears]);
 
-  useEffect(() => {
-    localStorage.setItem("selectedYear", currentYear.toString());
-  }, [currentYear]);
-
+  // Handle year changes
   const setYear = (year: number) => {
     if (availableYears.includes(year)) {
       setCurrentYear(year);
+      localStorage.setItem("selectedYear", year.toString());
+    }
+  };
+
+  // Handle quarter changes
+  const setQuarter = (quarter: number) => {
+    if (quarter >= 1 && quarter <= 4) {
+      setCurrentQuarter(quarter);
+      localStorage.setItem("selectedQuarter", quarter.toString());
+    }
+  };
+
+  // Combined year and quarter selection
+  const selectYearAndQuarter = (year: number, quarter: number) => {
+    if (availableYears.includes(year) && quarter >= 1 && quarter <= 4) {
+      setCurrentYear(year);
+      setCurrentQuarter(quarter);
+      localStorage.setItem("selectedYear", year.toString());
+      localStorage.setItem("selectedQuarter", quarter.toString());
     }
   };
 
@@ -108,12 +126,59 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
     <YearContext.Provider
       value={{
         currentYear,
+        currentQuarter,
         availableYears,
         yearlyStats,
         setYear,
+        setQuarter,
+        selectYearAndQuarter,
       }}
     >
       {children}
     </YearContext.Provider>
   );
+}
+
+export function useYear() {
+  const context = useContext(YearContext);
+  if (context === undefined) {
+    throw new Error("useYear must be used within a YearProvider");
+  }
+  return context;
+}
+
+// Helper functions for quarter operations
+export function isInQuarter(
+  date: Date,
+  year: number,
+  quarter: number,
+): boolean {
+  const quarterStart = new Date(year, (quarter - 1) * 3, 1);
+  const quarterEnd = new Date(year, quarter * 3, 0);
+  return date >= quarterStart && date <= quarterEnd;
+}
+
+export function filterInvoicesByQuarter(
+  invoices: Invoice[],
+  year: number,
+  quarter: number,
+) {
+  return invoices.filter((invoice) => {
+    const invoiceDate = new Date(invoice.date);
+    return isInQuarter(invoiceDate, year, quarter);
+  });
+}
+
+export function getQuarterRange(year: number, quarter: number) {
+  const start = new Date(year, (quarter - 1) * 3, 1);
+  const end = new Date(year, quarter * 3, 0);
+  return { start, end };
+}
+
+export function getCurrentQuarter() {
+  const now = new Date();
+  return {
+    year: now.getFullYear(),
+    quarter: Math.floor(now.getMonth() / 3) + 1,
+  };
 }

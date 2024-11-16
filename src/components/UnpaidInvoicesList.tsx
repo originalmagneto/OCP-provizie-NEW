@@ -1,13 +1,15 @@
 import React, { useMemo } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
+import { useYear, isInQuarter } from "../context/YearContext";
 import {
-  Clock,
   CheckCircle,
-  AlertTriangle,
-  Euro,
+  AlertCircle,
+  Clock,
   Calendar,
   Building,
+  Euro,
+  ChevronRight,
 } from "lucide-react";
 import type { FirmType } from "../types";
 
@@ -32,188 +34,204 @@ const firmThemes = {
   },
 } as const;
 
-interface UnpaidInvoice {
-  id: string;
-  clientName: string;
-  amount: number;
-  commissionPercentage: number;
-  date: string;
-  dueDate?: string;
-  invoicedByFirm: FirmType;
-  referredByFirm: FirmType;
+interface UnpaidInvoiceCardProps {
+  invoice: any;
+  onMarkAsPaid: () => void;
+  userFirm: FirmType;
+  daysOverdue: number;
 }
 
-function DaysOverdue({ date }: { date: string }) {
-  const days = Math.floor(
-    (new Date().getTime() - new Date(date).getTime()) / (1000 * 3600 * 24),
-  );
-
-  if (days <= 0) return null;
-
-  return (
-    <span
-      className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
-        days > 30
-          ? "bg-red-100 text-red-700"
-          : days > 14
-            ? "bg-orange-100 text-orange-700"
-            : "bg-yellow-100 text-yellow-700"
-      }`}
-    >
-      {days} days overdue
-    </span>
-  );
-}
-
-function UnpaidInvoiceCard({ invoice }: { invoice: UnpaidInvoice }) {
-  const { user } = useAuth();
-  const { updateInvoice } = useInvoices();
+function UnpaidInvoiceCard({
+  invoice,
+  onMarkAsPaid,
+  userFirm,
+  daysOverdue,
+}: UnpaidInvoiceCardProps) {
   const theme = firmThemes[invoice.invoicedByFirm];
-
-  const isUsersFirm = user?.firm === invoice.invoicedByFirm;
+  const isUsersFirm = userFirm === invoice.invoicedByFirm;
   const commission = (invoice.amount * invoice.commissionPercentage) / 100;
-
-  const handleMarkAsPaid = () => {
-    if (window.confirm("Are you sure you want to mark this invoice as paid?")) {
-      updateInvoice(invoice.id, { isPaid: true });
-    }
-  };
 
   return (
     <div
       className={`
-        ${theme.bg} ${theme.border}
-        border rounded-lg p-4 ${isUsersFirm ? theme.hover : ""}
-        transition-all duration-200
+        p-4 rounded-lg border transition-all duration-200
+        ${theme.border}
+        ${isUsersFirm ? theme.bg : "bg-white"}
       `}
     >
-      <div className="flex justify-between items-start">
-        {/* Left side - Invoice Details */}
-        <div className="space-y-2">
-          <div className="flex items-center space-x-2">
-            <h3 className="font-medium text-gray-900">{invoice.clientName}</h3>
-            <DaysOverdue date={invoice.date} />
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center space-x-3">
+          <div
+            className={`h-8 w-8 rounded-full flex items-center justify-center
+              ${daysOverdue > 30 ? "bg-red-100" : "bg-amber-100"}
+            `}
+          >
+            <Clock
+              className={`h-5 w-5 ${
+                daysOverdue > 30 ? "text-red-600" : "text-amber-600"
+              }`}
+            />
           </div>
-
-          <div className="flex items-center space-x-4 text-sm text-gray-500">
-            <div className="flex items-center">
-              <Calendar className="h-4 w-4 mr-1" />
-              {new Date(invoice.date).toLocaleDateString()}
-            </div>
-            <div className="flex items-center">
-              <Building className="h-4 w-4 mr-1" />
-              {invoice.invoicedByFirm}
+          <div>
+            <h3 className="font-medium text-gray-900">{invoice.clientName}</h3>
+            <div className="flex items-center text-sm">
+              {daysOverdue > 0 && (
+                <span
+                  className={`
+                    ${
+                      daysOverdue > 30
+                        ? "text-red-600"
+                        : daysOverdue > 14
+                          ? "text-orange-600"
+                          : "text-amber-600"
+                    }
+                  `}
+                >
+                  {daysOverdue} days overdue
+                </span>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Right side - Amount and Actions */}
         <div className="text-right">
           <div className="font-medium text-gray-900">
-            {new Intl.NumberFormat("de-DE", {
-              style: "currency",
-              currency: "EUR",
-            }).format(invoice.amount)}
+            {formatCurrency(invoice.amount)}
           </div>
           <div className="text-sm text-gray-500">
-            Commission:{" "}
-            {new Intl.NumberFormat("de-DE", {
-              style: "currency",
-              currency: "EUR",
-            }).format(commission)}
+            Commission: {formatCurrency(commission)}
           </div>
         </div>
       </div>
 
-      {/* Bottom section - Commission info and actions */}
-      <div className="mt-4 flex items-center justify-between">
-        <div className="flex items-center space-x-2 text-sm">
-          <span className={theme.text}>
-            {invoice.commissionPercentage}% commission to{" "}
+      {/* Details */}
+      <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+        <div className="flex items-center text-gray-500">
+          <Calendar className="h-4 w-4 mr-2" />
+          {new Date(invoice.date).toLocaleDateString()}
+        </div>
+        <div className="flex items-center text-gray-500">
+          <Building className="h-4 w-4 mr-2" />
+          <span className={firmThemes[invoice.invoicedByFirm].text}>
+            {invoice.invoicedByFirm}
+          </span>
+          <ChevronRight className="h-4 w-4 mx-1" />
+          <span className={firmThemes[invoice.referredByFirm].text}>
             {invoice.referredByFirm}
           </span>
         </div>
-
-        {isUsersFirm && (
-          <button
-            onClick={handleMarkAsPaid}
-            className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors"
-          >
-            <CheckCircle className="h-4 w-4 mr-1" />
-            Mark as Paid
-          </button>
-        )}
       </div>
+
+      {/* Actions */}
+      {isUsersFirm && (
+        <button
+          onClick={onMarkAsPaid}
+          className="w-full py-2 flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
+        >
+          <CheckCircle className="h-4 w-4" />
+          <span>Mark as Paid</span>
+        </button>
+      )}
     </div>
   );
 }
 
 export default function UnpaidInvoicesList() {
-  const { invoices } = useInvoices();
+  const { invoices, updateInvoice } = useInvoices();
   const { user } = useAuth();
+  const { currentYear, currentQuarter } = useYear();
 
-  const unpaidInvoices = useMemo(() => {
-    return invoices
-      .filter((invoice) => !invoice.isPaid)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [invoices]);
+  const { userInvoices, otherInvoices } = useMemo(() => {
+    const unpaidInvoices = invoices.filter(
+      (invoice) =>
+        !invoice.isPaid &&
+        isInQuarter(new Date(invoice.date), currentYear, currentQuarter),
+    );
 
-  const groupedInvoices = useMemo(() => {
-    const grouped = {
-      userFirm: [] as UnpaidInvoice[],
-      otherFirms: [] as UnpaidInvoice[],
+    return {
+      userInvoices: unpaidInvoices.filter(
+        (invoice) => invoice.invoicedByFirm === user?.firm,
+      ),
+      otherInvoices: unpaidInvoices.filter(
+        (invoice) => invoice.invoicedByFirm !== user?.firm,
+      ),
     };
+  }, [invoices, user, currentYear, currentQuarter]);
 
-    unpaidInvoices.forEach((invoice) => {
-      if (invoice.invoicedByFirm === user?.firm) {
-        grouped.userFirm.push(invoice);
-      } else {
-        grouped.otherFirms.push(invoice);
-      }
-    });
-
-    return grouped;
-  }, [unpaidInvoices, user]);
+  const calculateDaysOverdue = (date: string) => {
+    const invoiceDate = new Date(date);
+    const today = new Date();
+    const diffTime = today.getTime() - invoiceDate.getTime();
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  };
 
   if (!user) return null;
 
-  if (unpaidInvoices.length === 0) {
+  if (userInvoices.length === 0 && otherInvoices.length === 0) {
     return (
       <div className="text-center py-6">
         <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
         <h3 className="text-lg font-medium text-gray-900">All Paid!</h3>
-        <p className="text-gray-500">No unpaid invoices at the moment.</p>
+        <p className="text-gray-500">No unpaid invoices for this quarter.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Your Firm's Unpaid Invoices */}
-      {groupedInvoices.userFirm.length > 0 && (
+      {/* User's Unpaid Invoices */}
+      {userInvoices.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-gray-700 flex items-center">
-            <AlertTriangle className="h-4 w-4 text-amber-500 mr-2" />
+            <AlertCircle className="h-4 w-4 text-amber-500 mr-2" />
             Your Unpaid Invoices
           </h3>
-          {groupedInvoices.userFirm.map((invoice) => (
-            <UnpaidInvoiceCard key={invoice.id} invoice={invoice} />
-          ))}
+          {userInvoices
+            .sort(
+              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+            )
+            .map((invoice) => (
+              <UnpaidInvoiceCard
+                key={invoice.id}
+                invoice={invoice}
+                onMarkAsPaid={() => updateInvoice(invoice.id, { isPaid: true })}
+                userFirm={user.firm}
+                daysOverdue={calculateDaysOverdue(invoice.date)}
+              />
+            ))}
         </div>
       )}
 
       {/* Other Firms' Unpaid Invoices */}
-      {groupedInvoices.otherFirms.length > 0 && (
+      {otherInvoices.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-gray-700 flex items-center">
             <Clock className="h-4 w-4 text-gray-400 mr-2" />
             Other Firms' Unpaid Invoices
           </h3>
-          {groupedInvoices.otherFirms.map((invoice) => (
-            <UnpaidInvoiceCard key={invoice.id} invoice={invoice} />
-          ))}
+          {otherInvoices
+            .sort(
+              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+            )
+            .map((invoice) => (
+              <UnpaidInvoiceCard
+                key={invoice.id}
+                invoice={invoice}
+                onMarkAsPaid={() => updateInvoice(invoice.id, { isPaid: true })}
+                userFirm={user.firm}
+                daysOverdue={calculateDaysOverdue(invoice.date)}
+              />
+            ))}
         </div>
       )}
     </div>
   );
+}
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: "EUR",
+  }).format(amount);
 }

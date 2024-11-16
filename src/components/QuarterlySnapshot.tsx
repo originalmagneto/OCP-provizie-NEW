@@ -1,7 +1,16 @@
 import React, { useMemo } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
-import { ArrowUpRight, ArrowDownRight, Euro, AlertCircle } from "lucide-react";
+import { useYear, isInQuarter } from "../context/YearContext";
+import {
+  ArrowUpRight,
+  ArrowDownRight,
+  Euro,
+  AlertCircle,
+  ArrowRight,
+  AlertTriangle,
+  ChevronRight,
+} from "lucide-react";
 import type { FirmType } from "../types";
 
 const firmThemes = {
@@ -22,6 +31,14 @@ const firmThemes = {
   },
 } as const;
 
+interface UnpaidQuarterInfo {
+  quarter: string;
+  year: number;
+  amount: number;
+  receivable: number;
+  payable: number;
+}
+
 interface CommissionSummary {
   toReceive: {
     total: number;
@@ -31,38 +48,89 @@ interface CommissionSummary {
     total: number;
     byFirm: Record<FirmType, number>;
   };
-  previousQuarter: {
-    received: number;
-    paid: number;
-  };
 }
 
-function FirmCommissionCard({
+function CommissionCard({
   firm,
   amount,
-  type,
+  direction,
+  userFirm,
 }: {
   firm: FirmType;
   amount: number;
-  type: "receive" | "pay";
+  direction: "receivable" | "payable";
+  userFirm: FirmType;
 }) {
   const theme = firmThemes[firm];
 
   return (
     <div
-      className={`p-4 rounded-lg ${theme.light} ${theme.border} flex justify-between items-center`}
+      className={`
+        p-4 rounded-lg ${theme.light} ${theme.border}
+        flex justify-between items-center
+      `}
     >
-      <div>
-        <span className={`font-medium ${theme.text}`}>{firm}</span>
-        <span className="text-sm text-gray-500 ml-2">
-          {type === "receive" ? "to receive" : "to pay"}
-        </span>
+      <div className="flex items-center space-x-3">
+        {direction === "receivable" ? (
+          <>
+            <span className={`font-medium ${theme.text}`}>{firm}</span>
+            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <span className="font-medium text-gray-600">owes you</span>
+          </>
+        ) : (
+          <>
+            <span className="font-medium text-gray-600">you owe</span>
+            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <span className={`font-medium ${theme.text}`}>{firm}</span>
+          </>
+        )}
       </div>
-      <div className="font-medium text-gray-900">
-        {new Intl.NumberFormat("de-DE", {
-          style: "currency",
-          currency: "EUR",
-        }).format(amount)}
+      <div className="font-medium text-gray-900">{formatCurrency(amount)}</div>
+    </div>
+  );
+}
+
+function UnpaidQuartersWarning({
+  unpaidQuarters,
+  onQuarterClick,
+}: {
+  unpaidQuarters: UnpaidQuarterInfo[];
+  onQuarterClick: (quarter: string, year: number) => void;
+}) {
+  if (unpaidQuarters.length === 0) return null;
+
+  return (
+    <div className="mb-4 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-lg">
+      <div className="flex items-start">
+        <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 mr-3 flex-shrink-0" />
+        <div>
+          <h4 className="text-sm font-medium text-amber-800">
+            Unpaid Commissions from Previous Quarters
+          </h4>
+          <div className="mt-2 space-y-2">
+            {unpaidQuarters.map((q) => (
+              <button
+                key={`${q.quarter}-${q.year}`}
+                onClick={() => onQuarterClick(q.quarter, q.year)}
+                className="w-full text-left"
+              >
+                <div className="text-sm text-amber-700 hover:text-amber-900">
+                  <span className="font-medium">
+                    {q.quarter} {q.year}
+                  </span>
+                  <div className="ml-4 space-y-1">
+                    {q.receivable > 0 && (
+                      <div>To receive: {formatCurrency(q.receivable)}</div>
+                    )}
+                    {q.payable > 0 && (
+                      <div>To pay: {formatCurrency(q.payable)}</div>
+                    )}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -71,89 +139,117 @@ function FirmCommissionCard({
 export default function QuarterlySnapshot() {
   const { invoices } = useInvoices();
   const { user } = useAuth();
+  const { currentYear, currentQuarter, selectYearAndQuarter } = useYear();
 
-  const quarterlyData: CommissionSummary = useMemo(() => {
-    const now = new Date();
-    const quarterStart = new Date(
-      now.getFullYear(),
-      Math.floor(now.getMonth() / 3) * 3,
-      1,
-    );
-    const quarterEnd = new Date(
-      now.getFullYear(),
-      Math.floor(now.getMonth() / 3) * 3 + 3,
-      0,
-    );
+  const { quarterlyData, unpaidQuarters } = useMemo(() => {
+    // Initialize quarterly data
+    const currentQuarterData: CommissionSummary = {
+      toReceive: { total: 0, byFirm: {} },
+      toPay: { total: 0, byFirm: {} },
+    };
 
-    const previousQuarterStart = new Date(
-      quarterStart.getFullYear(),
-      quarterStart.getMonth() - 3,
-      1,
-    );
+    // Track unpaid commissions by quarter
+    const unpaidByQuarter: Record<string, UnpaidQuarterInfo> = {};
 
-    return invoices.reduce(
-      (summary, invoice) => {
-        const invoiceDate = new Date(invoice.date);
-        const isCurrentQuarter =
-          invoiceDate >= quarterStart && invoiceDate <= quarterEnd;
-        const isPreviousQuarter =
-          invoiceDate >= previousQuarterStart && invoiceDate < quarterStart;
+    invoices.forEach((invoice) => {
+      if (invoice.referredByFirm === invoice.invoicedByFirm) return; // Skip self-referrals
 
-        if (isCurrentQuarter) {
-          const commission =
-            (invoice.amount * invoice.commissionPercentage) / 100;
+      const invoiceDate = new Date(invoice.date);
+      const invoiceQuarter = Math.floor(invoiceDate.getMonth() / 3) + 1;
+      const invoiceYear = invoiceDate.getFullYear();
+      const quarterKey = `Q${invoiceQuarter}`;
+      const commission = (invoice.amount * invoice.commissionPercentage) / 100;
 
-          if (invoice.referredByFirm !== invoice.invoicedByFirm) {
-            // Update receivable amount for referring firm
-            if (invoice.referredByFirm === user?.firm) {
-              summary.toReceive.total += commission;
-              summary.toReceive.byFirm[invoice.invoicedByFirm] =
-                (summary.toReceive.byFirm[invoice.invoicedByFirm] || 0) +
-                commission;
-            }
+      // Handle current quarter commissions (paid only)
+      if (
+        isInQuarter(invoiceDate, currentYear, currentQuarter) &&
+        invoice.isPaid
+      ) {
+        if (invoice.referredByFirm === user?.firm) {
+          currentQuarterData.toReceive.total += commission;
+          currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm] =
+            (currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm] || 0) +
+            commission;
+        }
+        if (invoice.invoicedByFirm === user?.firm) {
+          currentQuarterData.toPay.total += commission;
+          currentQuarterData.toPay.byFirm[invoice.referredByFirm] =
+            (currentQuarterData.toPay.byFirm[invoice.referredByFirm] || 0) +
+            commission;
+        }
+      }
 
-            // Update payable amount for invoicing firm
-            if (invoice.invoicedByFirm === user?.firm) {
-              summary.toPay.total += commission;
-              summary.toPay.byFirm[invoice.referredByFirm] =
-                (summary.toPay.byFirm[invoice.referredByFirm] || 0) +
-                commission;
-            }
-          }
+      // Track unpaid commissions from previous quarters
+      if (
+        !invoice.isPaid &&
+        !isInQuarter(invoiceDate, currentYear, currentQuarter)
+      ) {
+        const key = `${quarterKey}-${invoiceYear}`;
+        if (!unpaidByQuarter[key]) {
+          unpaidByQuarter[key] = {
+            quarter: quarterKey,
+            year: invoiceYear,
+            amount: 0,
+            receivable: 0,
+            payable: 0,
+          };
         }
 
-        if (isPreviousQuarter && invoice.isPaid) {
-          const commission =
-            (invoice.amount * invoice.commissionPercentage) / 100;
-          if (invoice.referredByFirm === user?.firm) {
-            summary.previousQuarter.received += commission;
-          }
-          if (invoice.invoicedByFirm === user?.firm) {
-            summary.previousQuarter.paid += commission;
-          }
+        if (invoice.referredByFirm === user?.firm) {
+          unpaidByQuarter[key].receivable += commission;
+          unpaidByQuarter[key].amount += commission;
         }
+        if (invoice.invoicedByFirm === user?.firm) {
+          unpaidByQuarter[key].payable += commission;
+          unpaidByQuarter[key].amount += commission;
+        }
+      }
+    });
 
-        return summary;
-      },
-      {
-        toReceive: { total: 0, byFirm: {} as Record<FirmType, number> },
-        toPay: { total: 0, byFirm: {} as Record<FirmType, number> },
-        previousQuarter: { received: 0, paid: 0 },
-      } as CommissionSummary,
-    );
-  }, [invoices, user]);
+    return {
+      quarterlyData: currentQuarterData,
+      unpaidQuarters: Object.values(unpaidByQuarter).sort(
+        (a, b) => b.year - a.year || b.quarter.localeCompare(a.quarter),
+      ),
+    };
+  }, [invoices, user, currentYear, currentQuarter]);
+
+  const handleQuarterClick = (quarter: string, year: number) => {
+    const quarterNumber = parseInt(quarter.replace("Q", ""));
+    selectYearAndQuarter(year, quarterNumber);
+
+    // Scroll to unpaid invoices section
+    const unpaidSection = document.querySelector(".unpaid-invoices-section");
+    if (unpaidSection) {
+      unpaidSection.scrollIntoView({ behavior: "smooth" });
+    }
+  };
 
   if (!user) return null;
 
-  const quarterName = `Q${Math.floor(new Date().getMonth() / 3) + 1} ${new Date().getFullYear()}`;
-
   return (
     <div className="space-y-6">
+      {/* Unpaid Quarters Warning */}
+      <UnpaidQuartersWarning
+        unpaidQuarters={unpaidQuarters}
+        onQuarterClick={handleQuarterClick}
+      />
+
       {/* Quarter Header */}
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium text-gray-900">{quarterName}</h3>
+        <h3 className="text-lg font-medium text-gray-900">
+          Q{currentQuarter} {currentYear}
+        </h3>
         <span className="text-sm text-gray-500">
-          {new Date().toLocaleDateString("en-US", { month: "long" })}
+          {new Date(currentYear, (currentQuarter - 1) * 3).toLocaleDateString(
+            "en-US",
+            { month: "long" },
+          )}{" "}
+          -
+          {new Date(currentYear, currentQuarter * 3 - 1).toLocaleDateString(
+            "en-US",
+            { month: "long" },
+          )}
         </span>
       </div>
 
@@ -162,34 +258,20 @@ export default function QuarterlySnapshot() {
         <div className="p-4 bg-green-50 rounded-lg border border-green-200">
           <div className="text-sm font-medium text-green-700">To Receive</div>
           <div className="mt-2 text-2xl font-semibold text-gray-900">
-            {new Intl.NumberFormat("de-DE", {
-              style: "currency",
-              currency: "EUR",
-            }).format(quarterlyData.toReceive.total)}
+            {formatCurrency(quarterlyData.toReceive.total)}
           </div>
-          <div className="mt-1 flex items-center text-sm">
-            <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />
-            <span className="text-green-700">
-              vs {formatCurrency(quarterlyData.previousQuarter.received)} last
-              quarter
-            </span>
+          <div className="mt-1 text-sm text-green-600">
+            From paid invoices only
           </div>
         </div>
 
         <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
           <div className="text-sm font-medium text-blue-700">To Pay</div>
           <div className="mt-2 text-2xl font-semibold text-gray-900">
-            {new Intl.NumberFormat("de-DE", {
-              style: "currency",
-              currency: "EUR",
-            }).format(quarterlyData.toPay.total)}
+            {formatCurrency(quarterlyData.toPay.total)}
           </div>
-          <div className="mt-1 flex items-center text-sm">
-            <ArrowDownRight className="h-4 w-4 text-blue-500 mr-1" />
-            <span className="text-blue-700">
-              vs {formatCurrency(quarterlyData.previousQuarter.paid)} last
-              quarter
-            </span>
+          <div className="mt-1 text-sm text-blue-600">
+            From paid invoices only
           </div>
         </div>
       </div>
@@ -197,37 +279,38 @@ export default function QuarterlySnapshot() {
       {/* Detailed Breakdown */}
       <div className="space-y-3">
         <h4 className="text-sm font-medium text-gray-700">
-          Detailed Breakdown
+          Commission Breakdown (Paid Invoices)
         </h4>
 
-        {/* Commissions to Receive */}
+        {/* Receivables */}
         {Object.entries(quarterlyData.toReceive.byFirm).map(
           ([firm, amount]) => (
-            <FirmCommissionCard
+            <CommissionCard
               key={`receive-${firm}`}
               firm={firm as FirmType}
               amount={amount}
-              type="receive"
+              direction="receivable"
+              userFirm={user.firm}
             />
           ),
         )}
 
-        {/* Commissions to Pay */}
+        {/* Payables */}
         {Object.entries(quarterlyData.toPay.byFirm).map(([firm, amount]) => (
-          <FirmCommissionCard
+          <CommissionCard
             key={`pay-${firm}`}
             firm={firm as FirmType}
             amount={amount}
-            type="pay"
+            direction="payable"
+            userFirm={user.firm}
           />
         ))}
 
-        {/* No Commissions Message */}
         {Object.keys(quarterlyData.toReceive.byFirm).length === 0 &&
           Object.keys(quarterlyData.toPay.byFirm).length === 0 && (
             <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 flex items-center text-gray-500">
               <AlertCircle className="h-5 w-5 mr-2" />
-              No commission transactions for this quarter yet
+              No paid commission transactions for this quarter yet
             </div>
           )}
       </div>

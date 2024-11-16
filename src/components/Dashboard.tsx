@@ -1,16 +1,8 @@
 import React, { useState } from "react";
 import { Disclosure, Transition } from "@headlessui/react";
 import { useAuth } from "../context/AuthContext";
-import { useInvoices } from "../context/InvoiceContext";
 import { useYear } from "../context/YearContext";
-import {
-  LogOut,
-  Trash2,
-  AlertTriangle,
-  GripHorizontal,
-  HelpCircle,
-  ChevronDown,
-} from "lucide-react";
+import { LogOut, Trash2, AlertTriangle, ChevronDown } from "lucide-react";
 import InvoiceForm from "./InvoiceForm";
 import InvoiceList from "./InvoiceList";
 import QuarterlySnapshot from "./QuarterlySnapshot";
@@ -25,7 +17,7 @@ const firmThemes = {
     text: "text-purple-600",
     border: "border-purple-200",
     light: "text-purple-500",
-    accent: "#9333ea", // purple-600
+    accent: "#9333ea",
   },
   MKMs: {
     primary: "bg-blue-100",
@@ -33,7 +25,7 @@ const firmThemes = {
     text: "text-blue-600",
     border: "border-blue-200",
     light: "text-blue-500",
-    accent: "#2563eb", // blue-600
+    accent: "#2563eb",
   },
   Contax: {
     primary: "bg-yellow-100",
@@ -41,23 +33,29 @@ const firmThemes = {
     text: "text-yellow-600",
     border: "border-yellow-200",
     light: "text-yellow-500",
-    accent: "#d97706", // yellow-600
+    accent: "#d97706",
   },
 } as const;
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
-  const { resetAllData } = useInvoices();
+  const { currentYear, currentQuarter } = useYear();
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
 
   if (!user) return null;
 
   const firmTheme = firmThemes[user.firm as FirmType];
 
-  const handleReset = () => {
-    resetAllData();
-    setShowResetConfirmation(false);
+  const quarterLabel = `Q${currentQuarter} ${currentYear}`;
+  const quarterRange = {
+    start: new Date(currentYear, (currentQuarter - 1) * 3),
+    end: new Date(currentYear, currentQuarter * 3 - 1),
   };
+  const monthRange = `${quarterRange.start.toLocaleDateString("en-US", {
+    month: "long",
+  })} - ${quarterRange.end.toLocaleDateString("en-US", {
+    month: "long",
+  })}`;
 
   return (
     <div className={`min-h-screen ${firmTheme.secondary}`}>
@@ -69,6 +67,9 @@ export default function Dashboard() {
               <h1 className={`text-2xl font-semibold ${firmTheme.text}`}>
                 {user.firm} Commission Dashboard
               </h1>
+              <span className="ml-4 px-3 py-1 rounded-md bg-gray-100 text-gray-600 text-sm">
+                {quarterLabel}
+              </span>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-500">
@@ -97,13 +98,13 @@ export default function Dashboard() {
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Primary Action Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* New Invoice Form - Prominent and Easy to Use */}
+          {/* New Invoice Form */}
           <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
             <h2 className="text-lg font-medium mb-4">Create New Invoice</h2>
             <InvoiceForm />
           </div>
 
-          {/* Quarterly Commission Summary - At a Glance */}
+          {/* Quarterly Commission Summary */}
           <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
             <h2 className="text-lg font-medium mb-4">
               Current Quarter Summary
@@ -114,15 +115,21 @@ export default function Dashboard() {
 
         {/* Invoice Management Section */}
         <div className="space-y-6">
-          {/* Unpaid Invoices - Highly Visible */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-amber-500">
-            <h2 className="text-lg font-medium mb-4">Pending Payments</h2>
+          {/* Unpaid Invoices Section */}
+          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-amber-500 unpaid-invoices-section">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-medium">Pending Payments</h2>
+              <div className="text-sm text-gray-500">{monthRange}</div>
+            </div>
             <UnpaidInvoicesList />
           </div>
 
-          {/* All Invoices with Better Filtering */}
+          {/* All Invoices Section */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-medium mb-4">All Invoices</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-medium">All Invoices</h2>
+              <div className="text-sm text-gray-500">{quarterLabel}</div>
+            </div>
             <InvoiceList />
           </div>
         </div>
@@ -183,7 +190,10 @@ export default function Dashboard() {
                   Cancel
                 </button>
                 <button
-                  onClick={handleReset}
+                  onClick={() => {
+                    // Implement reset functionality
+                    setShowResetConfirmation(false);
+                  }}
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md"
                 >
                   Reset All Data
