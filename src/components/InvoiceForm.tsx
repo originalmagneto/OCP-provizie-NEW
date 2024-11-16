@@ -15,23 +15,27 @@ interface FormData {
   referredByFirm: FirmType;
 }
 
-const INITIAL_FORM_DATA: FormData = {
-  clientName: "",
-  amount: "",
-  commissionPercentage: "",
-  date: new Date(),
-  invoicedByFirm: "SKALLARS",
-  referredByFirm: "SKALLARS",
+// Helper function to get available referring firms
+const getReferringFirms = (currentFirm: FirmType): FirmType[] => {
+  const allFirms: FirmType[] = ["SKALLARS", "MKMs", "Contax"];
+  return allFirms.filter((firm) => firm !== currentFirm);
 };
 
 export default function InvoiceForm() {
   const { user } = useAuth();
   const { addInvoice } = useInvoices();
-  const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
 
-  const firms: FirmType[] = ["SKALLARS", "MKMs", "Contax"];
+  // Initialize form with default values
+  const [formData, setFormData] = useState<FormData>({
+    clientName: "",
+    amount: "",
+    commissionPercentage: "10", // Default commission percentage
+    date: new Date(),
+    invoicedByFirm: user?.firm || "SKALLARS",
+    referredByFirm: getReferringFirms(user?.firm || "SKALLARS")[0], // Default to first available referring firm
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,15 +49,6 @@ export default function InvoiceForm() {
 
     if (isNaN(Number(formData.amount)) || Number(formData.amount) <= 0) {
       setError("Please enter a valid amount");
-      return;
-    }
-
-    if (
-      isNaN(Number(formData.commissionPercentage)) ||
-      Number(formData.commissionPercentage) <= 0 ||
-      Number(formData.commissionPercentage) > 100
-    ) {
-      setError("Commission percentage must be between 0 and 100");
       return;
     }
 
@@ -71,7 +66,15 @@ export default function InvoiceForm() {
 
       addInvoice(newInvoice);
       setSuccess(true);
-      setFormData(INITIAL_FORM_DATA);
+
+      // Reset form but keep the default values
+      setFormData((prev) => ({
+        ...prev,
+        clientName: "",
+        amount: "",
+        commissionPercentage: "10", // Keep default commission
+        date: new Date(),
+      }));
 
       // Reset success message after 3 seconds
       setTimeout(() => setSuccess(false), 3000);
@@ -87,6 +90,10 @@ export default function InvoiceForm() {
     setFormData((prev) => ({ ...prev, [name]: value }));
     setError(null);
   };
+
+  if (!user) return null;
+
+  const referringFirms = getReferringFirms(user.firm);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -145,7 +152,7 @@ export default function InvoiceForm() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Commission %
+            Commission % (Default: 10%)
           </label>
           <input
             type="number"
@@ -153,7 +160,7 @@ export default function InvoiceForm() {
             value={formData.commissionPercentage}
             onChange={handleChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-            placeholder="Enter percentage"
+            placeholder="10"
             step="0.1"
             min="0"
             max="100"
@@ -180,18 +187,12 @@ export default function InvoiceForm() {
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Invoiced By
           </label>
-          <select
-            name="invoicedByFirm"
-            value={formData.invoicedByFirm}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            {firms.map((firm) => (
-              <option key={firm} value={firm}>
-                {firm}
-              </option>
-            ))}
-          </select>
+          <input
+            type="text"
+            value={user.firm}
+            disabled
+            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+          />
         </div>
 
         <div>
@@ -204,7 +205,7 @@ export default function InvoiceForm() {
             onChange={handleChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
           >
-            {firms.map((firm) => (
+            {referringFirms.map((firm) => (
               <option key={firm} value={firm}>
                 {firm}
               </option>
