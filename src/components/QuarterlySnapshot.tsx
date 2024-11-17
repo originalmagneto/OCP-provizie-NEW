@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   ChevronRight,
 } from "lucide-react";
+import QuarterYearSelector from "./QuarterYearSelector";
 import type { FirmType } from "../types";
 
 const firmThemes = {
@@ -229,29 +230,14 @@ export default function QuarterlySnapshot() {
 
   return (
     <div className="space-y-6">
+      {/* Quarter/Year Selector */}
+      <QuarterYearSelector />
+
       {/* Unpaid Quarters Warning */}
       <UnpaidQuartersWarning
         unpaidQuarters={unpaidQuarters}
         onQuarterClick={handleQuarterClick}
       />
-
-      {/* Quarter Header */}
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium text-gray-900">
-          Q{currentQuarter} {currentYear}
-        </h3>
-        <span className="text-sm text-gray-500">
-          {new Date(currentYear, (currentQuarter - 1) * 3).toLocaleDateString(
-            "en-US",
-            { month: "long" },
-          )}{" "}
-          -
-          {new Date(currentYear, currentQuarter * 3 - 1).toLocaleDateString(
-            "en-US",
-            { month: "long" },
-          )}
-        </span>
-      </div>
 
       {/* Main Summary */}
       <div className="grid grid-cols-2 gap-4">
