@@ -1,9 +1,12 @@
 import React, { useState, useMemo } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
-import { useYear, isInQuarter } from "../context/YearContext";
+import { useYear } from "../context/YearContext";
 import CustomDropdown from "./common/CustomDropdown";
 import EditInvoiceModal from "./EditInvoiceModal";
+import { filterInvoices, formatCurrency } from "../utils/invoiceUtils";
+import type { FilterState } from "../types/filters";
+import type { FirmType, Invoice } from "../types";
 import {
   Search,
   CheckCircle,
@@ -16,7 +19,6 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import type { FirmType } from "../types";
 
 const firmThemes = {
   SKALLARS: {
@@ -39,14 +41,8 @@ const firmThemes = {
   },
 } as const;
 
-interface FilterState {
-  search: string;
-  status: "all" | "paid" | "unpaid";
-  firm: "all" | FirmType;
-}
-
 interface InvoiceCardProps {
-  invoice: any;
+  invoice: Invoice;
   isExpanded: boolean;
   onToggleExpand: () => void;
   onTogglePaid: () => void;
@@ -281,45 +277,12 @@ export default function InvoiceList() {
     firm: "all",
   });
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [editingInvoice, setEditingInvoice] = useState<any>(null);
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
 
-  const filteredInvoices = useMemo(() => {
-    return invoices
-      .filter((invoice) => {
-        // Quarter filter
-        const invoiceDate = new Date(invoice.date);
-        if (!isInQuarter(invoiceDate, currentYear, currentQuarter)) {
-          return false;
-        }
-
-        // Search filter
-        if (
-          filters.search &&
-          !invoice.clientName
-            .toLowerCase()
-            .includes(filters.search.toLowerCase())
-        ) {
-          return false;
-        }
-
-        // Status filter
-        if (filters.status !== "all") {
-          if (filters.status === "paid" && !invoice.isPaid) return false;
-          if (filters.status === "unpaid" && invoice.isPaid) return false;
-        }
-
-        // Firm filter
-        if (filters.firm !== "all") {
-          return (
-            invoice.invoicedByFirm === filters.firm ||
-            invoice.referredByFirm === filters.firm
-          );
-        }
-
-        return true;
-      })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [invoices, filters, currentYear, currentQuarter]);
+  const filteredInvoices = useMemo(
+    () => filterInvoices(invoices, filters, currentYear, currentQuarter),
+    [invoices, filters, currentYear, currentQuarter],
+  );
 
   if (!user) return null;
 
@@ -392,11 +355,4 @@ export default function InvoiceList() {
       )}
     </div>
   );
-}
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("de-DE", {
-    style: "currency",
-    currency: "EUR",
-  }).format(amount);
 }
