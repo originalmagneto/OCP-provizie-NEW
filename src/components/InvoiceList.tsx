@@ -2,9 +2,9 @@ import React, { useState, useMemo } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { useYear, isInQuarter } from "../context/YearContext";
+import CustomDropdown from "./common/CustomDropdown";
 import {
   Search,
-  Filter,
   CheckCircle,
   Clock,
   Building,
@@ -42,6 +42,71 @@ interface FilterState {
   search: string;
   status: "all" | "paid" | "unpaid";
   firm: "all" | FirmType;
+}
+
+function FilterBar({
+  filters,
+  onFilterChange,
+}: {
+  filters: FilterState;
+  onFilterChange: (filters: FilterState) => void;
+}) {
+  return (
+    <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
+      <div className="flex flex-col sm:flex-row gap-4">
+        {/* Search */}
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <input
+              type="text"
+              placeholder="Search invoices..."
+              value={filters.search}
+              onChange={(e) =>
+                onFilterChange({ ...filters, search: e.target.value })
+              }
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+        </div>
+
+        {/* Status Filter */}
+        <div className="sm:w-40">
+          <CustomDropdown
+            label=""
+            value={
+              filters.status === "all"
+                ? "All Status"
+                : filters.status === "paid"
+                  ? "Paid"
+                  : "Unpaid"
+            }
+            onChange={(value) => {
+              const status =
+                value === "All Status"
+                  ? "all"
+                  : (value.toLowerCase() as "paid" | "unpaid");
+              onFilterChange({ ...filters, status });
+            }}
+            options={["All Status", "Paid", "Unpaid"]}
+          />
+        </div>
+
+        {/* Firm Filter */}
+        <div className="sm:w-40">
+          <CustomDropdown
+            label=""
+            value={filters.firm === "all" ? "All Firms" : filters.firm}
+            onChange={(value) => {
+              const firm = value === "All Firms" ? "all" : (value as FirmType);
+              onFilterChange({ ...filters, firm });
+            }}
+            options={["All Firms", "SKALLARS", "MKMs", "Contax"]}
+          />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 interface InvoiceCardProps {
@@ -121,6 +186,7 @@ function InvoiceCard({
                         ? "text-green-600 hover:bg-green-50"
                         : "text-amber-600 hover:bg-amber-50"
                     }`}
+                    title={invoice.isPaid ? "Mark as unpaid" : "Mark as paid"}
                   >
                     {invoice.isPaid ? (
                       <CheckCircle className="h-4 w-4" />
@@ -131,6 +197,7 @@ function InvoiceCard({
                   <button
                     onClick={onDelete}
                     className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
+                    title="Delete invoice"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -247,76 +314,15 @@ export default function InvoiceList() {
 
   return (
     <div>
-      {/* Filter Bar */}
-      <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <input
-                type="text"
-                placeholder="Search invoices..."
-                value={filters.search}
-                onChange={(e) =>
-                  setFilters({ ...filters, search: e.target.value })
-                }
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-          </div>
+      <FilterBar filters={filters} onFilterChange={setFilters} />
 
-          {/* Status Filter */}
-          <div className="sm:w-40">
-            <select
-              value={filters.status}
-              onChange={(e) =>
-                setFilters({
-                  ...filters,
-                  status: e.target.value as FilterState["status"],
-                })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              <option value="all">All Status</option>
-              <option value="paid">Paid</option>
-              <option value="unpaid">Unpaid</option>
-            </select>
-          </div>
-
-          {/* Firm Filter */}
-          <div className="sm:w-40">
-            <select
-              value={filters.firm}
-              onChange={(e) =>
-                setFilters({
-                  ...filters,
-                  firm: e.target.value as FilterState["firm"],
-                })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              <option value="all">All Firms</option>
-              <option value="SKALLARS">SKALLARS</option>
-              <option value="MKMs">MKMs</option>
-              <option value="Contax">Contax</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Quarter Info */}
       <div className="flex justify-between items-center mb-4">
         <div className="text-sm text-gray-500">
-          Showing invoices for Q{currentQuarter} {currentYear}
-        </div>
-        <div className="text-sm text-gray-500">
-          {filteredInvoices.length} invoice
+          Showing {filteredInvoices.length} invoice
           {filteredInvoices.length !== 1 ? "s" : ""}
         </div>
       </div>
 
-      {/* Invoice List */}
       <div className="space-y-4">
         {filteredInvoices.map((invoice) => (
           <InvoiceCard

@@ -1,7 +1,8 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { useYear, isInQuarter } from "../context/YearContext";
+import CustomDropdown from "./common/CustomDropdown";
 import {
   CheckCircle,
   AlertCircle,
@@ -10,6 +11,7 @@ import {
   Building,
   Euro,
   ChevronRight,
+  Filter,
 } from "lucide-react";
 import type { FirmType } from "../types";
 
@@ -39,6 +41,59 @@ interface UnpaidInvoiceCardProps {
   onMarkAsPaid: () => void;
   userFirm: FirmType;
   daysOverdue: number;
+}
+
+interface FilterState {
+  firm: "all" | FirmType;
+  sortBy: "date" | "amount" | "overdue";
+}
+
+function FilterBar({
+  filters,
+  onFilterChange,
+}: {
+  filters: FilterState;
+  onFilterChange: (filters: FilterState) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex space-x-4">
+        <div className="w-48">
+          <CustomDropdown
+            label=""
+            value={filters.firm === "all" ? "All Firms" : filters.firm}
+            onChange={(value) => {
+              const firm = value === "All Firms" ? "all" : (value as FirmType);
+              onFilterChange({ ...filters, firm });
+            }}
+            options={["All Firms", "SKALLARS", "MKMs", "Contax"]}
+          />
+        </div>
+        <div className="w-48">
+          <CustomDropdown
+            label=""
+            value={
+              filters.sortBy === "date"
+                ? "Sort by Date"
+                : filters.sortBy === "amount"
+                  ? "Sort by Amount"
+                  : "Sort by Overdue Days"
+            }
+            onChange={(value) => {
+              const sortBy =
+                value === "Sort by Date"
+                  ? "date"
+                  : value === "Sort by Amount"
+                    ? "amount"
+                    : "overdue";
+              onFilterChange({ ...filters, sortBy });
+            }}
+            options={["Sort by Date", "Sort by Amount", "Sort by Overdue Days"]}
+          />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function UnpaidInvoiceCard({
@@ -141,23 +196,44 @@ export default function UnpaidInvoicesList() {
   const { invoices, updateInvoice } = useInvoices();
   const { user } = useAuth();
   const { currentYear, currentQuarter } = useYear();
+  const [filters, setFilters] = useState<FilterState>({
+    firm: "all",
+    sortBy: "date",
+  });
 
-  const { userInvoices, otherInvoices } = useMemo(() => {
-    const unpaidInvoices = invoices.filter(
+  const unpaidInvoices = useMemo(() => {
+    let filtered = invoices.filter(
       (invoice) =>
         !invoice.isPaid &&
         isInQuarter(new Date(invoice.date), currentYear, currentQuarter),
     );
 
-    return {
-      userInvoices: unpaidInvoices.filter(
-        (invoice) => invoice.invoicedByFirm === user?.firm,
-      ),
-      otherInvoices: unpaidInvoices.filter(
-        (invoice) => invoice.invoicedByFirm !== user?.firm,
-      ),
-    };
-  }, [invoices, user, currentYear, currentQuarter]);
+    // Apply firm filter
+    if (filters.firm !== "all") {
+      filtered = filtered.filter(
+        (invoice) =>
+          invoice.invoicedByFirm === filters.firm ||
+          invoice.referredByFirm === filters.firm,
+      );
+    }
+
+    // Apply sorting
+    return filtered.sort((a, b) => {
+      const daysOverdueA = calculateDaysOverdue(a.date);
+      const daysOverdueB = calculateDaysOverdue(b.date);
+
+      switch (filters.sortBy) {
+        case "date":
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        case "amount":
+          return b.amount - a.amount;
+        case "overdue":
+          return daysOverdueB - daysOverdueA;
+        default:
+          return 0;
+      }
+    });
+  }, [invoices, currentYear, currentQuarter, filters]);
 
   const calculateDaysOverdue = (date: string) => {
     const invoiceDate = new Date(date);
@@ -168,61 +244,27 @@ export default function UnpaidInvoicesList() {
 
   if (!user) return null;
 
-  if (userInvoices.length === 0 && otherInvoices.length === 0) {
-    return (
-      <div className="text-center py-6">
-        <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
-        <h3 className="text-lg font-medium text-gray-900">All Paid!</h3>
-        <p className="text-gray-500">No unpaid invoices for this quarter.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      {/* User's Unpaid Invoices */}
-      {userInvoices.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-700 flex items-center">
-            <AlertCircle className="h-4 w-4 text-amber-500 mr-2" />
-            Your Unpaid Invoices
-          </h3>
-          {userInvoices
-            .sort(
-              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-            )
-            .map((invoice) => (
-              <UnpaidInvoiceCard
-                key={invoice.id}
-                invoice={invoice}
-                onMarkAsPaid={() => updateInvoice(invoice.id, { isPaid: true })}
-                userFirm={user.firm}
-                daysOverdue={calculateDaysOverdue(invoice.date)}
-              />
-            ))}
-        </div>
-      )}
+      <FilterBar filters={filters} onFilterChange={setFilters} />
 
-      {/* Other Firms' Unpaid Invoices */}
-      {otherInvoices.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-700 flex items-center">
-            <Clock className="h-4 w-4 text-gray-400 mr-2" />
-            Other Firms' Unpaid Invoices
-          </h3>
-          {otherInvoices
-            .sort(
-              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-            )
-            .map((invoice) => (
-              <UnpaidInvoiceCard
-                key={invoice.id}
-                invoice={invoice}
-                onMarkAsPaid={() => updateInvoice(invoice.id, { isPaid: true })}
-                userFirm={user.firm}
-                daysOverdue={calculateDaysOverdue(invoice.date)}
-              />
-            ))}
+      {unpaidInvoices.length === 0 ? (
+        <div className="text-center py-6">
+          <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
+          <h3 className="text-lg font-medium text-gray-900">All Paid!</h3>
+          <p className="text-gray-500">No unpaid invoices for this quarter.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {unpaidInvoices.map((invoice) => (
+            <UnpaidInvoiceCard
+              key={invoice.id}
+              invoice={invoice}
+              onMarkAsPaid={() => updateInvoice(invoice.id, { isPaid: true })}
+              userFirm={user.firm}
+              daysOverdue={calculateDaysOverdue(invoice.date)}
+            />
+          ))}
         </div>
       )}
     </div>

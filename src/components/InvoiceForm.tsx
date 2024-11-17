@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useInvoices } from "../context/InvoiceContext";
-import { Plus, Euro, AlertCircle } from "lucide-react";
+import { Euro, AlertCircle } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import type { FirmType } from "../types";
+import CustomDropdown from "./common/CustomDropdown";
 
 interface FormData {
   clientName: string;
@@ -15,10 +16,18 @@ interface FormData {
   referredByFirm: FirmType;
 }
 
-// Helper function to get available referring firms
-const getReferringFirms = (currentFirm: FirmType): FirmType[] => {
-  const allFirms: FirmType[] = ["SKALLARS", "MKMs", "Contax"];
-  return allFirms.filter((firm) => firm !== currentFirm);
+const INITIAL_FORM_DATA = (userFirm: FirmType): FormData => {
+  const firms: FirmType[] = ["SKALLARS", "MKMs", "Contax"];
+  const availableReferrers = firms.filter((firm) => firm !== userFirm);
+
+  return {
+    clientName: "",
+    amount: "",
+    commissionPercentage: "10", // Default commission percentage
+    date: new Date(),
+    invoicedByFirm: userFirm,
+    referredByFirm: availableReferrers[0],
+  };
 };
 
 export default function InvoiceForm() {
@@ -27,15 +36,12 @@ export default function InvoiceForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
 
-  // Initialize form with default values
-  const [formData, setFormData] = useState<FormData>({
-    clientName: "",
-    amount: "",
-    commissionPercentage: "10", // Default commission percentage
-    date: new Date(),
-    invoicedByFirm: user?.firm || "SKALLARS",
-    referredByFirm: getReferringFirms(user?.firm || "SKALLARS")[0], // Default to first available referring firm
-  });
+  const [formData, setFormData] = useState<FormData>(() =>
+    INITIAL_FORM_DATA(user?.firm || "SKALLARS"),
+  );
+
+  const firms: FirmType[] = ["SKALLARS", "MKMs", "Contax"];
+  const availableReferrers = firms.filter((firm) => firm !== user?.firm);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,13 +74,7 @@ export default function InvoiceForm() {
       setSuccess(true);
 
       // Reset form but keep the default values
-      setFormData((prev) => ({
-        ...prev,
-        clientName: "",
-        amount: "",
-        commissionPercentage: "10", // Keep default commission
-        date: new Date(),
-      }));
+      setFormData(INITIAL_FORM_DATA(user?.firm || "SKALLARS"));
 
       // Reset success message after 3 seconds
       setTimeout(() => setSuccess(false), 3000);
@@ -92,8 +92,6 @@ export default function InvoiceForm() {
   };
 
   if (!user) return null;
-
-  const referringFirms = getReferringFirms(user.firm);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -183,35 +181,25 @@ export default function InvoiceForm() {
 
       {/* Firm Selection Row */}
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Invoiced By
-          </label>
-          <input
-            type="text"
-            value={user.firm}
-            disabled
-            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
-          />
-        </div>
+        <CustomDropdown
+          label="Invoiced By"
+          value={user.firm}
+          onChange={() => {}} // No-op since it's disabled
+          options={firms}
+          disabled={true}
+        />
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Referred By
-          </label>
-          <select
-            name="referredByFirm"
-            value={formData.referredByFirm}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            {referringFirms.map((firm) => (
-              <option key={firm} value={firm}>
-                {firm}
-              </option>
-            ))}
-          </select>
-        </div>
+        <CustomDropdown
+          label="Referred By"
+          value={formData.referredByFirm}
+          onChange={(value) =>
+            setFormData((prev) => ({
+              ...prev,
+              referredByFirm: value as FirmType,
+            }))
+          }
+          options={availableReferrers}
+        />
       </div>
 
       {/* Submit Button */}
