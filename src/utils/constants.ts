@@ -1,4 +1,4 @@
-import type { FirmType } from '../types';
+import type { FirmType } from "../types";
 
 export const FIRM_THEMES = {
   SKALLARS: {
@@ -22,13 +22,3 @@ export const FIRM_THEMES = {
 } as const;
 
 export const FIRMS: FirmType[] = ["SKALLARS", "MKMs", "Contax"];
-```
-
-3. Create `src/utils/formatting.ts`:
-```typescript
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("de-DE", {
-    style: "currency",
-    currency: "EUR",
-  }).format(amount);
-}

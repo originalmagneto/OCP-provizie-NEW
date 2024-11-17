@@ -13,14 +13,12 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          "react-vendor": ["react", "react-dom"],
-          utils: [
-            "./src/utils/constants.ts",
-            "./src/utils/filterUtils.ts",
-            "./src/utils/formatting.ts",
-            "./src/utils/dateUtils.ts",
-          ],
+        manualChunks: (id) => {
+          if (id.includes("node_modules")) {
+            if (id.includes("react")) return "react-vendor";
+            if (id.includes("lucide")) return "icons-vendor";
+            return "vendor";
+          }
         },
       },
     },
