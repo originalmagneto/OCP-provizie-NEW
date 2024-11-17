@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -7,7 +7,6 @@ import {
   Timer,
 } from "lucide-react";
 import { useYear } from "../context/YearContext";
-import { AnimatePresence, motion } from "framer-motion";
 
 export default function QuarterYearSelector() {
   const { currentYear, currentQuarter, availableYears, selectYearAndQuarter } =
@@ -61,47 +60,49 @@ export default function QuarterYearSelector() {
     };
   };
 
+  const isCurrentYear = currentYear === new Date().getFullYear();
+  const minYear = Math.min(...availableYears);
+  const maxYear = Math.max(...availableYears);
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
-    >
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
       {/* Header with Year Selection */}
-      <motion.div
-        className="p-4 border-b border-gray-200"
-        animate={{ backgroundColor: isChanging ? "#f9fafb" : "#ffffff" }}
-        transition={{ duration: 0.2 }}
-      >
+      <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
-          <motion.div
-            className="flex items-center space-x-3"
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 400, damping: 10 }}
-          >
+          <div className="flex items-center space-x-3">
             <CalendarDays className="h-5 w-5 text-gray-400" />
-            <motion.select
-              key={currentYear}
+            <select
               value={currentYear}
               onChange={(e) =>
                 handleQuarterChange(Number(e.target.value), currentQuarter)
               }
               className="text-lg font-semibold text-gray-900 bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-md px-1 py-0.5 -ml-1 cursor-pointer"
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.2 }}
             >
-              {availableYears.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </motion.select>
-          </motion.div>
+              {availableYears.map((year) => {
+                const now = new Date().getFullYear();
+                const isPast = year < now;
+                const isFuture = year > now;
+                const isCurrent = year === now;
 
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+                return (
+                  <option
+                    key={year}
+                    value={year}
+                    className={`
+                      ${isPast ? "text-gray-600" : ""}
+                      ${isFuture ? "text-indigo-600" : ""}
+                      ${isCurrent ? "font-bold" : ""}
+                    `}
+                  >
+                    {year}
+                    {isCurrent && " (Current)"}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          <button
             onClick={() => {
               const now = new Date();
               handleQuarterChange(
@@ -113,110 +114,80 @@ export default function QuarterYearSelector() {
           >
             <Timer className="h-4 w-4 mr-1.5" />
             Current Quarter
-          </motion.button>
+          </button>
         </div>
-      </motion.div>
+      </div>
 
       {/* Quarter Selection */}
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+          <button
             onClick={handlePreviousQuarter}
+            disabled={currentYear === minYear && currentQuarter === 1}
             className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={
-              currentYear === Math.min(...availableYears) &&
-              currentQuarter === 1
-            }
           >
             <ChevronLeft className="h-5 w-5" />
-          </motion.button>
+          </button>
 
-          <motion.div
-            className="flex items-center space-x-2 text-sm text-gray-500"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
+          <div className="flex items-center space-x-2 text-sm text-gray-500">
             <ArrowLeftRight className="h-4 w-4" />
             <span>Navigate between quarters</span>
-          </motion.div>
+          </div>
 
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+          <button
             onClick={handleNextQuarter}
+            disabled={currentYear === maxYear && currentQuarter === 4}
             className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={
-              currentYear === Math.max(...availableYears) &&
-              currentQuarter === 4
-            }
           >
             <ChevronRight className="h-5 w-5" />
-          </motion.button>
+          </button>
         </div>
 
         <div className="grid grid-cols-4 gap-3">
-          <AnimatePresence>
-            {quarters.map((quarter) => {
-              const dates = getQuarterDates(quarter);
-              const isCurrent = isCurrentQuarter(quarter);
-              const isSelected = currentQuarter === quarter;
+          {quarters.map((quarter) => {
+            const dates = getQuarterDates(quarter);
+            const isCurrent = isCurrentQuarter(quarter);
+            const isSelected = currentQuarter === quarter;
 
-              return (
-                <motion.button
-                  key={`${currentYear}-Q${quarter}`}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 17,
-                    delay: quarter * 0.1,
-                  }}
-                  onClick={() => handleQuarterChange(currentYear, quarter)}
-                  className={`
-                    relative p-3 rounded-lg text-left transition-all
-                    ${
-                      isSelected
-                        ? "bg-indigo-600 text-white shadow-md"
-                        : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-                    }
-                    ${
-                      isCurrent && !isSelected
-                        ? "ring-2 ring-indigo-500 ring-offset-2"
-                        : ""
-                    }
-                  `}
+            return (
+              <button
+                key={quarter}
+                onClick={() => handleQuarterChange(currentYear, quarter)}
+                className={`
+                  relative p-3 rounded-lg text-left transition-all duration-200
+                  ${
+                    isSelected
+                      ? "bg-indigo-600 text-white shadow-md"
+                      : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                  }
+                  ${
+                    isCurrent && !isSelected
+                      ? "ring-2 ring-indigo-500 ring-offset-2"
+                      : ""
+                  }
+                `}
+              >
+                <div className="font-semibold">Q{quarter}</div>
+                <div
+                  className={`text-xs mt-1 ${isSelected ? "text-indigo-100" : "text-gray-500"}`}
                 >
-                  <div className="font-semibold">Q{quarter}</div>
+                  {dates.start} - {dates.end}
+                </div>
+                {isCurrent && (
                   <div
-                    className={`text-xs mt-1 ${isSelected ? "text-indigo-100" : "text-gray-500"}`}
+                    className={`
+                    absolute top-1 right-1 text-xs px-1.5 py-0.5 rounded-full
+                    ${isSelected ? "bg-indigo-500 text-white" : "bg-indigo-100 text-indigo-600"}
+                  `}
                   >
-                    {dates.start} - {dates.end}
+                    Current
                   </div>
-                  {isCurrent && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className={`absolute top-1 right-1 text-xs px-1.5 py-0.5 rounded-full
-                        ${isSelected ? "bg-indigo-500 text-white" : "bg-indigo-100 text-indigo-600"}
-                        ${isCurrent ? "animate-pulse-ring" : ""}
-                      `}
-                    >
-                      Current
-                    </motion.div>
-                  )}
-                </motion.button>
-              );
-            })}
-          </AnimatePresence>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

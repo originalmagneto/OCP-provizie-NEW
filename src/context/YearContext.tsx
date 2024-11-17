@@ -35,15 +35,28 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
       : Math.floor(new Date().getMonth() / 3) + 1;
   });
 
-  // Calculate available years from invoices
+  // Calculate available years from invoices and include a range around the current year
   const availableYears = React.useMemo(() => {
-    const years = invoices.map((invoice) =>
+    const currentRealYear = new Date().getFullYear();
+
+    // Get years from invoices
+    const invoiceYears = invoices.map((invoice) =>
       new Date(invoice.date).getFullYear(),
     );
-    return Array.from(new Set([...years, currentYear, currentYear + 1])).sort(
-      (a, b) => b - a,
+
+    // Create a range of years
+    const yearRange = Array.from(
+      { length: 10 }, // Adjust this number to show more/fewer years
+      (_, i) => currentRealYear - 5 + i, // Show 5 years back and 4 years forward
     );
-  }, [invoices, currentYear]);
+
+    // Combine invoice years and range, remove duplicates, and sort
+    const allYears = [...new Set([...invoiceYears, ...yearRange])].sort(
+      (a, b) => b - a,
+    ); // Sort in descending order
+
+    return allYears;
+  }, [invoices]);
 
   // Calculate yearly statistics
   const yearlyStats = React.useMemo(() => {
@@ -98,13 +111,10 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
 
   // Handle year changes
   const setYear = (year: number) => {
-    if (availableYears.includes(year)) {
-      setCurrentYear(year);
-      localStorage.setItem("selectedYear", year.toString());
-    }
+    setCurrentYear(year);
+    localStorage.setItem("selectedYear", year.toString());
   };
 
-  // Handle quarter changes
   const setQuarter = (quarter: number) => {
     if (quarter >= 1 && quarter <= 4) {
       setCurrentQuarter(quarter);
@@ -112,9 +122,8 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Combined year and quarter selection
   const selectYearAndQuarter = (year: number, quarter: number) => {
-    if (availableYears.includes(year) && quarter >= 1 && quarter <= 4) {
+    if (quarter >= 1 && quarter <= 4) {
       setCurrentYear(year);
       setCurrentQuarter(quarter);
       localStorage.setItem("selectedYear", year.toString());
