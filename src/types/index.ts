@@ -10,3 +10,9 @@ export interface Invoice {
   date: string;
   isPaid: boolean;
 }
+
+export interface FilterState {
+  search: string;
+  status: "all" | "paid" | "unpaid";
+  firm: "all" | FirmType;
+}

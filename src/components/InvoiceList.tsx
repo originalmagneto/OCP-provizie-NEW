@@ -4,9 +4,10 @@ import { useAuth } from "../context/AuthContext";
 import { useYear } from "../context/YearContext";
 import CustomDropdown from "./common/CustomDropdown";
 import EditInvoiceModal from "./EditInvoiceModal";
-import { filterInvoices, formatCurrency } from "../utils/invoiceUtils";
-import type { FilterState } from "../types/filters";
-import type { FirmType, Invoice } from "../types";
+import { FIRM_THEMES, FIRMS } from "../utils/constants";
+import { filterInvoices } from "../utils/filterUtils";
+import { formatCurrency } from "../utils/formatting";
+import type { Invoice, FirmType, FilterState } from "../types";
 import {
   Search,
   CheckCircle,
@@ -19,27 +20,6 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-
-const firmThemes = {
-  SKALLARS: {
-    bg: "bg-purple-50",
-    border: "border-purple-200",
-    text: "text-purple-600",
-    hover: "hover:bg-purple-100",
-  },
-  MKMs: {
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-    text: "text-blue-600",
-    hover: "hover:bg-blue-100",
-  },
-  Contax: {
-    bg: "bg-yellow-50",
-    border: "border-yellow-200",
-    text: "text-yellow-600",
-    hover: "hover:bg-yellow-100",
-  },
-} as const;
 
 interface InvoiceCardProps {
   invoice: Invoice;
@@ -108,7 +88,7 @@ function FilterBar({
               const firm = value === "All Firms" ? "all" : (value as FirmType);
               onFilterChange({ ...filters, firm });
             }}
-            options={["All Firms", "SKALLARS", "MKMs", "Contax"]}
+            options={["All Firms", ...FIRMS]}
           />
         </div>
       </div>
@@ -125,7 +105,7 @@ function InvoiceCard({
   onEdit,
   userFirm,
 }: InvoiceCardProps) {
-  const theme = firmThemes[invoice.invoicedByFirm];
+  const theme = FIRM_THEMES[invoice.invoicedByFirm];
   const isUsersFirm = userFirm === invoice.invoicedByFirm;
   const commission = (invoice.amount * invoice.commissionPercentage) / 100;
 
@@ -230,7 +210,7 @@ function InvoiceCard({
               <div>
                 <span className="text-gray-500">Invoiced by:</span>
                 <span
-                  className={`ml-2 ${firmThemes[invoice.invoicedByFirm].text}`}
+                  className={`ml-2 ${FIRM_THEMES[invoice.invoicedByFirm].text}`}
                 >
                   {invoice.invoicedByFirm}
                 </span>
@@ -238,7 +218,7 @@ function InvoiceCard({
               <div>
                 <span className="text-gray-500">Referred by:</span>
                 <span
-                  className={`ml-2 ${firmThemes[invoice.referredByFirm].text}`}
+                  className={`ml-2 ${FIRM_THEMES[invoice.referredByFirm].text}`}
                 >
                   {invoice.referredByFirm}
                 </span>
@@ -279,10 +259,10 @@ export default function InvoiceList() {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
 
-  const filteredInvoices = useMemo(
-    () => filterInvoices(invoices, filters, currentYear, currentQuarter),
-    [invoices, filters, currentYear, currentQuarter],
-  );
+  const filteredInvoices = useMemo(() => {
+    if (!Array.isArray(invoices)) return [];
+    return filterInvoices(invoices, filters, currentYear, currentQuarter);
+  }, [invoices, filters, currentYear, currentQuarter]);
 
   if (!user) return null;
 

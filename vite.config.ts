@@ -6,31 +6,26 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "src"),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
   build: {
     sourcemap: true,
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          if (id.includes("node_modules")) {
-            if (id.includes("react")) return "react-vendor";
-            if (id.includes("lucide")) return "icons-vendor";
-            return "vendor";
-          }
+        manualChunks: {
+          "react-vendor": ["react", "react-dom"],
+          utils: [
+            "./src/utils/constants.ts",
+            "./src/utils/filterUtils.ts",
+            "./src/utils/formatting.ts",
+            "./src/utils/dateUtils.ts",
+          ],
         },
       },
     },
   },
   optimizeDeps: {
-    include: [
-      "react",
-      "react-dom",
-      "lucide-react",
-      "@headlessui/react",
-      "react-datepicker",
-    ],
-    exclude: [],
+    include: ["react", "react-dom", "lucide-react"],
   },
 });
