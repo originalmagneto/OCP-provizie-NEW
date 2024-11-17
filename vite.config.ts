@@ -1,23 +1,29 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import path from "path";
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": "/src",
+      "@": path.resolve(__dirname, "./src"),
     },
   },
   build: {
+    outDir: "dist",
+    sourcemap: true,
     rollupOptions: {
-      external: ["react", "react-dom"],
-    },
-    commonjsOptions: {
-      include: [/node_modules/],
-      extensions: [".js", ".cjs", ".jsx", ".tsx"],
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+      },
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "framer-motion", "@headlessui/react"],
+        },
+      },
     },
   },
-  optimizeDeps: {
-    include: ["framer-motion", "@headlessui/react"],
+  server: {
+    port: 3000,
   },
 });
