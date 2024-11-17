@@ -5,6 +5,8 @@ import {
   CalendarDays,
   ArrowLeftRight,
   Timer,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 import { useYear } from "../context/YearContext";
 
@@ -60,7 +62,95 @@ export default function QuarterYearSelector() {
     };
   };
 
-  const isCurrentYear = currentYear === new Date().getFullYear();
+  const YearSelect = () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const selectRef = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (
+          selectRef.current &&
+          !selectRef.current.contains(event.target as Node)
+        ) {
+          setIsOpen(false);
+        }
+      };
+
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    return (
+      <div className="relative" ref={selectRef}>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center space-x-2 px-2 py-1 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+        >
+          <CalendarDays className="h-5 w-5 text-gray-400" />
+          <span className="text-lg font-semibold text-gray-900">
+            {currentYear}
+          </span>
+          <ChevronDown
+            className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
+              isOpen ? "transform rotate-180" : ""
+            }`}
+          />
+        </button>
+
+        {isOpen && (
+          <div className="absolute z-10 mt-1 w-48 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 animate-slide-down">
+            <div className="max-h-60 overflow-auto py-1 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+              {availableYears.map((year) => {
+                const now = new Date().getFullYear();
+                const isPast = year < now;
+                const isFuture = year > now;
+                const isCurrent = year === now;
+                const isSelected = year === currentYear;
+
+                return (
+                  <button
+                    key={year}
+                    onClick={() => {
+                      handleQuarterChange(year, currentQuarter);
+                      setIsOpen(false);
+                    }}
+                    className={`
+                      w-full text-left px-4 py-2 text-sm
+                      ${isSelected ? "bg-indigo-50 text-indigo-600" : "text-gray-700"}
+                      ${!isSelected && "hover:bg-gray-50"}
+                      flex items-center justify-between
+                    `}
+                  >
+                    <span
+                      className={`
+                      ${isCurrent ? "font-semibold" : ""}
+                      ${isPast ? "text-gray-600" : ""}
+                      ${isFuture ? "text-indigo-600" : ""}
+                    `}
+                    >
+                      {year}
+                    </span>
+
+                    {isSelected && (
+                      <Check className="h-4 w-4 text-indigo-600" />
+                    )}
+
+                    {isCurrent && !isSelected && (
+                      <span className="text-xs text-indigo-600 font-medium">
+                        Current
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const minYear = Math.min(...availableYears);
   const maxYear = Math.max(...availableYears);
 
@@ -69,38 +159,7 @@ export default function QuarterYearSelector() {
       {/* Header with Year Selection */}
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <CalendarDays className="h-5 w-5 text-gray-400" />
-            <select
-              value={currentYear}
-              onChange={(e) =>
-                handleQuarterChange(Number(e.target.value), currentQuarter)
-              }
-              className="text-lg font-semibold text-gray-900 bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-md px-1 py-0.5 -ml-1 cursor-pointer"
-            >
-              {availableYears.map((year) => {
-                const now = new Date().getFullYear();
-                const isPast = year < now;
-                const isFuture = year > now;
-                const isCurrent = year === now;
-
-                return (
-                  <option
-                    key={year}
-                    value={year}
-                    className={`
-                      ${isPast ? "text-gray-600" : ""}
-                      ${isFuture ? "text-indigo-600" : ""}
-                      ${isCurrent ? "font-bold" : ""}
-                    `}
-                  >
-                    {year}
-                    {isCurrent && " (Current)"}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
+          <YearSelect />
 
           <button
             onClick={() => {
