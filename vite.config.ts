@@ -10,20 +10,16 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: "dist",
-    sourcemap: true,
     rollupOptions: {
-      input: {
-        main: path.resolve(__dirname, "index.html"),
-      },
       output: {
         manualChunks: {
-          vendor: ["react", "react-dom", "framer-motion", "@headlessui/react"],
+          vendor: ["react", "react-dom"],
+          utils: ["date-fns", "react-datepicker"],
         },
       },
     },
   },
-  server: {
-    port: 3000,
+  optimizeDeps: {
+    include: ["react", "react-dom", "date-fns", "react-datepicker"],
   },
 });

@@ -3,6 +3,7 @@ import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { useYear, isInQuarter } from "../context/YearContext";
 import CustomDropdown from "./common/CustomDropdown";
+import EditInvoiceModal from "./EditInvoiceModal";
 import {
   Search,
   CheckCircle,
@@ -42,6 +43,16 @@ interface FilterState {
   search: string;
   status: "all" | "paid" | "unpaid";
   firm: "all" | FirmType;
+}
+
+interface InvoiceCardProps {
+  invoice: any;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onTogglePaid: () => void;
+  onDelete: () => void;
+  onEdit: () => void;
+  userFirm: FirmType;
 }
 
 function FilterBar({
@@ -109,21 +120,13 @@ function FilterBar({
   );
 }
 
-interface InvoiceCardProps {
-  invoice: any;
-  isExpanded: boolean;
-  onToggleExpand: () => void;
-  onTogglePaid: () => void;
-  onDelete: () => void;
-  userFirm: FirmType;
-}
-
 function InvoiceCard({
   invoice,
   isExpanded,
   onToggleExpand,
   onTogglePaid,
   onDelete,
+  onEdit,
   userFirm,
 }: InvoiceCardProps) {
   const theme = firmThemes[invoice.invoicedByFirm];
@@ -193,6 +196,13 @@ function InvoiceCard({
                     ) : (
                       <Clock className="h-4 w-4" />
                     )}
+                  </button>
+                  <button
+                    onClick={onEdit}
+                    className="p-1 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"
+                    title="Edit invoice"
+                  >
+                    <Edit2 className="h-4 w-4" />
                   </button>
                   <button
                     onClick={onDelete}
@@ -271,6 +281,7 @@ export default function InvoiceList() {
     firm: "all",
   });
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [editingInvoice, setEditingInvoice] = useState<any>(null);
 
   const filteredInvoices = useMemo(() => {
     return invoices
@@ -350,6 +361,7 @@ export default function InvoiceList() {
                 deleteInvoice(invoice.id);
               }
             }}
+            onEdit={() => setEditingInvoice(invoice)}
             userFirm={user.firm}
           />
         ))}
@@ -366,6 +378,18 @@ export default function InvoiceList() {
           </div>
         )}
       </div>
+
+      {editingInvoice && (
+        <EditInvoiceModal
+          invoice={editingInvoice}
+          onClose={() => setEditingInvoice(null)}
+          onSave={(updatedInvoice) => {
+            updateInvoice(editingInvoice.id, updatedInvoice);
+            setEditingInvoice(null);
+          }}
+          userFirm={user.firm}
+        />
+      )}
     </div>
   );
 }
