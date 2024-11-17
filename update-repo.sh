@@ -138,7 +138,7 @@ echo -e "✓ Deployed to Netlify"
 # Optional: Open relevant URLs
 echo -e "\n${BLUE}Opening relevant URLs...${NC}"
 echo -e "Opening GitHub releases page..."
-gh browse -R originalmagneto/OCP-provizie-NEW/releases
+gh browse -R https://ocp-provizie-new.netlify.app
 
 echo -e "\n${YELLOW}Don't forget to check:${NC}"
 echo -e "1. GitHub releases page for the new release"
