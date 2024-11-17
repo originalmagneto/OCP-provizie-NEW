@@ -8,12 +8,16 @@ export default defineConfig({
       "@": "/src",
     },
   },
-  optimizeDeps: {
-    include: ["@headlessui/react"],
-  },
   build: {
-    commonjsOptions: {
-      include: [/@headlessui\/react/, /node_modules/],
+    rollupOptions: {
+      external: ["react", "react-dom"],
     },
+    commonjsOptions: {
+      include: [/node_modules/],
+      extensions: [".js", ".cjs", ".jsx", ".tsx"],
+    },
+  },
+  optimizeDeps: {
+    include: ["framer-motion", "@headlessui/react"],
   },
 });
