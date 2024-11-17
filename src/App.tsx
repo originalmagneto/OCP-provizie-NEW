@@ -1,26 +1,18 @@
 import React from "react";
-import { AuthProvider } from "./context/AuthContext";
-import { InvoiceProvider } from "./context/InvoiceContext";
-import { YearProvider } from "./context/YearContext";
+import { AppProviders } from "./providers/AppProviders";
+import { useAuth } from "./context/AuthContext";
 import LoginForm from "./components/LoginForm";
 import Dashboard from "./components/Dashboard";
-import { useAuth } from "./context/AuthContext";
 
 function AppContent() {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? <Dashboard /> : <LoginForm />;
 }
 
-function App() {
+export default function App() {
   return (
-    <AuthProvider>
-      <YearProvider>
-        <InvoiceProvider>
-          <AppContent />
-        </InvoiceProvider>
-      </YearProvider>
-    </AuthProvider>
+    <AppProviders>
+      <AppContent />
+    </AppProviders>
   );
 }
-
-export default App;

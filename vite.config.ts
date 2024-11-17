@@ -3,7 +3,12 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react({
+      jsxRuntime: "automatic",
+      fastRefresh: true,
+    }),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -13,17 +18,24 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          if (id.includes("node_modules")) {
-            if (id.includes("react")) return "react-vendor";
-            if (id.includes("lucide")) return "icons-vendor";
-            return "vendor";
-          }
+        manualChunks: {
+          "react-vendor": ["react", "react-dom"],
+          "ui-vendor": ["@headlessui/react", "lucide-react"],
         },
       },
     },
   },
   optimizeDeps: {
-    include: ["react", "react-dom", "lucide-react"],
+    include: [
+      "react",
+      "react-dom",
+      "react/jsx-runtime",
+      "@headlessui/react",
+      "lucide-react",
+    ],
+    exclude: [],
+  },
+  esbuild: {
+    jsxInject: `import React from 'react'`,
   },
 });
