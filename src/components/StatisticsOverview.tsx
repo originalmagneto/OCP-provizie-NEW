@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -12,6 +12,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import MiniGraph from "./MiniGraph";
+import { QuarterlyCommissionCard } from "./QuarterlyCommissionCard";
 import type { FirmType } from "../types";
 
 const firmThemes = {
@@ -156,120 +157,73 @@ function TopClientCard({ client }: TopClientCardProps) {
 export default function StatisticsOverview() {
   const { invoices } = useInvoices();
   const { user } = useAuth();
+  const [settledQuarters, setSettledQuarters] = useState<Set<string>>(new Set());
 
   const stats = useMemo(() => {
     const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const currentQuarter = Math.floor(now.getMonth() / 3) + 1;
+    const currentYear = now.getFullYear();
 
+    // Group invoices by quarter
+    const quarterlyInvoices = invoices.reduce((acc, invoice) => {
+      const date = new Date(invoice.date);
+      const quarter = Math.floor(date.getMonth() / 3) + 1;
+      const year = date.getFullYear();
+      const key = `${year}-Q${quarter}`;
+
+      if (!acc[key]) {
+        acc[key] = {
+          quarter,
+          year,
+          invoices: [],
+        };
+      }
+
+      acc[key].invoices.push(invoice);
+      return acc;
+    }, {} as Record<string, { quarter: number; year: number; invoices: typeof invoices }>);
+
+    // Calculate stats for the current month (for the top cards)
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const recentInvoices = invoices.filter(
-      (inv) => new Date(inv.date) >= thirtyDaysAgo,
+      (inv) => new Date(inv.date) >= thirtyDaysAgo
     );
     const previousInvoices = invoices.filter(
       (inv) =>
         new Date(inv.date) >=
           new Date(thirtyDaysAgo.getTime() - 30 * 24 * 60 * 60 * 1000) &&
-        new Date(inv.date) < thirtyDaysAgo,
+        new Date(inv.date) < thirtyDaysAgo
     );
 
     const currentRevenue = recentInvoices.reduce(
       (sum, inv) => sum + inv.amount,
-      0,
+      0
     );
     const previousRevenue = previousInvoices.reduce(
       (sum, inv) => sum + inv.amount,
-      0,
+      0
     );
     const revenueTrend =
       previousRevenue === 0
         ? 100
         : ((currentRevenue - previousRevenue) / previousRevenue) * 100;
 
-    const currentCommissions = recentInvoices.reduce(
-      (sum, inv) => sum + (inv.amount * inv.commissionPercentage) / 100,
-      0,
-    );
-    const previousCommissions = previousInvoices.reduce(
-      (sum, inv) => sum + (inv.amount * inv.commissionPercentage) / 100,
-      0,
-    );
-    const commissionsTrend =
-      previousCommissions === 0
-        ? 100
-        : ((currentCommissions - previousCommissions) / previousCommissions) *
-          100;
-
-    // Generate monthly data for graphs
-    const monthlyData = invoices.reduce(
-      (acc, inv) => {
-        const date = new Date(inv.date);
-        const monthYear = date.toLocaleDateString("en-US", {
-          month: "short",
-          year: "2-digit",
-        });
-
-        if (!acc[monthYear]) {
-          acc[monthYear] = {
-            revenue: 0,
-            commissions: 0,
-          };
-        }
-
-        acc[monthYear].revenue += inv.amount;
-        acc[monthYear].commissions +=
-          (inv.amount * inv.commissionPercentage) / 100;
-
-        return acc;
-      },
-      {} as Record<string, { revenue: number; commissions: number }>,
-    );
-
-    const graphData = Object.entries(monthlyData).map(
-      ([date, { revenue, commissions }]) => ({
-        date,
-        revenue,
-        commissions,
-      }),
-    );
-
-    // Calculate top clients
-    const clientStats = invoices.reduce(
-      (acc, inv) => {
-        if (!acc[inv.clientName]) {
-          acc[inv.clientName] = {
-            name: inv.clientName,
-            totalRevenue: 0,
-            invoiceCount: 0,
-            trend: 0,
-          };
-        }
-        acc[inv.clientName].totalRevenue += inv.amount;
-        acc[inv.clientName].invoiceCount += 1;
-        return acc;
-      },
-      {} as Record<
-        string,
-        {
-          name: string;
-          totalRevenue: number;
-          invoiceCount: number;
-          trend: number;
-        }
-      >,
-    );
-
-    const topClients = Object.values(clientStats)
-      .sort((a, b) => b.totalRevenue - a.totalRevenue)
-      .slice(0, 5);
-
     return {
+      quarterlyInvoices,
       currentRevenue,
       revenueTrend,
-      currentCommissions,
-      commissionsTrend,
-      graphData,
-      topClients,
+      currentQuarter,
+      currentYear,
     };
   }, [invoices]);
+
+  const handleMarkQuarterAsSettled = (quarterKey: string) => {
+    setSettledQuarters((prev) => {
+      const newSet = new Set(prev);
+      newSet.add(quarterKey);
+      return newSet;
+    });
+  };
 
   if (!user) return null;
 
@@ -292,32 +246,35 @@ export default function StatisticsOverview() {
           icon={Euro}
           color={theme.primary}
           subValue="Last 30 days"
-          graphData={stats.graphData.map((d) => ({
-            amount: d.revenue,
-            date: d.date,
-          }))}
         />
         <StatCard
           title="Monthly Commissions"
           value={new Intl.NumberFormat("de-DE", {
             style: "currency",
             currency: "EUR",
-          }).format(stats.currentCommissions)}
+          }).format(
+            invoices
+              .filter((inv) => !inv.isPaid)
+              .reduce(
+                (sum, inv) =>
+                  sum + (inv.amount * inv.commissionPercentage) / 100,
+                0
+              )
+          )}
           trend={{
-            value: Number(stats.commissionsTrend.toFixed(1)),
-            isPositive: stats.commissionsTrend >= 0,
+            value: 0,
+            isPositive: true,
           }}
           icon={TrendingUp}
           color={theme.secondary}
           subValue="Last 30 days"
-          graphData={stats.graphData.map((d) => ({
-            amount: d.commissions,
-            date: d.date,
-          }))}
         />
         <StatCard
           title="Active Clients"
-          value={stats.topClients.length.toString()}
+          value={invoices
+            .filter((inv) => new Date(inv.date) >= new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))
+            .map((inv) => inv.clientName)
+            .filter((client, index, self) => self.indexOf(client) === index).length.toString()}
           icon={Users}
           color={theme.primary}
           subValue="With recent activity"
@@ -333,8 +290,8 @@ export default function StatisticsOverview() {
               .reduce(
                 (sum, inv) =>
                   sum + (inv.amount * inv.commissionPercentage) / 100,
-                0,
-              ),
+                0
+              )
           )}
           icon={Clock}
           color={theme.secondary}
@@ -342,15 +299,59 @@ export default function StatisticsOverview() {
         />
       </div>
 
+      {/* Current Quarter Summary */}
+      {Object.entries(stats.quarterlyInvoices)
+        .sort(([a], [b]) => b.localeCompare(a))
+        .map(([quarterKey, { quarter, year, invoices }]) => (
+          <QuarterlyCommissionCard
+            key={quarterKey}
+            quarter={quarter}
+            year={year}
+            invoices={invoices}
+            userFirm={user.firm}
+            isSettled={settledQuarters.has(quarterKey)}
+            onMarkAsSettled={() => handleMarkQuarterAsSettled(quarterKey)}
+          />
+        ))}
+
       {/* Top Clients */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">
           Top Performing Clients
         </h3>
         <div className="space-y-3">
-          {stats.topClients.map((client) => (
-            <TopClientCard key={client.name} client={client} />
-          ))}
+          {invoices
+            .filter((inv) => new Date(inv.date) >= new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))
+            .reduce(
+              (acc, inv) => {
+                if (!acc[inv.clientName]) {
+                  acc[inv.clientName] = {
+                    name: inv.clientName,
+                    totalRevenue: 0,
+                    invoiceCount: 0,
+                    trend: 0,
+                  };
+                }
+                acc[inv.clientName].totalRevenue += inv.amount;
+                acc[inv.clientName].invoiceCount += 1;
+                return acc;
+              },
+              {} as Record<
+                string,
+                {
+                  name: string;
+                  totalRevenue: number;
+                  invoiceCount: number;
+                  trend: number;
+                }
+              >
+            )
+            .map((client) => ({ ...client, trend: 0 }))
+            .sort((a, b) => b.totalRevenue - a.totalRevenue)
+            .slice(0, 5)
+            .map((client) => (
+              <TopClientCard key={client.name} client={client} />
+            ))}
         </div>
       </div>
 
@@ -391,7 +392,7 @@ export default function StatisticsOverview() {
               .slice(0, 3)
               .sort(
                 (a, b) =>
-                  new Date(b.date).getTime() - new Date(a.date).getTime(),
+                  new Date(b.date).getTime() - new Date(a.date).getTime()
               )
               .map((invoice) => (
                 <div
