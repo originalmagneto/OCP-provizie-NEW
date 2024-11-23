@@ -1,6 +1,7 @@
 import React from "react";
 import { CheckCircle, TrendingUp, TrendingDown, Euro } from "lucide-react";
 import type { FirmType } from "../types";
+import { useCommissions } from "../context/CommissionContext";
 
 const COLORS = {
   revenue: {
@@ -46,117 +47,109 @@ export function QuarterlyCommissionCard({
   userFirm,
   onSettleCommission,
 }: QuarterlyCommissionCardProps) {
+  const { isQuarterSettled, settleQuarter } = useCommissions();
+  const isCurrentQuarterSettled = isQuarterSettled(quarterKey);
+
   const formatter = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "EUR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   });
 
-  // These are commissions where we are the receiving party
-  const commissionsToReceive = commissionsByFirm.filter(c => !c.isPaying);
-  // These are commissions where we are the paying party
-  const commissionsToPay = commissionsByFirm.filter(c => c.isPaying);
+  const handleSettleClick = (firm: FirmType) => {
+    settleQuarter(quarterKey, userFirm);
+    onSettleCommission(firm);
+  };
+
+  const totalCommissions = commissionsByFirm.reduce(
+    (sum, { amount }) => sum + amount,
+    0
+  );
+
+  const receivableCommissions = commissionsByFirm
+    .filter(({ isPaying }) => !isPaying)
+    .reduce((sum, { amount }) => sum + amount, 0);
+
+  const payableCommissions = commissionsByFirm
+    .filter(({ isPaying }) => isPaying)
+    .reduce((sum, { amount }) => sum + amount, 0);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-semibold text-gray-900">
-          Q{quarter} {year} Summary
-        </h3>
-      </div>
-
-      <div className="space-y-8">
-        {/* Revenue Summary */}
-        <div className={`p-4 rounded-lg bg-${COLORS.revenue.secondary}`}>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Revenue</span>
-            <Euro className={`w-5 h-5 text-${COLORS.revenue.primary}`} />
+    <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Q{quarter} {year}
+            </h3>
+            <p className="text-sm text-gray-500">Quarterly Overview</p>
           </div>
-          <p className={`text-2xl font-bold text-${COLORS.revenue.primary}`}>
-            {formatter.format(revenue)}
-          </p>
+          <div className="text-right">
+            <p className="text-sm text-gray-500">Revenue</p>
+            <p className="text-lg font-semibold text-emerald-600">
+              {formatter.format(revenue)}
+            </p>
+          </div>
         </div>
 
-        {/* Commissions to Receive */}
-        {commissionsToReceive.length > 0 && (
-          <div className="space-y-4">
-            <h4 className="text-lg font-medium text-gray-900 border-b pb-2">
-              Commissions to Receive
-            </h4>
-            {commissionsToReceive.map((commission) => (
-              <div 
-                key={commission.firm}
-                className={`p-4 rounded-lg border-2 ${
-                  commission.isSettled 
-                    ? 'border-green-500 bg-green-50' 
-                    : 'border-indigo-200 bg-indigo-50'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-600">From {commission.firm}</p>
-                    <p className={`text-2xl font-bold ${
-                      commission.isSettled ? 'text-green-600' : 'text-indigo-600'
-                    }`}>
-                      {formatter.format(commission.amount)}
-                    </p>
-                  </div>
-                  <div>
-                    {!commission.isPaying && !commission.isSettled && (
-                      <button
-                        onClick={() => onSettleCommission(commission.firm)}
-                        className="flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                      >
-                        Mark as Paid
-                      </button>
-                    )}
-                    {commission.isSettled && (
-                      <div className="flex items-center text-green-600 bg-green-100 px-3 py-2 rounded-lg">
-                        <CheckCircle className="w-5 h-5 mr-2" />
-                        <span className="text-sm font-medium">Paid</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+        {/* Commission Summary */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-indigo-50 rounded-lg p-4">
+            <p className="text-sm text-indigo-600 font-medium">Receivable</p>
+            <p className="text-lg font-semibold text-indigo-700">
+              {formatter.format(receivableCommissions)}
+            </p>
           </div>
-        )}
+          <div className="bg-amber-50 rounded-lg p-4">
+            <p className="text-sm text-amber-600 font-medium">Payable</p>
+            <p className="text-lg font-semibold text-amber-700">
+              {formatter.format(payableCommissions)}
+            </p>
+          </div>
+        </div>
 
-        {/* Commissions to Pay */}
-        {commissionsToPay.length > 0 && (
-          <div className="space-y-4">
-            <h4 className="text-lg font-medium text-gray-900 border-b pb-2">
-              Commissions to Pay
-            </h4>
-            {commissionsToPay.map((commission) => (
-              <div 
-                key={commission.firm}
-                className={`p-4 rounded-lg border-2 ${
-                  commission.isSettled 
-                    ? 'border-green-500 bg-green-50' 
-                    : 'border-amber-200 bg-amber-50'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-600">To {commission.firm}</p>
-                    <p className={`text-2xl font-bold ${
-                      commission.isSettled ? 'text-green-600' : 'text-amber-600'
-                    }`}>
-                      {formatter.format(commission.amount)}
-                    </p>
-                  </div>
-                  {commission.isSettled && (
-                    <div className="flex items-center text-green-600 bg-green-100 px-3 py-2 rounded-lg">
-                      <CheckCircle className="w-5 h-5 mr-2" />
-                      <span className="text-sm font-medium">Paid</span>
-                    </div>
-                  )}
-                </div>
+        {/* Commission Details */}
+        <div className="space-y-3">
+          {commissionsByFirm.map(({ firm, amount, isPaying, isSettled }) => (
+            <div
+              key={firm}
+              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+            >
+              <div>
+                <p className="font-medium">{firm}</p>
+                <p className="text-sm text-gray-600">
+                  {isPaying ? "To Pay" : "To Receive"}
+                </p>
               </div>
-            ))}
+              <div className="text-right">
+                <p className="font-semibold">{formatter.format(amount)}</p>
+                {isSettled ? (
+                  <div className="flex items-center text-emerald-600 text-sm">
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    <span>Settled</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleSettleClick(firm)}
+                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                  >
+                    Mark as Settled
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Quarter Settlement Status */}
+        {isCurrentQuarterSettled ? (
+          <div className="flex items-center justify-center space-x-2 bg-emerald-100 text-emerald-700 py-2 px-4 rounded-lg">
+            <CheckCircle className="w-5 h-5" />
+            <span className="font-medium">Quarter Settled</span>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
