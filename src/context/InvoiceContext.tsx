@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { Invoice } from "../types";
+import type { Invoice } from "../types";
 
 interface InvoiceContextType {
   invoices: Invoice[];

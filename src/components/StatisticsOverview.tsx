@@ -20,7 +20,7 @@ interface QuarterSummary {
 
 export default function StatisticsOverview() {
   const { invoices } = useInvoices();
-  const { userFirm } = useAuth();
+  const { user } = useAuth();
   const { isQuarterSettled, settleQuarter } = useCommissions();
 
   const {
@@ -46,19 +46,20 @@ export default function StatisticsOverview() {
       const date = new Date(invoice.date);
       const q = Math.floor((date.getMonth() + 3) / 3);
       const y = date.getFullYear();
+      const invoiceQKey = `${y}-Q${q}`;
       
-      if (q === currentQ && y === currentY) {
+      if (invoiceQKey === currentQKey) {
         const amount = invoice.amount;
         const commission = amount * (invoice.commissionPercentage / 100);
 
-        if (invoice.invoicedByFirm === userFirm) {
+        if (invoice.invoicedByFirm === user?.firm) {
           quarterSummary.revenue += amount;
-          if (invoice.referredByFirm !== userFirm) {
+          if (invoice.referredByFirm !== user?.firm) {
             quarterSummary.commissionPayable += commission;
           }
         }
 
-        if (invoice.referredByFirm === userFirm && invoice.invoicedByFirm !== userFirm) {
+        if (invoice.referredByFirm === user?.firm && invoice.invoicedByFirm !== user?.firm) {
           quarterSummary.commissionsReceivable += commission;
         }
       }
@@ -74,11 +75,12 @@ export default function StatisticsOverview() {
       pendingPayments: pending,
       allInvoices: invoices,
     };
-  }, [invoices, userFirm]);
+  }, [invoices, user?.firm]);
 
   const handleMarkQuarterSettled = () => {
+    if (!user?.firm) return;
     const quarterKey = `${currentQuarter.year}-Q${currentQuarter.quarter}`;
-    settleQuarter(quarterKey, userFirm);
+    settleQuarter(quarterKey, user.firm);
   };
 
   const formatter = new Intl.NumberFormat('en-US', { 
@@ -91,7 +93,7 @@ export default function StatisticsOverview() {
   const currentQuarterKey = `${currentQuarter.year}-Q${currentQuarter.quarter}`;
   const isCurrentQuarterSettled = isQuarterSettled(currentQuarterKey);
 
-  if (!userFirm) return null;
+  if (!user?.firm) return null;
 
   return (
     <div className="space-y-6 p-6">
@@ -99,7 +101,7 @@ export default function StatisticsOverview() {
       <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 text-white p-6 rounded-xl shadow-lg">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">{userFirm}</h1>
+            <h1 className="text-3xl font-bold">{user.firm}</h1>
             <p className="text-indigo-200 mt-1">Partner Dashboard</p>
           </div>
           <div className="text-right">

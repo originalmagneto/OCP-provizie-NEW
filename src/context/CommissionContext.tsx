@@ -1,16 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-
-interface SettlementStatus {
-  quarterKey: string;  // Format: "2024-Q1"
-  isSettled: boolean;
-  settledAt?: string;
-  settledBy: string;
-}
+import type { FirmType, SettlementStatus } from '../types';
 
 interface CommissionContextType {
   settledQuarters: SettlementStatus[];
   isQuarterSettled: (quarterKey: string) => boolean;
-  settleQuarter: (quarterKey: string, settledBy: string) => void;
+  settleQuarter: (quarterKey: string, settledBy: FirmType) => void;
   unsettleQuarter: (quarterKey: string) => void;
 }
 
@@ -38,7 +32,7 @@ export function CommissionProvider({ children }: { children: React.ReactNode }) 
     return settledQuarters.some(q => q.quarterKey === quarterKey && q.isSettled);
   };
 
-  const settleQuarter = (quarterKey: string, settledBy: string) => {
+  const settleQuarter = (quarterKey: string, settledBy: FirmType) => {
     setSettledQuarters(prev => {
       const existingIndex = prev.findIndex(q => q.quarterKey === quarterKey);
       const newStatus: SettlementStatus = {
