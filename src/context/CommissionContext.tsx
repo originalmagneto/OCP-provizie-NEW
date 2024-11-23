@@ -3,9 +3,9 @@ import type { FirmType, SettlementStatus } from '../types';
 
 interface CommissionContextType {
   settledQuarters: SettlementStatus[];
-  isQuarterSettled: (quarterKey: string) => boolean;
-  settleQuarter: (quarterKey: string, settledBy: FirmType) => void;
-  unsettleQuarter: (quarterKey: string) => void;
+  isQuarterSettled: (quarterKey: string, firm: FirmType) => boolean;
+  settleQuarter: (quarterKey: string, firm: FirmType) => void;
+  unsettleQuarter: (quarterKey: string, firm: FirmType) => void;
 }
 
 const CommissionContext = createContext<CommissionContextType | undefined>(undefined);
@@ -28,33 +28,38 @@ export function CommissionProvider({ children }: { children: React.ReactNode }) 
     localStorage.setItem('settledQuarters', JSON.stringify(settledQuarters));
   }, [settledQuarters]);
 
-  const isQuarterSettled = (quarterKey: string): boolean => {
-    return settledQuarters.some(q => q.quarterKey === quarterKey && q.isSettled);
+  const isQuarterSettled = (quarterKey: string, firm: FirmType): boolean => {
+    // Check if this specific quarter-firm combination is settled
+    return settledQuarters.some(q => q.quarterKey === quarterKey && q.isSettled && q.settledBy === firm);
   };
 
-  const settleQuarter = (quarterKey: string, settledBy: FirmType) => {
+  const settleQuarter = (quarterKey: string, firm: FirmType) => {
     setSettledQuarters(prev => {
-      const existingIndex = prev.findIndex(q => q.quarterKey === quarterKey);
+      // Find if this quarter-firm combination already exists
+      const existingIndex = prev.findIndex(q => q.quarterKey === quarterKey && q.settledBy === firm);
+      
       const newStatus: SettlementStatus = {
         quarterKey,
         isSettled: true,
         settledAt: new Date().toISOString(),
-        settledBy
+        settledBy: firm
       };
 
       if (existingIndex >= 0) {
+        // Update existing settlement
         const updated = [...prev];
         updated[existingIndex] = newStatus;
         return updated;
       }
 
+      // Add new settlement
       return [...prev, newStatus];
     });
   };
 
-  const unsettleQuarter = (quarterKey: string) => {
+  const unsettleQuarter = (quarterKey: string, firm: FirmType) => {
     setSettledQuarters(prev => 
-      prev.filter(q => q.quarterKey !== quarterKey)
+      prev.filter(q => q.quarterKey !== quarterKey || q.settledBy !== firm)
     );
   };
 
