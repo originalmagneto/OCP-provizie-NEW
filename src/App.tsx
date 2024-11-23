@@ -2,6 +2,7 @@ import React from "react";
 import { AuthProvider } from "./context/AuthContext";
 import { InvoiceProvider } from "./context/InvoiceContext";
 import { YearProvider } from "./context/YearContext";
+import { CommissionProvider } from "./context/CommissionContext";
 import LoginForm from "./components/LoginForm";
 import Dashboard from "./components/Dashboard";
 import { useAuth } from "./context/AuthContext";
@@ -16,7 +17,9 @@ function App() {
     <AuthProvider>
       <YearProvider>
         <InvoiceProvider>
-          <AppContent />
+          <CommissionProvider>
+            <AppContent />
+          </CommissionProvider>
         </InvoiceProvider>
       </YearProvider>
     </AuthProvider>

@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
+import { useCommissions } from "../context/CommissionContext";
 import {
   PlusCircle,
   FileText,
@@ -15,13 +16,12 @@ interface QuarterSummary {
   revenue: number;
   commissionsReceivable: number;
   commissionPayable: number;
-  isSettled: boolean;
 }
 
 export default function StatisticsOverview() {
   const { invoices } = useInvoices();
   const { userFirm } = useAuth();
-  const [settledQuarters, setSettledQuarters] = useState<Set<string>>(new Set());
+  const { isQuarterSettled, settleQuarter } = useCommissions();
 
   const {
     currentQuarter,
@@ -38,7 +38,6 @@ export default function StatisticsOverview() {
       revenue: 0,
       commissionsReceivable: 0,
       commissionPayable: 0,
-      isSettled: settledQuarters.has(currentQKey)
     };
 
     let pending = [];
@@ -75,11 +74,11 @@ export default function StatisticsOverview() {
       pendingPayments: pending,
       allInvoices: invoices,
     };
-  }, [invoices, userFirm, settledQuarters]);
+  }, [invoices, userFirm]);
 
   const handleMarkQuarterSettled = () => {
     const quarterKey = `${currentQuarter.year}-Q${currentQuarter.quarter}`;
-    setSettledQuarters(prev => new Set([...prev, quarterKey]));
+    settleQuarter(quarterKey, userFirm);
   };
 
   const formatter = new Intl.NumberFormat('en-US', { 
@@ -88,6 +87,9 @@ export default function StatisticsOverview() {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
   });
+
+  const currentQuarterKey = `${currentQuarter.year}-Q${currentQuarter.quarter}`;
+  const isCurrentQuarterSettled = isQuarterSettled(currentQuarterKey);
 
   if (!userFirm) return null;
 
@@ -144,7 +146,7 @@ export default function StatisticsOverview() {
               </span>
             </div>
             <div className="pt-4 border-t">
-              {currentQuarterSummary.isSettled ? (
+              {isCurrentQuarterSettled ? (
                 <div className="flex items-center justify-center space-x-2 bg-green-100 text-green-700 py-2 px-4 rounded-lg">
                   <CheckCircle className="w-5 h-5" />
                   <span className="font-medium">Quarter Settled</span>
