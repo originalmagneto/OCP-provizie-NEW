@@ -173,9 +173,9 @@ function TopClientCard({ client }: TopClientCardProps) {
 
 export default function StatisticsOverview() {
   const { invoices } = useInvoices();
-  const { user } = useAuth();
+  const { userFirm } = useAuth();
   const [selectedQuarter, setSelectedQuarter] = useState<string | null>(null);
-  const [settledQuarters, setSettledQuarters] = useState<Set<string>>(new Set());
+  const [settledCommissions, setSettledCommissions] = useState<Set<string>>(new Set());
 
   const {
     quarterlyData,
@@ -196,66 +196,98 @@ export default function StatisticsOverview() {
 
       if (!quarters[quarterKey]) {
         quarters[quarterKey] = {
-          invoices: [],
-          revenue: 0,
-          commissionsOwed: 0,
-          commissionsDue: 0,
+          key: quarterKey,
           quarter,
           year,
-          isSettled: false,
+          revenue: 0,
+          commissionsByFirm: new Map<FirmType, {
+            amount: number;
+            isPaying: boolean;
+            isSettled: boolean;
+          }>(),
         };
       }
 
-      quarters[quarterKey].invoices.push(invoice);
+      const quarterData = quarters[quarterKey];
+      const amount = invoice.amount;
+      const commission = amount * (invoice.commissionPercentage / 100);
 
-      if (invoice.invoicedByFirm === user.firm) {
-        const amount = invoice.amount;
+      // Update revenue
+      if (invoice.invoicedByFirm === userFirm) {
         revenue += amount;
-        quarters[quarterKey].revenue += amount;
+        quarterData.revenue += amount;
 
-        if (invoice.referredByFirm !== user.firm) {
-          const commission = amount * (invoice.commissionPercentage / 100);
+        // We need to pay commission
+        if (invoice.referredByFirm !== userFirm) {
           commissionsOwed += commission;
-          quarters[quarterKey].commissionsOwed += commission;
+          const key = `${quarterKey}-${invoice.referredByFirm}-pay`;
+          
+          const firmCommission = quarterData.commissionsByFirm.get(invoice.referredByFirm) || {
+            amount: 0,
+            isPaying: true,
+            isSettled: settledCommissions.has(key),
+          };
+          
+          firmCommission.amount += commission;
+          quarterData.commissionsByFirm.set(invoice.referredByFirm, firmCommission);
         }
       }
 
-      if (invoice.referredByFirm === user.firm && invoice.invoicedByFirm !== user.firm) {
-        const commission = invoice.amount * (invoice.commissionPercentage / 100);
+      // We should receive commission
+      if (invoice.referredByFirm === userFirm && invoice.invoicedByFirm !== userFirm) {
         commissionsDue += commission;
-        quarters[quarterKey].commissionsDue += commission;
+        const key = `${quarterKey}-${invoice.invoicedByFirm}-receive`;
+        
+        const firmCommission = quarterData.commissionsByFirm.get(invoice.invoicedByFirm) || {
+          amount: 0,
+          isPaying: false,
+          isSettled: settledCommissions.has(key),
+        };
+        
+        firmCommission.amount += commission;
+        quarterData.commissionsByFirm.set(invoice.invoicedByFirm, firmCommission);
       }
     });
 
+    // Convert Map to array for each quarter
+    Object.values(quarters).forEach(quarter => {
+      quarter.commissionsByFirm = Array.from(quarter.commissionsByFirm.entries()).map(
+        ([firm, data]) => ({
+          firm,
+          ...data,
+        })
+      );
+    });
+
     return {
-      quarterlyData: Object.entries(quarters)
-        .map(([key, data]) => ({ key, ...data }))
-        .sort((a, b) => b.year - a.year || b.quarter - a.quarter),
+      quarterlyData: Object.values(quarters).sort((a, b) => 
+        b.year - a.year || b.quarter - a.quarter
+      ),
       totalRevenue: revenue,
       totalCommissionsDue: commissionsDue,
       totalCommissionsOwed: commissionsOwed,
     };
-  }, [invoices, user]);
+  }, [invoices, userFirm, settledCommissions]);
 
   const handleQuarterSelect = (quarterKey: string) => {
     setSelectedQuarter(quarterKey);
   };
 
-  const handleSettleQuarter = (quarterKey: string) => {
-    setSettledQuarters((prev) => {
+  const handleSettleCommission = (quarterKey: string, firm: FirmType, isPaying: boolean) => {
+    const settlementKey = `${quarterKey}-${firm}-${isPaying ? 'pay' : 'receive'}`;
+    setSettledCommissions(prev => {
       const newSet = new Set(prev);
-      newSet.add(quarterKey);
+      newSet.add(settlementKey);
       return newSet;
     });
   };
 
-  if (!user) return null;
+  if (!userFirm) return null;
 
-  const theme = firmThemes[user.firm];
+  const theme = firmThemes[userFirm];
 
   return (
-    <div className="space-y-6">
-      {/* Main Stats */}
+    <div className="p-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* Revenue Card */}
         <div className={`p-6 rounded-xl shadow-sm border ${COLORS.revenue.secondary} border-${COLORS.revenue.primary}`}>
@@ -298,13 +330,15 @@ export default function StatisticsOverview() {
         {/* Quarter Navigation */}
         <div className="md:col-span-1">
           <QuarterNavigation
-            quarters={quarterlyData.map(({ quarter, year, key }) => ({
+            quarters={quarterlyData.map(({ key, quarter, year, commissionsByFirm }) => ({
               quarter,
               year,
-              isSettled: settledQuarters.has(key),
+              key,
+              settlements: commissionsByFirm,
             }))}
             selectedQuarter={selectedQuarter}
             onQuarterSelect={handleQuarterSelect}
+            userFirm={userFirm}
           />
         </div>
 
@@ -319,11 +353,15 @@ export default function StatisticsOverview() {
                 quarter={quarterData.quarter}
                 year={quarterData.year}
                 revenue={quarterData.revenue}
-                commissionsOwed={quarterData.commissionsOwed}
-                commissionsDue={quarterData.commissionsDue}
-                isSettled={settledQuarters.has(quarterData.key)}
-                onSettle={() => handleSettleQuarter(quarterData.key)}
-                userFirm={user.firm}
+                commissionsByFirm={quarterData.commissionsByFirm}
+                userFirm={userFirm}
+                onSettleCommission={(firm) => 
+                  handleSettleCommission(
+                    quarterData.key,
+                    firm,
+                    quarterData.commissionsByFirm.find(c => c.firm === firm)?.isPaying || false
+                  )
+                }
               />
             ))}
         </div>
