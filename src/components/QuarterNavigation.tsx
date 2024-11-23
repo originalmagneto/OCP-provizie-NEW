@@ -50,38 +50,4 @@ export function QuarterNavigation({
               `}
             >
               <div className="flex items-center space-x-3">
-                <span className={`font-medium ${isSelected ? 'text-indigo-700' : 'text-gray-900'}`}>
-                  Q{quarter} {year}
-                </span>
-                <div className="flex items-center space-x-1">
-                  {hasSettledCommissions && (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                  )}
-                  {hasUnsettledCommissions && (
-                    <AlertCircle className="h-4 w-4 text-amber-500" />
-                  )}
-                </div>
-              </div>
-              
-              <div className="text-sm">
-                {settlements.map((settlement) => (
-                  settlement.amount > 0 && (
-                    <div 
-                      key={settlement.firm}
-                      className={`flex items-center space-x-1 ${
-                        settlement.isSettled ? 'text-green-600' : 'text-gray-500'
-                      }`}
-                    >
-                      <span>{settlement.firm}</span>
-                      {settlement.isSettled && <CheckCircle className="h-3 w-3" />}
-                    </div>
-                  )
-                ))}
-              </div>
-            </button>
-          );
-        })}
-      </nav>
-    </div>
-  );
-}
+                <span className={`f
