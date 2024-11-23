@@ -13,7 +13,24 @@ import {
 } from "lucide-react";
 import MiniGraph from "./MiniGraph";
 import { QuarterlyCommissionCard } from "./QuarterlyCommissionCard";
+import { QuarterNavigation } from "./QuarterNavigation";
 import type { FirmType } from "../types";
+
+// Color theme constants
+const COLORS = {
+  revenue: {
+    primary: "#10B981", // Emerald-500
+    secondary: "#D1FAE5", // Emerald-100
+  },
+  commission: {
+    primary: "#6366F1", // Indigo-500
+    secondary: "#E0E7FF", // Indigo-100
+  },
+  pending: {
+    primary: "#F59E0B", // Amber-500
+    secondary: "#FEF3C7", // Amber-100
+  }
+};
 
 const firmThemes = {
   SKALLARS: {
@@ -157,67 +174,74 @@ function TopClientCard({ client }: TopClientCardProps) {
 export default function StatisticsOverview() {
   const { invoices } = useInvoices();
   const { user } = useAuth();
+  const [selectedQuarter, setSelectedQuarter] = useState<string | null>(null);
   const [settledQuarters, setSettledQuarters] = useState<Set<string>>(new Set());
 
-  const stats = useMemo(() => {
-    const now = new Date();
-    const currentQuarter = Math.floor(now.getMonth() / 3) + 1;
-    const currentYear = now.getFullYear();
+  const {
+    quarterlyData,
+    totalRevenue,
+    totalCommissionsDue,
+    totalCommissionsOwed,
+  } = useMemo(() => {
+    const quarters: { [key: string]: any } = {};
+    let revenue = 0;
+    let commissionsOwed = 0;
+    let commissionsDue = 0;
 
-    // Group invoices by quarter
-    const quarterlyInvoices = invoices.reduce((acc, invoice) => {
+    invoices.forEach((invoice) => {
       const date = new Date(invoice.date);
-      const quarter = Math.floor(date.getMonth() / 3) + 1;
+      const quarter = Math.floor((date.getMonth() + 3) / 3);
       const year = date.getFullYear();
-      const key = `${year}-Q${quarter}`;
+      const quarterKey = `${year}-Q${quarter}`;
 
-      if (!acc[key]) {
-        acc[key] = {
+      if (!quarters[quarterKey]) {
+        quarters[quarterKey] = {
+          invoices: [],
+          revenue: 0,
+          commissionsOwed: 0,
+          commissionsDue: 0,
           quarter,
           year,
-          invoices: [],
+          isSettled: false,
         };
       }
 
-      acc[key].invoices.push(invoice);
-      return acc;
-    }, {} as Record<string, { quarter: number; year: number; invoices: typeof invoices }>);
+      quarters[quarterKey].invoices.push(invoice);
 
-    // Calculate stats for the current month (for the top cards)
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const recentInvoices = invoices.filter(
-      (inv) => new Date(inv.date) >= thirtyDaysAgo
-    );
-    const previousInvoices = invoices.filter(
-      (inv) =>
-        new Date(inv.date) >=
-          new Date(thirtyDaysAgo.getTime() - 30 * 24 * 60 * 60 * 1000) &&
-        new Date(inv.date) < thirtyDaysAgo
-    );
+      if (invoice.invoicedByFirm === user.firm) {
+        const amount = invoice.amount;
+        revenue += amount;
+        quarters[quarterKey].revenue += amount;
 
-    const currentRevenue = recentInvoices.reduce(
-      (sum, inv) => sum + inv.amount,
-      0
-    );
-    const previousRevenue = previousInvoices.reduce(
-      (sum, inv) => sum + inv.amount,
-      0
-    );
-    const revenueTrend =
-      previousRevenue === 0
-        ? 100
-        : ((currentRevenue - previousRevenue) / previousRevenue) * 100;
+        if (invoice.referredByFirm !== user.firm) {
+          const commission = amount * (invoice.commissionPercentage / 100);
+          commissionsOwed += commission;
+          quarters[quarterKey].commissionsOwed += commission;
+        }
+      }
+
+      if (invoice.referredByFirm === user.firm && invoice.invoicedByFirm !== user.firm) {
+        const commission = invoice.amount * (invoice.commissionPercentage / 100);
+        commissionsDue += commission;
+        quarters[quarterKey].commissionsDue += commission;
+      }
+    });
 
     return {
-      quarterlyInvoices,
-      currentRevenue,
-      revenueTrend,
-      currentQuarter,
-      currentYear,
+      quarterlyData: Object.entries(quarters)
+        .map(([key, data]) => ({ key, ...data }))
+        .sort((a, b) => b.year - a.year || b.quarter - a.quarter),
+      totalRevenue: revenue,
+      totalCommissionsDue: commissionsDue,
+      totalCommissionsOwed: commissionsOwed,
     };
-  }, [invoices]);
+  }, [invoices, user]);
 
-  const handleMarkQuarterAsSettled = (quarterKey: string) => {
+  const handleQuarterSelect = (quarterKey: string) => {
+    setSelectedQuarter(quarterKey);
+  };
+
+  const handleSettleQuarter = (quarterKey: string) => {
     setSettledQuarters((prev) => {
       const newSet = new Set(prev);
       newSet.add(quarterKey);
@@ -232,202 +256,76 @@ export default function StatisticsOverview() {
   return (
     <div className="space-y-6">
       {/* Main Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Monthly Revenue"
-          value={new Intl.NumberFormat("de-DE", {
-            style: "currency",
-            currency: "EUR",
-          }).format(stats.currentRevenue)}
-          trend={{
-            value: Number(stats.revenueTrend.toFixed(1)),
-            isPositive: stats.revenueTrend >= 0,
-          }}
-          icon={Euro}
-          color={theme.primary}
-          subValue="Last 30 days"
-        />
-        <StatCard
-          title="Monthly Commissions"
-          value={new Intl.NumberFormat("de-DE", {
-            style: "currency",
-            currency: "EUR",
-          }).format(
-            invoices
-              .filter((inv) => !inv.isPaid)
-              .reduce(
-                (sum, inv) =>
-                  sum + (inv.amount * inv.commissionPercentage) / 100,
-                0
-              )
-          )}
-          trend={{
-            value: 0,
-            isPositive: true,
-          }}
-          icon={TrendingUp}
-          color={theme.secondary}
-          subValue="Last 30 days"
-        />
-        <StatCard
-          title="Active Clients"
-          value={invoices
-            .filter((inv) => new Date(inv.date) >= new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))
-            .map((inv) => inv.clientName)
-            .filter((client, index, self) => self.indexOf(client) === index).length.toString()}
-          icon={Users}
-          color={theme.primary}
-          subValue="With recent activity"
-        />
-        <StatCard
-          title="Pending Commissions"
-          value={new Intl.NumberFormat("de-DE", {
-            style: "currency",
-            currency: "EUR",
-          }).format(
-            invoices
-              .filter((inv) => !inv.isPaid)
-              .reduce(
-                (sum, inv) =>
-                  sum + (inv.amount * inv.commissionPercentage) / 100,
-                0
-              )
-          )}
-          icon={Clock}
-          color={theme.secondary}
-          subValue="Awaiting payment"
-        />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Revenue Card */}
+        <div className={`p-6 rounded-xl shadow-sm border ${COLORS.revenue.secondary} border-${COLORS.revenue.primary}`}>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium text-gray-900">Total Revenue</h3>
+            <Euro className={`w-8 h-8 text-${COLORS.revenue.primary}`} />
+          </div>
+          <p className={`mt-2 text-3xl font-bold text-${COLORS.revenue.primary}`}>
+            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(totalRevenue)}
+          </p>
+          <MiniGraph data={[]} className={`text-${COLORS.revenue.primary}`} />
+        </div>
+
+        {/* Commissions Due Card */}
+        <div className={`p-6 rounded-xl shadow-sm border ${COLORS.commission.secondary} border-${COLORS.commission.primary}`}>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium text-gray-900">Commissions Due</h3>
+            <TrendingUp className={`w-8 h-8 text-${COLORS.commission.primary}`} />
+          </div>
+          <p className={`mt-2 text-3xl font-bold text-${COLORS.commission.primary}`}>
+            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(totalCommissionsDue)}
+          </p>
+          <MiniGraph data={[]} className={`text-${COLORS.commission.primary}`} />
+        </div>
+
+        {/* Commissions Owed Card */}
+        <div className={`p-6 rounded-xl shadow-sm border ${COLORS.pending.secondary} border-${COLORS.pending.primary}`}>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium text-gray-900">Commissions Owed</h3>
+            <TrendingDown className={`w-8 h-8 text-${COLORS.pending.primary}`} />
+          </div>
+          <p className={`mt-2 text-3xl font-bold text-${COLORS.pending.primary}`}>
+            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(totalCommissionsOwed)}
+          </p>
+          <MiniGraph data={[]} className={`text-${COLORS.pending.primary}`} />
+        </div>
       </div>
 
-      {/* Current Quarter Summary */}
-      {Object.entries(stats.quarterlyInvoices)
-        .sort(([a], [b]) => b.localeCompare(a))
-        .map(([quarterKey, { quarter, year, invoices }]) => (
-          <QuarterlyCommissionCard
-            key={quarterKey}
-            quarter={quarter}
-            year={year}
-            invoices={invoices}
-            userFirm={user.firm}
-            isSettled={settledQuarters.has(quarterKey)}
-            onMarkAsSettled={() => handleMarkQuarterAsSettled(quarterKey)}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Quarter Navigation */}
+        <div className="md:col-span-1">
+          <QuarterNavigation
+            quarters={quarterlyData.map(({ quarter, year, key }) => ({
+              quarter,
+              year,
+              isSettled: settledQuarters.has(key),
+            }))}
+            selectedQuarter={selectedQuarter}
+            onQuarterSelect={handleQuarterSelect}
           />
-        ))}
+        </div>
 
-      {/* Top Clients */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Top Performing Clients
-        </h3>
-        <div className="space-y-3">
-          {invoices
-            .filter((inv) => new Date(inv.date) >= new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))
-            .reduce(
-              (acc, inv) => {
-                if (!acc[inv.clientName]) {
-                  acc[inv.clientName] = {
-                    name: inv.clientName,
-                    totalRevenue: 0,
-                    invoiceCount: 0,
-                    trend: 0,
-                  };
-                }
-                acc[inv.clientName].totalRevenue += inv.amount;
-                acc[inv.clientName].invoiceCount += 1;
-                return acc;
-              },
-              {} as Record<
-                string,
-                {
-                  name: string;
-                  totalRevenue: number;
-                  invoiceCount: number;
-                  trend: number;
-                }
-              >
-            )
-            .map((client) => ({ ...client, trend: 0 }))
-            .sort((a, b) => b.totalRevenue - a.totalRevenue)
-            .slice(0, 5)
-            .map((client) => (
-              <TopClientCard key={client.name} client={client} />
+        {/* Commission Cards */}
+        <div className="md:col-span-3 space-y-6">
+          {quarterlyData
+            .filter(({ key }) => !selectedQuarter || key === selectedQuarter)
+            .map((quarterData) => (
+              <QuarterlyCommissionCard
+                key={quarterData.key}
+                quarterKey={quarterData.key}
+                quarter={quarterData.quarter}
+                year={quarterData.year}
+                revenue={quarterData.revenue}
+                commissionsOwed={quarterData.commissionsOwed}
+                commissionsDue={quarterData.commissionsDue}
+                isSettled={settledQuarters.has(quarterData.key)}
+                onSettle={() => handleSettleQuarter(quarterData.key)}
+                userFirm={user.firm}
+              />
             ))}
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Payment Status
-          </h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                <span className="text-sm text-gray-600">Paid Invoices</span>
-              </div>
-              <span className="text-sm font-medium">
-                {invoices.filter((inv) => inv.isPaid).length}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <Clock className="h-5 w-5 text-yellow-500 mr-2" />
-                <span className="text-sm text-gray-600">Pending Payments</span>
-              </div>
-              <span className="text-sm font-medium">
-                {invoices.filter((inv) => !inv.isPaid).length}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Recent Activity
-          </h3>
-          <div className="space-y-4">
-            {invoices
-              .slice(0, 3)
-              .sort(
-                (a, b) =>
-                  new Date(b.date).getTime() - new Date(a.date).getTime()
-              )
-              .map((invoice) => (
-                <div
-                  key={invoice.id}
-                  className="flex items-center justify-between"
-                >
-                  <div className="flex items-center">
-                    {invoice.isPaid ? (
-                      <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                    ) : (
-                      <AlertTriangle className="h-5 w-5 text-yellow-500 mr-2" />
-                    )}
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {invoice.clientName}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(invoice.date).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">
-                      {new Intl.NumberFormat("de-DE", {
-                        style: "currency",
-                        currency: "EUR",
-                      }).format(invoice.amount)}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {invoice.commissionPercentage}% commission
-                    </p>
-                  </div>
-                </div>
-              ))}
-          </div>
         </div>
       </div>
     </div>

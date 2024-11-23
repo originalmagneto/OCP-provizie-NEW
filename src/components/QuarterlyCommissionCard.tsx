@@ -1,185 +1,106 @@
-import React from 'react';
-import { CheckCircle, AlertTriangle } from 'lucide-react';
-import type { Invoice, FirmType } from '../types';
+import React from "react";
+import { CheckCircle, TrendingUp, TrendingDown } from "lucide-react";
+import type { FirmType } from "../types";
+
+const COLORS = {
+  revenue: {
+    primary: "#10B981", // Emerald-500
+    secondary: "#D1FAE5", // Emerald-100
+  },
+  commission: {
+    primary: "#6366F1", // Indigo-500
+    secondary: "#E0E7FF", // Indigo-100
+  },
+  pending: {
+    primary: "#F59E0B", // Amber-500
+    secondary: "#FEF3C7", // Amber-100
+  }
+};
 
 interface QuarterlyCommissionCardProps {
+  quarterKey: string;
   quarter: number;
   year: number;
-  invoices: Invoice[];
+  revenue: number;
+  commissionsOwed: number;
+  commissionsDue: number;
+  isSettled: boolean;
+  onSettle: () => void;
   userFirm: FirmType;
-  isSettled?: boolean;
-  onMarkAsSettled?: () => void;
-}
-
-interface CommissionSummary {
-  firm: FirmType;
-  amount: number;
-  isReceivable: boolean;
 }
 
 export function QuarterlyCommissionCard({
+  quarterKey,
   quarter,
   year,
-  invoices,
+  revenue,
+  commissionsOwed,
+  commissionsDue,
+  isSettled,
+  onSettle,
   userFirm,
-  isSettled = false,
-  onMarkAsSettled,
 }: QuarterlyCommissionCardProps) {
-  // Calculate commissions for each firm
-  const commissionSummaries = React.useMemo(() => {
-    const summaries: CommissionSummary[] = [];
-    
-    invoices.forEach((invoice) => {
-      const commission = (invoice.amount * invoice.commissionPercentage) / 100;
-      
-      if (invoice.referredByFirm === userFirm) {
-        // We should receive commission from the invoicing firm
-        summaries.push({
-          firm: invoice.invoicedByFirm,
-          amount: commission,
-          isReceivable: true,
-        });
-      }
-      
-      if (invoice.invoicedByFirm === userFirm) {
-        // We should pay commission to the referring firm
-        summaries.push({
-          firm: invoice.referredByFirm,
-          amount: commission,
-          isReceivable: false,
-        });
-      }
-    });
-
-    // Combine amounts for each firm
-    const combined = summaries.reduce((acc, curr) => {
-      const existing = acc.find(
-        (item) => item.firm === curr.firm && item.isReceivable === curr.isReceivable
-      );
-      
-      if (existing) {
-        existing.amount += curr.amount;
-      } else {
-        acc.push(curr);
-      }
-      
-      return acc;
-    }, [] as CommissionSummary[]);
-
-    return combined.sort((a, b) => b.amount - a.amount);
-  }, [invoices, userFirm]);
-
-  const totalToReceive = commissionSummaries
-    .filter((s) => s.isReceivable)
-    .reduce((sum, curr) => sum + curr.amount, 0);
-
-  const totalToPay = commissionSummaries
-    .filter((s) => !s.isReceivable)
-    .reduce((sum, curr) => sum + curr.amount, 0);
+  const formatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "EUR",
+  });
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border ${
-      isSettled ? 'border-green-200' : 'border-gray-200'
-    } p-6`}>
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <h3 className="text-lg font-medium text-gray-900">
-            Q{quarter} {year} Commission Breakdown
-          </h3>
-          <p className="text-sm text-gray-500 mt-1">
-            {isSettled ? 'Settled' : 'Unsettled'}
-          </p>
-        </div>
+    <div className={`bg-white rounded-lg shadow-sm border p-6 ${
+      isSettled ? 'border-green-500' : 'border-gray-200'
+    }`}>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-medium text-gray-900">
+          Q{quarter} {year} Summary
+        </h3>
         {isSettled ? (
-          <CheckCircle className="h-6 w-6 text-green-500" />
+          <div className="flex items-center text-green-500">
+            <CheckCircle className="w-5 h-5 mr-2" />
+            <span className="text-sm font-medium">Settled</span>
+          </div>
         ) : (
-          <AlertTriangle className="h-6 w-6 text-yellow-500" />
+          <button
+            onClick={onSettle}
+            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Mark as Settled
+          </button>
         )}
       </div>
 
-      <div className="space-y-6">
-        {/* Receivables */}
-        {commissionSummaries.filter(s => s.isReceivable).length > 0 && (
-          <div>
-            <h4 className="text-sm font-medium text-gray-900 mb-3">To Receive</h4>
-            <div className="space-y-3">
-              {commissionSummaries
-                .filter(s => s.isReceivable)
-                .map((summary, index) => (
-                  <div key={index} className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">
-                      {summary.firm} owes you
-                    </span>
-                    <span className="text-sm font-medium text-gray-900">
-                      {new Intl.NumberFormat("de-DE", {
-                        style: "currency",
-                        currency: "EUR",
-                      }).format(summary.amount)}
-                    </span>
-                  </div>
-                ))}
-              <div className="pt-2 mt-2 border-t border-gray-100">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-900">
-                    Total to Receive
-                  </span>
-                  <span className="text-sm font-medium text-green-600">
-                    {new Intl.NumberFormat("de-DE", {
-                      style: "currency",
-                      currency: "EUR",
-                    }).format(totalToReceive)}
-                  </span>
-                </div>
-              </div>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Revenue */}
+        <div className={`p-4 rounded-lg bg-${COLORS.revenue.secondary}`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-600">Revenue</span>
+            <TrendingUp className={`w-5 h-5 text-${COLORS.revenue.primary}`} />
           </div>
-        )}
+          <p className={`text-2xl font-bold text-${COLORS.revenue.primary}`}>
+            {formatter.format(revenue)}
+          </p>
+        </div>
 
-        {/* Payables */}
-        {commissionSummaries.filter(s => !s.isReceivable).length > 0 && (
-          <div>
-            <h4 className="text-sm font-medium text-gray-900 mb-3">To Pay</h4>
-            <div className="space-y-3">
-              {commissionSummaries
-                .filter(s => !s.isReceivable)
-                .map((summary, index) => (
-                  <div key={index} className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">
-                      You owe {summary.firm}
-                    </span>
-                    <span className="text-sm font-medium text-gray-900">
-                      {new Intl.NumberFormat("de-DE", {
-                        style: "currency",
-                        currency: "EUR",
-                      }).format(summary.amount)}
-                    </span>
-                  </div>
-                ))}
-              <div className="pt-2 mt-2 border-t border-gray-100">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-900">
-                    Total to Pay
-                  </span>
-                  <span className="text-sm font-medium text-red-600">
-                    {new Intl.NumberFormat("de-DE", {
-                      style: "currency",
-                      currency: "EUR",
-                    }).format(totalToPay)}
-                  </span>
-                </div>
-              </div>
-            </div>
+        {/* Commissions Due */}
+        <div className={`p-4 rounded-lg bg-${COLORS.commission.secondary}`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-600">Due to You</span>
+            <TrendingUp className={`w-5 h-5 text-${COLORS.commission.primary}`} />
           </div>
-        )}
+          <p className={`text-2xl font-bold text-${COLORS.commission.primary}`}>
+            {formatter.format(commissionsDue)}
+          </p>
+        </div>
 
-        {!isSettled && onMarkAsSettled && (
-          <button
-            onClick={onMarkAsSettled}
-            className="mt-4 w-full px-4 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg transition-colors duration-200"
-          >
-            Mark Quarter as Settled
-          </button>
-        )}
+        {/* Commissions Owed */}
+        <div className={`p-4 rounded-lg bg-${COLORS.pending.secondary}`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-600">You Owe</span>
+            <TrendingDown className={`w-5 h-5 text-${COLORS.pending.primary}`} />
+          </div>
+          <p className={`text-2xl font-bold text-${COLORS.pending.primary}`}>
+            {formatter.format(commissionsOwed)}
+          </p>
+        </div>
       </div>
     </div>
   );
