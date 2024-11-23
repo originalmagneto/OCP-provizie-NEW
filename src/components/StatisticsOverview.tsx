@@ -355,13 +355,12 @@ export default function StatisticsOverview() {
                 revenue={quarterData.revenue}
                 commissionsByFirm={quarterData.commissionsByFirm}
                 userFirm={userFirm}
-                onSettleCommission={(firm) => 
-                  handleSettleCommission(
-                    quarterData.key,
-                    firm,
-                    quarterData.commissionsByFirm.find(c => c.firm === firm)?.isPaying || false
-                  )
-                }
+                onSettleCommission={(firm) => {
+                  const commission = quarterData.commissionsByFirm.find(c => c.firm === firm);
+                  if (commission) {
+                    handleSettleCommission(quarterData.key, firm, commission.isPaying);
+                  }
+                }}
               />
             ))}
         </div>
