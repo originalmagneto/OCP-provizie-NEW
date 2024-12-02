@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useInvoices } from './InvoiceContext';
 
 interface ClientContextType {
   clientHistory: string[];
@@ -7,25 +6,48 @@ interface ClientContextType {
   searchClients: (query: string) => string[];
 }
 
-const ClientContext = createContext<ClientContextType | undefined>(undefined);
+const defaultContext: ClientContextType = {
+  clientHistory: [],
+  addClient: () => {},
+  searchClients: () => [],
+};
+
+const ClientContext = createContext<ClientContextType>(defaultContext);
+
+export function useClient() {
+  const context = useContext(ClientContext);
+  if (!context) {
+    throw new Error('useClient must be used within a ClientProvider');
+  }
+  return context;
+}
 
 export function ClientProvider({ children }: { children: React.ReactNode }) {
   const [clientHistory, setClientHistory] = useState<string[]>([]);
-  const { invoices } = useInvoices();
 
-  // Initialize client history from existing invoices
+  // Load client history from localStorage
   useEffect(() => {
-    if (invoices && invoices.length > 0) {
-      const uniqueClients = Array.from(
-        new Set(invoices.map((invoice) => invoice.clientName))
-      ).filter(Boolean);
-      setClientHistory(prev => {
-        // Only update if there are new clients
-        const newClients = uniqueClients.filter(client => !prev.includes(client));
-        return newClients.length > 0 ? [...prev, ...newClients] : prev;
-      });
+    try {
+      const storedClients = localStorage.getItem('clientHistory');
+      if (storedClients) {
+        const parsedClients = JSON.parse(storedClients);
+        if (Array.isArray(parsedClients)) {
+          setClientHistory(parsedClients);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading client history:', error);
     }
-  }, [invoices]);
+  }, []);
+
+  // Save client history to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('clientHistory', JSON.stringify(clientHistory));
+    } catch (error) {
+      console.error('Error saving client history:', error);
+    }
+  }, [clientHistory]);
 
   const addClient = (clientName: string) => {
     if (clientName && !clientHistory.includes(clientName)) {
@@ -33,7 +55,6 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Simple fuzzy search implementation
   const searchClients = (query: string): string[] => {
     if (!query) return [];
     const normalizedQuery = query.toLowerCase();
@@ -53,12 +74,4 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
       {children}
     </ClientContext.Provider>
   );
-}
-
-export function useClients() {
-  const context = useContext(ClientContext);
-  if (context === undefined) {
-    throw new Error('useClients must be used within a ClientProvider');
-  }
-  return context;
 }
