@@ -334,20 +334,7 @@ export default function InvoiceList() {
     }
 
     try {
-      // Create a stable copy of the invoices array
-      const stableInvoices = [...invoices];
-      
-      // First filter
-      const filtered = stableInvoices.filter(filterInvoice);
-      
-      // Then sort by date
-      return filtered.sort((a, b) => {
-        if (!a || !b) return 0;
-        const dateA = new Date(a.date || 0);
-        const dateB = new Date(b.date || 0);
-        if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
-        return dateB.getTime() - dateA.getTime();
-      });
+      return invoices.filter(filterInvoice);
     } catch (error) {
       console.error("Error processing invoices:", error);
       return [];

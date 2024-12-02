@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { Invoice } from "../types";
 
 interface InvoiceContextType {
@@ -25,6 +25,17 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
+  // Sort invoices by date
+  const sortInvoices = useCallback((invoicesToSort: Invoice[]): Invoice[] => {
+    return [...invoicesToSort].sort((a, b) => {
+      if (!a?.date || !b?.date) return 0;
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
+      return dateB.getTime() - dateA.getTime();
+    });
+  }, []);
+
   // Initialize invoices from localStorage
   useEffect(() => {
     try {
@@ -48,7 +59,7 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
               !isNaN(new Date(invoice.date).getTime())
             );
           });
-          setInvoices(validInvoices);
+          setInvoices(sortInvoices(validInvoices));
         }
       }
     } catch (error) {
@@ -56,7 +67,7 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [sortInvoices]);
 
   // Save invoices to localStorage whenever they change
   useEffect(() => {
@@ -69,7 +80,7 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
     }
   }, [invoices, isLoading]);
 
-  const addInvoice = (invoice: Invoice) => {
+  const addInvoice = useCallback((invoice: Invoice) => {
     if (!invoice || typeof invoice !== "object") {
       console.error("Invalid invoice object:", invoice);
       return;
@@ -81,33 +92,34 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
         console.error("Invoice with this ID already exists:", invoice.id);
         return prev;
       }
-      const newInvoices = [...prev, invoice];
-      return newInvoices.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      return sortInvoices([...prev, invoice]);
     });
-  };
+  }, [sortInvoices]);
 
-  const removeInvoice = (id: string) => {
+  const removeInvoice = useCallback((id: string) => {
     if (!id) {
       console.error("Invalid invoice ID for removal:", id);
       return;
     }
     setInvoices((prev) => prev.filter((invoice) => invoice.id !== id));
-  };
+  }, []);
 
-  const updateInvoice = (id: string, updatedInvoice: Partial<Invoice>) => {
+  const updateInvoice = useCallback((id: string, updatedInvoice: Partial<Invoice>) => {
     if (!id || !updatedInvoice || typeof updatedInvoice !== "object") {
       console.error("Invalid update parameters:", { id, updatedInvoice });
       return;
     }
 
     setInvoices((prev) =>
-      prev.map((invoice) =>
-        invoice.id === id ? { ...invoice, ...updatedInvoice } : invoice
+      sortInvoices(
+        prev.map((invoice) =>
+          invoice.id === id ? { ...invoice, ...updatedInvoice } : invoice
+        )
       )
     );
-  };
+  }, [sortInvoices]);
 
-  const togglePaid = (id: string) => {
+  const togglePaid = useCallback((id: string) => {
     if (!id) {
       console.error("Invalid invoice ID for toggle:", id);
       return;
@@ -124,16 +136,16 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
           : invoice
       )
     );
-  };
+  }, []);
 
-  const resetAllData = () => {
+  const resetAllData = useCallback(() => {
     setInvoices([]);
     try {
       localStorage.removeItem("invoices");
     } catch (error) {
       console.error("Error resetting invoice data:", error);
     }
-  };
+  }, []);
 
   const value = {
     invoices,
