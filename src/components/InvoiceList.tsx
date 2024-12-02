@@ -284,57 +284,73 @@ export default function InvoiceList() {
   });
 
   const filteredInvoices = useMemo(() => {
-    // Ensure invoices is an array before filtering
-    if (!Array.isArray(invoices)) return [];
-    
-    // First, safely sort the invoices by date
-    const sortedInvoices = [...invoices].sort((a, b) => {
-      const dateA = new Date(a?.date || 0).getTime();
-      const dateB = new Date(b?.date || 0).getTime();
-      return dateB - dateA;
-    });
-
-    return sortedInvoices.filter((invoice) => {
-      // Ensure invoice object exists and has required properties
-      if (!invoice || !invoice.date) return false;
-
-      const invoiceDate = new Date(invoice.date);
-      if (isNaN(invoiceDate.getTime())) return false;
+    try {
+      // Ensure invoices is an array before filtering
+      if (!Array.isArray(invoices) || !invoices.length) return [];
       
-      // Check if invoice is in current year and quarter
-      if (!isInQuarter(invoiceDate, currentYear, currentQuarter)) {
-        return false;
-      }
+      // First, safely sort the invoices by date
+      const sortedInvoices = [...invoices].sort((a, b) => {
+        if (!a?.date || !b?.date) return 0;
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
+        return dateB.getTime() - dateA.getTime();
+      });
 
-      // Search filter
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        const clientName = invoice.clientName?.toLowerCase() || '';
-        const invoicedByFirm = invoice.invoicedByFirm?.toLowerCase() || '';
-        
-        if (!clientName.includes(searchLower) && !invoicedByFirm.includes(searchLower)) {
+      return sortedInvoices.filter((invoice) => {
+        try {
+          // Basic validation
+          if (!invoice || typeof invoice !== 'object') return false;
+          if (!invoice.date || !invoice.clientName || !invoice.invoicedByFirm) return false;
+
+          const invoiceDate = new Date(invoice.date);
+          if (isNaN(invoiceDate.getTime())) return false;
+          
+          // Check if invoice is in current year and quarter
+          if (!isInQuarter(invoiceDate, currentYear, currentQuarter)) {
+            return false;
+          }
+
+          // Search filter
+          if (filters.search) {
+            const searchLower = filters.search.toLowerCase();
+            const clientName = String(invoice.clientName).toLowerCase();
+            const invoicedByFirm = String(invoice.invoicedByFirm).toLowerCase();
+            
+            if (!clientName.includes(searchLower) && !invoicedByFirm.includes(searchLower)) {
+              return false;
+            }
+          }
+
+          // Status filter
+          if (filters.status !== "all") {
+            const isOverdue = invoice.isPaid === false && 
+              new Date(invoice.date).getTime() < Date.now() - 30 * 24 * 60 * 60 * 1000;
+            
+            if (
+              (filters.status === "paid" && !invoice.isPaid) ||
+              (filters.status === "pending" && (invoice.isPaid || isOverdue)) ||
+              (filters.status === "overdue" && (!isOverdue || invoice.isPaid))
+            ) {
+              return false;
+            }
+          }
+
+          // Firm filter
+          if (filters.firm !== "all" && invoice.invoicedByFirm !== filters.firm) {
+            return false;
+          }
+
+          return true;
+        } catch (error) {
+          console.error("Error filtering invoice:", error);
           return false;
         }
-      }
-
-      // Status filter
-      if (filters.status !== "all") {
-        const daysDiff = Math.floor(
-          (new Date().getTime() - invoiceDate.getTime()) / (1000 * 60 * 60 * 24)
-        );
-        
-        if (filters.status === "paid" && !invoice.isPaid) return false;
-        if (filters.status === "pending" && (invoice.isPaid || daysDiff > 30)) return false;
-        if (filters.status === "overdue" && (invoice.isPaid || daysDiff <= 30)) return false;
-      }
-
-      // Firm filter
-      if (filters.firm !== "all" && invoice.invoicedByFirm !== filters.firm) {
-        return false;
-      }
-
-      return true;
-    });
+      });
+    } catch (error) {
+      console.error("Error processing invoices:", error);
+      return [];
+    }
   }, [invoices, filters, currentYear, currentQuarter]);
 
   // Calculate summary statistics
