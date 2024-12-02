@@ -336,21 +336,23 @@ export default function InvoiceList() {
     const validInvoices = invoices.filter(invoice => 
       invoice && 
       typeof invoice === 'object' && 
-      typeof invoice.date === 'string'
+      'date' in invoice &&
+      typeof invoice.date === 'string' &&
+      'clientName' in invoice &&
+      typeof invoice.clientName === 'string' &&
+      'invoicedByFirm' in invoice &&
+      typeof invoice.invoicedByFirm === 'string'
     );
 
-    return validInvoices
-      .filter(filterInvoice)
-      .sort((a, b) => {
-        try {
-          const dateA = new Date(a.date).getTime();
-          const dateB = new Date(b.date).getTime();
-          if (isNaN(dateA) || isNaN(dateB)) return 0;
-          return dateB - dateA;
-        } catch {
-          return 0;
-        }
-      });
+    const filtered = validInvoices.filter(filterInvoice);
+    
+    return filtered.sort((a, b) => {
+      if (!a?.date || !b?.date) return 0;
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      if (!dateA || !dateB || isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
+      return dateB.getTime() - dateA.getTime();
+    });
   }, [invoices, isLoading, filterInvoice]);
 
   if (isLoading) {
