@@ -284,8 +284,22 @@ export default function InvoiceList() {
   });
 
   const filteredInvoices = useMemo(() => {
-    return invoices.filter((invoice) => {
+    // Ensure invoices is an array before filtering
+    if (!Array.isArray(invoices)) return [];
+    
+    // First, safely sort the invoices by date
+    const sortedInvoices = [...invoices].sort((a, b) => {
+      const dateA = new Date(a?.date || 0).getTime();
+      const dateB = new Date(b?.date || 0).getTime();
+      return dateB - dateA;
+    });
+
+    return sortedInvoices.filter((invoice) => {
+      // Ensure invoice object exists and has required properties
+      if (!invoice || !invoice.date) return false;
+
       const invoiceDate = new Date(invoice.date);
+      if (isNaN(invoiceDate.getTime())) return false;
       
       // Check if invoice is in current year and quarter
       if (!isInQuarter(invoiceDate, currentYear, currentQuarter)) {
@@ -295,10 +309,10 @@ export default function InvoiceList() {
       // Search filter
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
-        if (
-          !invoice.clientName.toLowerCase().includes(searchLower) &&
-          !invoice.invoicedByFirm.toLowerCase().includes(searchLower)
-        ) {
+        const clientName = invoice.clientName?.toLowerCase() || '';
+        const invoicedByFirm = invoice.invoicedByFirm?.toLowerCase() || '';
+        
+        if (!clientName.includes(searchLower) && !invoicedByFirm.includes(searchLower)) {
           return false;
         }
       }
@@ -336,7 +350,9 @@ export default function InvoiceList() {
     };
 
     filteredInvoices.forEach((invoice) => {
-      const amount = Number(invoice.amount);
+      if (!invoice) return;
+      
+      const amount = Number(invoice.amount) || 0;
       stats.totalAmount += amount;
 
       const daysDiff = Math.floor(
