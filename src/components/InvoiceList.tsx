@@ -272,7 +272,7 @@ function InvoiceCard({
 }
 
 export default function InvoiceList() {
-  const { invoices, deleteInvoice, togglePaid } = useInvoices();
+  const { invoices, isLoading, deleteInvoice, togglePaid } = useInvoices();
   const { userFirm } = useAuth();
   const { currentYear, currentQuarter } = useYear();
   const [editingInvoice, setEditingInvoice] = useState<any>(null);
@@ -284,20 +284,13 @@ export default function InvoiceList() {
   });
 
   const filteredInvoices = useMemo(() => {
-    try {
-      // Ensure invoices is an array before filtering
-      if (!Array.isArray(invoices) || !invoices.length) return [];
-      
-      // First, safely sort the invoices by date
-      const sortedInvoices = [...invoices].sort((a, b) => {
-        if (!a?.date || !b?.date) return 0;
-        const dateA = new Date(a.date);
-        const dateB = new Date(b.date);
-        if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
-        return dateB.getTime() - dateA.getTime();
-      });
+    // Don't process while loading or if invoices is not available
+    if (isLoading || !Array.isArray(invoices)) {
+      return [];
+    }
 
-      return sortedInvoices.filter((invoice) => {
+    try {
+      return invoices.filter((invoice) => {
         try {
           // Basic validation
           if (!invoice || typeof invoice !== 'object') return false;
@@ -351,7 +344,15 @@ export default function InvoiceList() {
       console.error("Error processing invoices:", error);
       return [];
     }
-  }, [invoices, filters, currentYear, currentQuarter]);
+  }, [isLoading, invoices, filters, currentYear, currentQuarter]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
 
   // Calculate summary statistics
   const summaryStats = useMemo(() => {
