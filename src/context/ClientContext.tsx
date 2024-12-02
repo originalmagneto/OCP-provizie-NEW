@@ -15,28 +15,41 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize client history from existing invoices
   useEffect(() => {
-    const uniqueClients = Array.from(
-      new Set(invoices.map((invoice) => invoice.clientName))
-    ).filter(Boolean);
-    setClientHistory(uniqueClients);
+    if (invoices && invoices.length > 0) {
+      const uniqueClients = Array.from(
+        new Set(invoices.map((invoice) => invoice.clientName))
+      ).filter(Boolean);
+      setClientHistory(prev => {
+        // Only update if there are new clients
+        const newClients = uniqueClients.filter(client => !prev.includes(client));
+        return newClients.length > 0 ? [...prev, ...newClients] : prev;
+      });
+    }
   }, [invoices]);
 
   const addClient = (clientName: string) => {
-    if (!clientHistory.includes(clientName)) {
-      setClientHistory((prev) => [...prev, clientName]);
+    if (clientName && !clientHistory.includes(clientName)) {
+      setClientHistory(prev => [...prev, clientName]);
     }
   };
 
   // Simple fuzzy search implementation
   const searchClients = (query: string): string[] => {
+    if (!query) return [];
     const normalizedQuery = query.toLowerCase();
     return clientHistory.filter((client) =>
       client.toLowerCase().includes(normalizedQuery)
     );
   };
 
+  const value = {
+    clientHistory,
+    addClient,
+    searchClients
+  };
+
   return (
-    <ClientContext.Provider value={{ clientHistory, addClient, searchClients }}>
+    <ClientContext.Provider value={value}>
       {children}
     </ClientContext.Provider>
   );
