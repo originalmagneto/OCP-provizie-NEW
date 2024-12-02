@@ -67,144 +67,26 @@ function FirmSummaryCard({
     // Here you would typically update the state or make an API call to mark as settled
   };
 
-  const formatEUR = (amount: number) => {
-    return new Intl.NumberFormat("de-DE", {
-      style: "currency",
-      currency: "EUR",
-    }).format(amount);
-  };
-
   const firmData = quarterlyData[`${new Date().getFullYear()}-Q${Math.floor(new Date().getMonth() / 3) + 1}`];
   const receivable = firmData?.commissionsReceivable[firm] || { amount: 0, count: 0 };
   const payable = firmData?.commissionsPayable[firm] || { amount: 0, count: 0 };
 
   return (
-    <div
-      className={`
-      rounded-lg border ${firmThemes[firm].border}
-      bg-gradient-to-br ${firmThemes[firm].gradient}
-    `}
-    >
-      <div className="p-6">
-        <h3 className={`text-lg font-semibold ${firmThemes[firm].text}`}>
-          {firm}
-        </h3>
-
-        {Object.entries(quarterlyData)
-          .sort(([a], [b]) => b.localeCompare(a))
-          .map(([key, data]) => (
-            <div key={key} className="mt-4 first:mt-2">
-              <div className="font-medium text-gray-900 mb-2">
-                {data.quarter} {data.year}
-              </div>
-
-              {/* Commissions Receivable */}
-              {Object.entries(data.commissionsReceivable).map(
-                ([fromFirm, details]) => (
-                  <div
-                    key={`receive-${fromFirm}`}
-                    className="mb-2 pl-4 border-l-2 border-green-200"
-                  >
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center">
-                        <span className={firmThemes[fromFirm as FirmType].text}>
-                          {fromFirm}
-                        </span>
-                        <ArrowRightIcon className="h-3 w-3 mx-1 text-gray-400" />
-                        <span className="font-medium">
-                          {formatEUR(details.amount)}
-                        </span>
-                      </div>
-                      {details.isPaid ? (
-                        <span className="flex items-center text-green-600">
-                          <CheckIcon className="h-4 w-4 mr-1" />
-                          Received
-                        </span>
-                      ) : (
-                        <span className="flex items-center text-gray-500">
-                          <ClockIcon className="h-4 w-4 mr-1" />
-                          Pending
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      From {details.count} invoice
-                      {details.count !== 1 ? "s" : ""}
-                    </div>
-                  </div>
-                ),
-              )}
-
-              {/* Commissions Payable */}
-              {Object.entries(data.commissionsPayable).map(
-                ([toFirm, details]) => (
-                  <div
-                    key={`pay-${toFirm}`}
-                    className="mb-2 pl-4 border-l-2 border-red-200"
-                  >
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center">
-                        <EuroIcon className="h-3 w-3 mr-1 text-gray-400" />
-                        <span className={firmThemes[toFirm as FirmType].text}>
-                          {toFirm}
-                        </span>
-                        <span className="mx-1">·</span>
-                        <span className="font-medium">
-                          {formatEUR(details.amount)}
-                        </span>
-                      </div>
-                      {details.isPaid ? (
-                        <span className="flex items-center text-green-600">
-                          <CheckIcon className="h-4 w-4 mr-1" />
-                          Paid
-                        </span>
-                      ) : (
-                        <span className="flex items-center text-orange-500">
-                          <ClockIcon className="h-4 w-4 mr-1" />
-                          Due
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      For {details.count} referral
-                      {details.count !== 1 ? "s" : ""}
-                    </div>
-                  </div>
-                ),
-              )}
-
-              {/* Quarter Summary */}
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Quarter Balance</span>
-                  <span className="font-medium">
-                    {formatEUR(
-                      Object.values(data.commissionsReceivable).reduce(
-                        (sum, d) => sum + d.amount,
-                        0,
-                      ) -
-                        Object.values(data.commissionsPayable).reduce(
-                          (sum, d) => sum + d.amount,
-                          0,
-                        ),
-                    )}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        <div className="mt-4">
-          <p className="text-sm text-gray-500">Receivable: {formatEUR(receivable.amount)}</p>
-          <p className="text-sm text-gray-500">Payable: {formatEUR(payable.amount)}</p>
-        </div>
-        <button
-          onClick={handleSettleCommissions}
-          className={`w-full py-2 text-white rounded-md transition-colors ${isSettled ? 'bg-green-400' : 'bg-blue-600 hover:bg-blue-700'}`}
-          disabled={isSettled}
-        >
-          {isSettled ? 'Settled' : 'Settle Commissions'}
-        </button>
+    <div className={`p-4 rounded-lg shadow ${firmThemes[firm].border}`}>
+      <h3 className="text-lg font-medium mb-2">
+        {firm} Summary
+      </h3>
+      <div className="mb-4">
+        <p className="text-sm text-gray-500">Receivable: {formatCurrency(receivable.amount)}</p>
+        <p className="text-sm text-gray-500">Payable: {formatCurrency(payable.amount)}</p>
       </div>
+      <button
+        onClick={handleSettleCommissions}
+        className={`w-full py-2 text-white rounded-md transition-colors ${isSettled ? 'bg-green-400' : 'bg-blue-600 hover:bg-blue-700'}`}
+        disabled={isSettled}
+      >
+        {isSettled ? 'Settled' : 'Settle Commissions'}
+      </button>
     </div>
   );
 }

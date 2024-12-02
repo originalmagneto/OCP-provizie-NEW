@@ -244,7 +244,6 @@ export default function InvoiceList() {
   const { currentYear, currentQuarter } = useYear();
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [expandedInvoices, setExpandedInvoices] = useState<string[]>([]);
-  const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     status: "all",
@@ -384,18 +383,6 @@ export default function InvoiceList() {
       <div className="space-y-4">
         {processedInvoices.map((invoice) => (
           <div key={invoice.id} className="flex items-center space-x-4">
-            <input
-              type="checkbox"
-              checked={selectedInvoices.includes(invoice.id)}
-              onChange={(e) => {
-                setSelectedInvoices((prev) =>
-                  e.target.checked
-                    ? [...prev, invoice.id]
-                    : prev.filter((id) => id !== invoice.id)
-                );
-              }}
-              className="h-4 w-4 text-blue-600 rounded border-gray-300"
-            />
             <div className="flex-1">
               <InvoiceCard
                 invoice={invoice}
