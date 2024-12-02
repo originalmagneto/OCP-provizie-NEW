@@ -17,13 +17,13 @@ function App() {
   return (
     <AuthProvider>
       <YearProvider>
-        <InvoiceProvider>
-          <ClientProvider>
+        <ClientProvider>
+          <InvoiceProvider>
             <CommissionProvider>
               <AppContent />
             </CommissionProvider>
-          </ClientProvider>
-        </InvoiceProvider>
+          </InvoiceProvider>
+        </ClientProvider>
       </YearProvider>
     </AuthProvider>
   );

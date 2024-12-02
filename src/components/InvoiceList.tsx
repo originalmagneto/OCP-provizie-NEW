@@ -1,13 +1,14 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { useYear, isInQuarter } from "../context/YearContext";
 import CustomDropdown from "./common/CustomDropdown";
+import StatusBadge from "./common/StatusBadge";
+import Tooltip from "./common/Tooltip";
+import InvoiceSummary from "./InvoiceSummary";
 import EditInvoiceModal from "./EditInvoiceModal";
 import {
   Search,
-  CheckCircle,
-  Clock,
   Building,
   Calendar,
   Euro,
@@ -16,7 +17,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import type { FirmType } from "../types";
+import type { FirmType, Invoice } from "../types";
 
 const firmThemes = {
   SKALLARS: {
@@ -41,12 +42,12 @@ const firmThemes = {
 
 interface FilterState {
   search: string;
-  status: "all" | "paid" | "unpaid";
+  status: "all" | "paid" | "pending" | "overdue";
   firm: "all" | FirmType;
 }
 
 interface InvoiceCardProps {
-  invoice: any;
+  invoice: Invoice;
   isExpanded: boolean;
   onToggleExpand: () => void;
   onTogglePaid: () => void;
@@ -63,56 +64,52 @@ function FilterBar({
   onFilterChange: (filters: FilterState) => void;
 }) {
   return (
-    <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
-      <div className="flex flex-col sm:flex-row gap-4">
-        {/* Search */}
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <input
-              type="text"
-              placeholder="Search invoices..."
-              value={filters.search}
-              onChange={(e) =>
-                onFilterChange({ ...filters, search: e.target.value })
-              }
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-        </div>
-
-        {/* Status Filter */}
-        <div className="sm:w-40">
-          <CustomDropdown
-            label=""
-            value={
-              filters.status === "all"
-                ? "All Status"
-                : filters.status === "paid"
-                  ? "Paid"
-                  : "Unpaid"
+    <div className="flex flex-col md:flex-row gap-4 p-4 bg-white rounded-lg shadow">
+      <div className="flex-1">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search by client or firm..."
+            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={filters.search}
+            onChange={(e) =>
+              onFilterChange({ ...filters, search: e.target.value })
             }
-            onChange={(value) => {
-              const status =
-                value === "All Status"
-                  ? "all"
-                  : (value.toLowerCase() as "paid" | "unpaid");
-              onFilterChange({ ...filters, status });
-            }}
-            options={["All Status", "Paid", "Unpaid"]}
+          />
+        </div>
+      </div>
+
+      <div className="flex gap-4">
+        <div className="w-40">
+          <CustomDropdown
+            value={filters.status}
+            onChange={(value) =>
+              onFilterChange({ ...filters, status: value as FilterState["status"] })
+            }
+            options={[
+              { value: "all", label: "All Status" },
+              { value: "paid", label: "Paid" },
+              { value: "pending", label: "Pending" },
+              { value: "overdue", label: "Overdue" },
+            ]}
+            icon={<Calendar className="w-4 h-4" />}
           />
         </div>
 
-        {/* Firm Filter */}
-        <div className="sm:w-40">
+        <div className="w-40">
           <CustomDropdown
-            label=""
-            value={filters.firm === "all" ? "All Firms" : filters.firm}
-            onChange={(value) => {
-              const firm = value === "All Firms" ? "all" : (value as FirmType);
-              onFilterChange({ ...filters, firm });
-            }}
-            options={["All Firms", "SKALLARS", "MKMs", "Contax"]}
+            value={filters.firm}
+            onChange={(value) =>
+              onFilterChange({ ...filters, firm: value as FilterState["firm"] })
+            }
+            options={[
+              { value: "all", label: "All Firms" },
+              { value: "SKALLARS", label: "SKALLARS" },
+              { value: "MKMs", label: "MKMs" },
+              { value: "Contax", label: "Contax" },
+            ]}
+            icon={<Building className="w-4 h-4" />}
           />
         </div>
       </div>
@@ -130,140 +127,109 @@ function InvoiceCard({
   userFirm,
 }: InvoiceCardProps) {
   const theme = firmThemes[invoice.invoicedByFirm];
-  const isUsersFirm = userFirm === invoice.invoicedByFirm;
-  const commission = (invoice.amount * invoice.commissionPercentage) / 100;
+  const isOverdue =
+    !invoice.isPaid &&
+    new Date(invoice.date).getTime() < Date.now() - 30 * 24 * 60 * 60 * 1000;
 
   return (
     <div
-      className={`
-        border rounded-lg overflow-hidden transition-all duration-200
-        ${theme.border}
-        ${isUsersFirm ? theme.bg : "bg-white"}
-      `}
+      className={`bg-white rounded-lg shadow transition-all duration-200 ${
+        isExpanded ? "ring-2 ring-blue-500" : ""
+      }`}
     >
       <div className="p-4">
         <div className="flex items-center justify-between">
-          {/* Left side - Basic Info */}
           <div className="flex items-center space-x-4">
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center
-                ${invoice.isPaid ? "bg-green-100" : "bg-amber-100"}
-              `}
+              className={`px-3 py-1 rounded-full ${theme.bg} ${theme.border} ${theme.text}`}
             >
-              {invoice.isPaid ? (
-                <CheckCircle className="h-5 w-5 text-green-600" />
-              ) : (
-                <Clock className="h-5 w-5 text-amber-600" />
-              )}
+              {invoice.invoicedByFirm}
             </div>
-
             <div>
-              <h3 className="font-medium text-gray-900">
-                {invoice.clientName}
-              </h3>
-              <div className="flex items-center text-sm text-gray-500">
-                <Calendar className="h-4 w-4 mr-1" />
+              <h3 className="text-lg font-semibold">{invoice.clientName}</h3>
+              <p className="text-sm text-gray-500">
                 {new Date(invoice.date).toLocaleDateString()}
-              </div>
+              </p>
             </div>
           </div>
 
-          {/* Right side - Amount and Actions */}
           <div className="flex items-center space-x-4">
             <div className="text-right">
-              <div className="font-medium text-gray-900">
+              <p className="text-lg font-semibold flex items-center">
+                <Euro className="w-4 h-4 mr-1" />
                 {formatCurrency(invoice.amount)}
-              </div>
-              <div className="text-sm text-gray-500">
-                {invoice.commissionPercentage}% commission
-              </div>
+              </p>
+              <StatusBadge isPaid={invoice.isPaid} isOverdue={isOverdue} />
             </div>
 
             <div className="flex items-center space-x-2">
-              {isUsersFirm && (
+              {userFirm === invoice.invoicedByFirm && (
                 <>
-                  <button
-                    onClick={onTogglePaid}
-                    className={`p-1 rounded ${
-                      invoice.isPaid
-                        ? "text-green-600 hover:bg-green-50"
-                        : "text-amber-600 hover:bg-amber-50"
-                    }`}
-                    title={invoice.isPaid ? "Mark as unpaid" : "Mark as paid"}
-                  >
-                    {invoice.isPaid ? (
-                      <CheckCircle className="h-4 w-4" />
-                    ) : (
-                      <Clock className="h-4 w-4" />
-                    )}
-                  </button>
-                  <button
-                    onClick={onEdit}
-                    className="p-1 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"
-                    title="Edit invoice"
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={onDelete}
-                    className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
-                    title="Delete invoice"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <Tooltip content="Edit Invoice">
+                    <button
+                      onClick={onEdit}
+                      className="p-2 text-gray-500 hover:text-blue-500 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                  </Tooltip>
+
+                  <Tooltip content="Delete Invoice">
+                    <button
+                      onClick={onDelete}
+                      className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </Tooltip>
                 </>
               )}
+
               <button
                 onClick={onToggleExpand}
-                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                className="p-2 text-gray-500 hover:text-blue-500 hover:bg-gray-100 rounded-full transition-colors"
               >
                 {isExpanded ? (
-                  <ChevronUp className="h-4 w-4" />
+                  <ChevronUp className="w-4 h-4" />
                 ) : (
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="w-4 h-4" />
                 )}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Expanded Details */}
         {isExpanded && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="mt-4 pt-4 border-t">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <span className="text-gray-500">Invoiced by:</span>
-                <span
-                  className={`ml-2 ${firmThemes[invoice.invoicedByFirm].text}`}
-                >
-                  {invoice.invoicedByFirm}
-                </span>
+                <p className="text-sm text-gray-500">Commission</p>
+                <p className="font-medium">
+                  {invoice.commissionPercentage}% (€
+                  {formatCurrency(
+                    (invoice.amount * invoice.commissionPercentage) / 100
+                  )}
+                  )
+                </p>
               </div>
               <div>
-                <span className="text-gray-500">Referred by:</span>
-                <span
-                  className={`ml-2 ${firmThemes[invoice.referredByFirm].text}`}
-                >
-                  {invoice.referredByFirm}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-500">Commission Amount:</span>
-                <span className="ml-2 font-medium">
-                  {formatCurrency(commission)}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-500">Status:</span>
-                <span
-                  className={`ml-2 ${
-                    invoice.isPaid ? "text-green-600" : "text-amber-600"
-                  }`}
-                >
-                  {invoice.isPaid ? "Paid" : "Pending"}
-                </span>
+                <p className="text-sm text-gray-500">Referred By</p>
+                <p className="font-medium">{invoice.referredByFirm}</p>
               </div>
             </div>
+
+            {userFirm === invoice.invoicedByFirm && (
+              <button
+                onClick={onTogglePaid}
+                className={`mt-4 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  invoice.isPaid
+                    ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    : "bg-green-50 text-green-700 hover:bg-green-100"
+                }`}
+              >
+                {invoice.isPaid ? "Mark as Unpaid" : "Mark as Paid"}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -272,122 +238,169 @@ function InvoiceCard({
 }
 
 export default function InvoiceList() {
-  const { invoices, updateInvoice, deleteInvoice } = useInvoices();
-  const { user } = useAuth();
+  const { invoices, isLoading, removeInvoice, togglePaid } = useInvoices();
+  const { userFirm } = useAuth();
   const { currentYear, currentQuarter } = useYear();
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [expandedInvoices, setExpandedInvoices] = useState<string[]>([]);
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     status: "all",
     firm: "all",
   });
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [editingInvoice, setEditingInvoice] = useState<any>(null);
 
-  const filteredInvoices = useMemo(() => {
-    return invoices
-      .filter((invoice) => {
-        // Quarter filter
-        const invoiceDate = new Date(invoice.date);
-        if (!isInQuarter(invoiceDate, currentYear, currentQuarter)) {
-          return false;
-        }
+  const filterInvoice = useCallback(
+    (invoice: Invoice): boolean => {
+      if (!invoice?.date || !invoice?.clientName || !invoice?.invoicedByFirm) {
+        return false;
+      }
 
-        // Search filter
+      const invoiceDate = new Date(invoice.date);
+      if (isNaN(invoiceDate.getTime())) {
+        return false;
+      }
+
+      // Check if invoice is in current year and quarter
+      if (!isInQuarter(invoiceDate, currentYear, currentQuarter)) {
+        return false;
+      }
+
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const clientName = invoice.clientName.toLowerCase();
+        const invoicedByFirm = invoice.invoicedByFirm.toLowerCase();
+
         if (
-          filters.search &&
-          !invoice.clientName
-            .toLowerCase()
-            .includes(filters.search.toLowerCase())
+          !clientName.includes(searchLower) &&
+          !invoicedByFirm.includes(searchLower)
         ) {
           return false;
         }
+      }
 
-        // Status filter
-        if (filters.status !== "all") {
-          if (filters.status === "paid" && !invoice.isPaid) return false;
-          if (filters.status === "unpaid" && invoice.isPaid) return false;
+      // Status filter
+      if (filters.status !== "all") {
+        const isOverdue =
+          !invoice.isPaid &&
+          new Date(invoice.date).getTime() <
+            Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+        if (
+          (filters.status === "paid" && !invoice.isPaid) ||
+          (filters.status === "pending" && (invoice.isPaid || isOverdue)) ||
+          (filters.status === "overdue" && (!isOverdue || invoice.isPaid))
+        ) {
+          return false;
         }
+      }
 
-        // Firm filter
-        if (filters.firm !== "all") {
-          return (
-            invoice.invoicedByFirm === filters.firm ||
-            invoice.referredByFirm === filters.firm
-          );
-        }
+      // Firm filter
+      if (filters.firm !== "all" && invoice.invoicedByFirm !== filters.firm) {
+        return false;
+      }
 
-        return true;
-      })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [invoices, filters, currentYear, currentQuarter]);
+      return true;
+    },
+    [filters, currentYear, currentQuarter]
+  );
 
-  if (!user) return null;
+  const processedInvoices = useMemo(() => {
+    if (!Array.isArray(invoices) || isLoading) {
+      return [];
+    }
+
+    const validInvoices = invoices.filter((invoice): invoice is Invoice => {
+      return (
+        invoice &&
+        typeof invoice === "object" &&
+        typeof invoice.date === "string" &&
+        typeof invoice.clientName === "string" &&
+        typeof invoice.invoicedByFirm === "string" &&
+        typeof invoice.amount === "number" &&
+        typeof invoice.isPaid === "boolean"
+      );
+    });
+
+    const filtered = validInvoices.filter(filterInvoice);
+
+    // Create a new array for sorting to avoid mutation
+    const sorted = [...filtered];
+    sorted.sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    return sorted;
+  }, [invoices, isLoading, filterInvoice]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  // Calculate summary statistics
+  const summaryStats = {
+    totalInvoices: processedInvoices.length,
+    paidCount: 0,
+    pendingCount: 0,
+    overdueCount: 0,
+    totalAmount: 0,
+    overdueAmount: 0,
+  };
+
+  processedInvoices.forEach((invoice) => {
+    const amount = invoice.amount;
+    const isOverdue =
+      !invoice.isPaid &&
+      new Date(invoice.date).getTime() < Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+    if (invoice.isPaid) {
+      summaryStats.paidCount++;
+    } else if (isOverdue) {
+      summaryStats.overdueCount++;
+      summaryStats.overdueAmount += amount;
+    } else {
+      summaryStats.pendingCount++;
+    }
+
+    summaryStats.totalAmount += amount;
+  });
 
   return (
-    <div>
+    <div className="space-y-4">
       <FilterBar filters={filters} onFilterChange={setFilters} />
-
-      <div className="flex justify-between items-center mb-4">
-        <div className="text-sm text-gray-500">
-          Showing {filteredInvoices.length} invoice
-          {filteredInvoices.length !== 1 ? "s" : ""}
-        </div>
-      </div>
+      <InvoiceSummary {...summaryStats} />
 
       <div className="space-y-4">
-        {filteredInvoices.map((invoice) => (
+        {processedInvoices.map((invoice) => (
           <InvoiceCard
             key={invoice.id}
             invoice={invoice}
-            isExpanded={expandedIds.has(invoice.id)}
-            onToggleExpand={() => {
-              setExpandedIds((prev) => {
-                const next = new Set(prev);
-                if (next.has(invoice.id)) {
-                  next.delete(invoice.id);
-                } else {
-                  next.add(invoice.id);
-                }
-                return next;
-              });
-            }}
-            onTogglePaid={() =>
-              updateInvoice(invoice.id, { isPaid: !invoice.isPaid })
+            isExpanded={expandedInvoices.includes(invoice.id)}
+            onToggleExpand={() =>
+              setExpandedInvoices((prev) =>
+                prev.includes(invoice.id)
+                  ? prev.filter((id) => id !== invoice.id)
+                  : [...prev, invoice.id]
+              )
             }
-            onDelete={() => {
-              if (
-                window.confirm("Are you sure you want to delete this invoice?")
-              ) {
-                deleteInvoice(invoice.id);
-              }
-            }}
+            onTogglePaid={() => togglePaid(invoice.id)}
+            onDelete={() => removeInvoice(invoice.id)}
             onEdit={() => setEditingInvoice(invoice)}
-            userFirm={user.firm}
+            userFirm={userFirm}
           />
         ))}
-
-        {filteredInvoices.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-            <Search className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">
-              No invoices found
-            </h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Try adjusting your filters or changing the quarter
-            </p>
-          </div>
-        )}
       </div>
 
       {editingInvoice && (
         <EditInvoiceModal
           invoice={editingInvoice}
           onClose={() => setEditingInvoice(null)}
-          onSave={(updatedInvoice) => {
-            updateInvoice(editingInvoice.id, updatedInvoice);
-            setEditingInvoice(null);
-          }}
-          userFirm={user.firm}
         />
       )}
     </div>
@@ -395,8 +408,8 @@ export default function InvoiceList() {
 }
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("de-DE", {
-    style: "currency",
-    currency: "EUR",
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(amount);
 }

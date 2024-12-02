@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useInvoices } from "../context/InvoiceContext";
-import { useClients } from "../context/ClientContext";
+import { useClient } from "../context/ClientContext";
 import { Euro, AlertCircle } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -35,7 +35,7 @@ const INITIAL_FORM_DATA = (userFirm: FirmType): FormData => {
 export default function InvoiceForm() {
   const { user } = useAuth();
   const { addInvoice } = useInvoices();
-  const { addClient } = useClients();
+  const { addClient, searchClients } = useClient();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
 

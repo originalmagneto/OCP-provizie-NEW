@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useClients } from '../../context/ClientContext';
+import { useClient } from '../../context/ClientContext';
 
 interface AutocompleteInputProps {
   value: string;
@@ -14,7 +14,7 @@ export default function AutocompleteInput({
   placeholder = '',
   className = '',
 }: AutocompleteInputProps) {
-  const { searchClients } = useClients();
+  const { searchClients } = useClient();
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
