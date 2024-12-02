@@ -2,7 +2,6 @@ import React, { useState, useMemo, useCallback } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { useYear, isInQuarter } from "../context/YearContext";
-import { useSettlement } from "../context/SettlementContext";
 import CustomDropdown from "./common/CustomDropdown";
 import StatusBadge from "./common/StatusBadge";
 import Tooltip from "./common/Tooltip";
@@ -243,7 +242,6 @@ export default function InvoiceList() {
   const { invoices, isLoading, removeInvoice, togglePaid } = useInvoices();
   const { userFirm } = useAuth();
   const { currentYear, currentQuarter } = useYear();
-  const { createSettlement } = useSettlement();
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [expandedInvoices, setExpandedInvoices] = useState<string[]>([]);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
@@ -379,17 +377,6 @@ export default function InvoiceList() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <FilterBar filters={filters} onFilterChange={setFilters} />
-        {selectedInvoices.length > 0 && (
-          <button
-            onClick={() => {
-              createSettlement(selectedInvoices);
-              setSelectedInvoices([]);
-            }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Create Settlement
-          </button>
-        )}
       </div>
 
       <InvoiceSummary {...summaryStats} />
