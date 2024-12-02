@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, Clock, CheckCircle } from 'lucide-react';
+import { AlertCircleIcon, ClockIcon, CheckCircleIcon } from 'lucide-react';
 
 interface InvoiceSummaryProps {
   totalInvoices: number;
@@ -38,7 +38,7 @@ export default function InvoiceSummary({
             <p className="text-2xl font-semibold text-gray-900">{totalInvoices}</p>
           </div>
           <div className="bg-blue-50 p-2 rounded-full">
-            <CheckCircle className="h-6 w-6 text-blue-500" />
+            <CheckCircleIcon className="h-6 w-6 text-blue-500" />
           </div>
         </div>
         <p className="mt-2 text-sm text-gray-500">
@@ -54,7 +54,7 @@ export default function InvoiceSummary({
             <p className="text-2xl font-semibold text-green-600">{paidCount}</p>
           </div>
           <div className="bg-green-50 p-2 rounded-full">
-            <CheckCircle className="h-6 w-6 text-green-500" />
+            <CheckCircleIcon className="h-6 w-6 text-green-500" />
           </div>
         </div>
         <p className="mt-2 text-sm text-gray-500">
@@ -70,7 +70,7 @@ export default function InvoiceSummary({
             <p className="text-2xl font-semibold text-amber-600">{pendingCount}</p>
           </div>
           <div className="bg-amber-50 p-2 rounded-full">
-            <Clock className="h-6 w-6 text-amber-500" />
+            <ClockIcon className="h-6 w-6 text-amber-500" />
           </div>
         </div>
         <p className="mt-2 text-sm text-gray-500">
@@ -86,7 +86,7 @@ export default function InvoiceSummary({
             <p className="text-2xl font-semibold text-red-600">{overdueCount}</p>
           </div>
           <div className="bg-red-50 p-2 rounded-full">
-            <AlertCircle className="h-6 w-6 text-red-500" />
+            <AlertCircleIcon className="h-6 w-6 text-red-500" />
           </div>
         </div>
         <p className="mt-2 text-sm text-gray-500">

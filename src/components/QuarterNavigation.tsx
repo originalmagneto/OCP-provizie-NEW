@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircleIcon, AlertCircleIcon } from 'lucide-react';
 import type { FirmType } from '../types';
 
 interface QuarterNavigationProps {
@@ -55,10 +55,10 @@ export function QuarterNavigation({
                 </span>
                 <div className="flex items-center space-x-1">
                   {hasSettledCommissions && (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <CheckCircleIcon className="h-4 w-4 text-green-500" />
                   )}
                   {hasUnsettledCommissions && (
-                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                    <AlertCircleIcon className="h-4 w-4 text-amber-500" />
                   )}
                 </div>
               </div>
@@ -73,7 +73,7 @@ export function QuarterNavigation({
                       }`}
                     >
                       <span>{settlement.firm}</span>
-                      {settlement.isSettled && <CheckCircle className="h-3 w-3" />}
+                      {settlement.isSettled && <CheckCircleIcon className="h-3 w-3" />}
                     </div>
                   )
                 ))}

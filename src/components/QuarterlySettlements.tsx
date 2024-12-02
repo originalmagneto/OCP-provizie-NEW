@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useSettlement } from '../context/SettlementContext';
 import { useYear } from '../context/YearContext';
 import { useAuth } from '../context/AuthContext';
-import { Check, AlertTriangle, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckIcon, AlertTriangleIcon, ClockIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 import type { Settlement } from '../types/settlement';
 
 interface SettlementCardProps {
@@ -20,9 +20,9 @@ function SettlementCard({ settlement, onUpdateStatus, isExpanded, onToggleExpand
   };
 
   const statusIcons = {
-    pending: <Clock className="w-4 h-4" />,
-    settled: <Check className="w-4 h-4" />,
-    disputed: <AlertTriangle className="w-4 h-4" />,
+    pending: <ClockIcon className="h-5 w-5 text-yellow-500" />,
+    settled: <CheckIcon className="h-5 w-5 text-green-500" />,
+    disputed: <AlertTriangleIcon className="h-5 w-5 text-red-500" />,
   };
 
   return (
@@ -57,9 +57,9 @@ function SettlementCard({ settlement, onUpdateStatus, isExpanded, onToggleExpand
               className="p-2 text-gray-500 hover:text-blue-500 hover:bg-gray-100 rounded-full transition-colors"
             >
               {isExpanded ? (
-                <ChevronUp className="w-4 h-4" />
+                <ChevronUpIcon className="h-5 w-5 text-gray-500" />
               ) : (
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDownIcon className="h-5 w-5 text-gray-500" />
               )}
             </button>
           </div>
