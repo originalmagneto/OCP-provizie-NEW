@@ -4,12 +4,13 @@ import { InvoiceProvider } from "./context/InvoiceContext";
 import { YearProvider } from "./context/YearContext";
 import { CommissionProvider } from "./context/CommissionContext";
 import { ClientProvider } from "./context/ClientContext";
-import AppContent from "./components/AppContent";
+import LoginForm from "./components/LoginForm";
+import Dashboard from "./components/Dashboard";
 import { useAuth } from "./context/AuthContext";
 
 function AppContent() {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <Dashboard /> : <LoginForm />;
+  const { user } = useAuth();
+  return user ? <Dashboard /> : <LoginForm />;
 }
 
 function App() {
