@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useInvoices } from "../context/InvoiceContext";
 import { useClient } from "../context/ClientContext";
-import { Euro, AlertCircle } from "lucide-react";
+import { EuroIcon, AlertCircle } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import type { FirmType } from "../types";
@@ -140,7 +140,7 @@ export default function InvoiceForm() {
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Euro className="h-5 w-5 text-gray-400" />
+                <EuroIcon className="h-5 w-5 text-gray-400" />
               </div>
               <input
                 type="number"

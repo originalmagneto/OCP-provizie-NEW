@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDownIcon, CheckIcon } from "lucide-react";
 
 interface CustomDropdownProps {
   value: string;
@@ -53,10 +53,12 @@ export default function CustomDropdown({
         `}
       >
         <span>{value}</span>
-        <ChevronDown
-          className={`h-4 w-4 text-gray-400 transition-transform duration-200
-          ${isOpen ? "transform rotate-180" : ""}`}
-        />
+        <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+          <ChevronDownIcon
+            className={`h-5 w-5 text-gray-400 transition-transform duration-200
+            ${isOpen ? "transform rotate-180" : ""}`}
+          />
+        </div>
       </button>
 
       {isOpen && (
@@ -81,7 +83,9 @@ export default function CustomDropdown({
               >
                 <span>{option}</span>
                 {value === option && (
-                  <Check className="h-4 w-4 text-indigo-600" />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                    <CheckIcon className="h-5 w-5 text-indigo-600" />
+                  </div>
                 )}
               </button>
             ))}
