@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { formatCurrency } from '../utils/formatters';
-import { useInvoices } from "../context/InvoiceContext";
+import { useInvoices, useCommissions } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { ArrowRightIcon, EuroIcon, ClockIcon, CheckIcon } from "lucide-react";
 import type { FirmType } from "../types";
@@ -94,6 +94,7 @@ function FirmSummaryCard({
 export default function QuarterlySummary() {
   const { invoices } = useInvoices();
   const { user } = useAuth();
+  const commissions = useCommissions();
 
   const quarterlyData = useMemo(() => {
     const data: Record<string, QuarterlyData> = {};
@@ -115,7 +116,8 @@ export default function QuarterlySummary() {
         };
       }
 
-      const commission = invoice.amount * (invoice.commissionPercentage / 100);
+      const firmKey = `${invoice.referredByFirm}-${invoice.invoicedByFirm}`;
+      const commission = commissions[firmKey] || 0;
 
       // If this firm referred the client but didn't invoice
       if (invoice.referredByFirm !== invoice.invoicedByFirm) {
@@ -146,7 +148,7 @@ export default function QuarterlySummary() {
     });
 
     return data;
-  }, [invoices]);
+  }, [invoices, commissions]);
 
   if (!user) return null;
 

@@ -128,6 +128,25 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("invoices");
   }, []);
 
+  const calculateCommissions = (invoices: Invoice[]): Record<string, number> => {
+    const commissions: Record<string, number> = {};
+
+    invoices.forEach((invoice) => {
+      if (!invoice.isPaid) return;
+
+      const commission = invoice.amount * (invoice.commissionPercentage / 100);
+      const firmKey = `${invoice.referredByFirm}-${invoice.invoicedByFirm}`;
+
+      if (!commissions[firmKey]) {
+        commissions[firmKey] = 0;
+      }
+
+      commissions[firmKey] += commission;
+    });
+
+    return commissions;
+  };
+
   const value = useMemo(
     () => ({
       invoices,
@@ -137,6 +156,7 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
       updateInvoice,
       resetAllData,
       togglePaid,
+      calculateCommissions: calculateCommissions(invoices),
     }),
     [invoices, isLoading, addInvoice, removeInvoice, updateInvoice, resetAllData, togglePaid]
   );
@@ -146,4 +166,9 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
       {children}
     </InvoiceContext.Provider>
   );
+}
+
+export function useCommissions() {
+  const { calculateCommissions } = useInvoices();
+  return calculateCommissions;
 }
