@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { useYear, isInQuarter } from "../context/YearContext";
@@ -17,7 +17,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import type { FirmType } from "../types";
+import type { FirmType, Invoice } from "../types";
 
 const firmThemes = {
   SKALLARS: {
@@ -47,7 +47,7 @@ interface FilterState {
 }
 
 interface InvoiceCardProps {
-  invoice: any;
+  invoice: Invoice;
   isExpanded: boolean;
   onToggleExpand: () => void;
   onTogglePaid: () => void;
@@ -275,7 +275,7 @@ export default function InvoiceList() {
   const { invoices, isLoading, deleteInvoice, togglePaid } = useInvoices();
   const { userFirm } = useAuth();
   const { currentYear, currentQuarter } = useYear();
-  const [editingInvoice, setEditingInvoice] = useState<any>(null);
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [expandedInvoices, setExpandedInvoices] = useState<string[]>([]);
   const [filters, setFilters] = useState<FilterState>({
     search: "",
@@ -283,68 +283,76 @@ export default function InvoiceList() {
     firm: "all",
   });
 
+  const filterInvoice = useCallback((invoice: Invoice | null): boolean => {
+    if (!invoice || typeof invoice !== 'object') return false;
+    if (!invoice.date || !invoice.clientName || !invoice.invoicedByFirm) return false;
+
+    const invoiceDate = new Date(invoice.date);
+    if (isNaN(invoiceDate.getTime())) return false;
+    
+    // Check if invoice is in current year and quarter
+    if (!isInQuarter(invoiceDate, currentYear, currentQuarter)) {
+      return false;
+    }
+
+    // Search filter
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      const clientName = String(invoice.clientName).toLowerCase();
+      const invoicedByFirm = String(invoice.invoicedByFirm).toLowerCase();
+      
+      if (!clientName.includes(searchLower) && !invoicedByFirm.includes(searchLower)) {
+        return false;
+      }
+    }
+
+    // Status filter
+    if (filters.status !== "all") {
+      const isOverdue = invoice.isPaid === false && 
+        new Date(invoice.date).getTime() < Date.now() - 30 * 24 * 60 * 60 * 1000;
+      
+      if (
+        (filters.status === "paid" && !invoice.isPaid) ||
+        (filters.status === "pending" && (invoice.isPaid || isOverdue)) ||
+        (filters.status === "overdue" && (!isOverdue || invoice.isPaid))
+      ) {
+        return false;
+      }
+    }
+
+    // Firm filter
+    if (filters.firm !== "all" && invoice.invoicedByFirm !== filters.firm) {
+      return false;
+    }
+
+    return true;
+  }, [filters, currentYear, currentQuarter]);
+
   const filteredInvoices = useMemo(() => {
-    // Don't process while loading or if invoices is not available
     if (isLoading || !Array.isArray(invoices)) {
       return [];
     }
 
     try {
-      return invoices.filter((invoice) => {
-        try {
-          // Basic validation
-          if (!invoice || typeof invoice !== 'object') return false;
-          if (!invoice.date || !invoice.clientName || !invoice.invoicedByFirm) return false;
-
-          const invoiceDate = new Date(invoice.date);
-          if (isNaN(invoiceDate.getTime())) return false;
-          
-          // Check if invoice is in current year and quarter
-          if (!isInQuarter(invoiceDate, currentYear, currentQuarter)) {
-            return false;
-          }
-
-          // Search filter
-          if (filters.search) {
-            const searchLower = filters.search.toLowerCase();
-            const clientName = String(invoice.clientName).toLowerCase();
-            const invoicedByFirm = String(invoice.invoicedByFirm).toLowerCase();
-            
-            if (!clientName.includes(searchLower) && !invoicedByFirm.includes(searchLower)) {
-              return false;
-            }
-          }
-
-          // Status filter
-          if (filters.status !== "all") {
-            const isOverdue = invoice.isPaid === false && 
-              new Date(invoice.date).getTime() < Date.now() - 30 * 24 * 60 * 60 * 1000;
-            
-            if (
-              (filters.status === "paid" && !invoice.isPaid) ||
-              (filters.status === "pending" && (invoice.isPaid || isOverdue)) ||
-              (filters.status === "overdue" && (!isOverdue || invoice.isPaid))
-            ) {
-              return false;
-            }
-          }
-
-          // Firm filter
-          if (filters.firm !== "all" && invoice.invoicedByFirm !== filters.firm) {
-            return false;
-          }
-
-          return true;
-        } catch (error) {
-          console.error("Error filtering invoice:", error);
-          return false;
-        }
+      // Create a stable copy of the invoices array
+      const stableInvoices = [...invoices];
+      
+      // First filter
+      const filtered = stableInvoices.filter(filterInvoice);
+      
+      // Then sort by date
+      return filtered.sort((a, b) => {
+        if (!a || !b) return 0;
+        const dateA = new Date(a.date || 0);
+        const dateB = new Date(b.date || 0);
+        if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
+        return dateB.getTime() - dateA.getTime();
       });
     } catch (error) {
       console.error("Error processing invoices:", error);
       return [];
     }
-  }, [isLoading, invoices, filters, currentYear, currentQuarter]);
+  }, [isLoading, invoices, filterInvoice]);
 
   if (isLoading) {
     return (
