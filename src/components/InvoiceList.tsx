@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { useYear, isInQuarter } from "../context/YearContext";
+import { useSettlement } from "../context/SettlementContext";
 import CustomDropdown from "./common/CustomDropdown";
 import StatusBadge from "./common/StatusBadge";
 import Tooltip from "./common/Tooltip";
@@ -241,8 +242,10 @@ export default function InvoiceList() {
   const { invoices, isLoading, removeInvoice, togglePaid } = useInvoices();
   const { userFirm } = useAuth();
   const { currentYear, currentQuarter } = useYear();
+  const { createSettlement } = useSettlement();
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [expandedInvoices, setExpandedInvoices] = useState<string[]>([]);
+  const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     status: "all",
@@ -373,27 +376,56 @@ export default function InvoiceList() {
 
   return (
     <div className="space-y-4">
-      <FilterBar filters={filters} onFilterChange={setFilters} />
+      <div className="flex justify-between items-center">
+        <FilterBar filters={filters} onFilterChange={setFilters} />
+        {selectedInvoices.length > 0 && (
+          <button
+            onClick={() => {
+              createSettlement(selectedInvoices);
+              setSelectedInvoices([]);
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Create Settlement
+          </button>
+        )}
+      </div>
+
       <InvoiceSummary {...summaryStats} />
 
       <div className="space-y-4">
         {processedInvoices.map((invoice) => (
-          <InvoiceCard
-            key={invoice.id}
-            invoice={invoice}
-            isExpanded={expandedInvoices.includes(invoice.id)}
-            onToggleExpand={() =>
-              setExpandedInvoices((prev) =>
-                prev.includes(invoice.id)
-                  ? prev.filter((id) => id !== invoice.id)
-                  : [...prev, invoice.id]
-              )
-            }
-            onTogglePaid={() => togglePaid(invoice.id)}
-            onDelete={() => removeInvoice(invoice.id)}
-            onEdit={() => setEditingInvoice(invoice)}
-            userFirm={userFirm}
-          />
+          <div key={invoice.id} className="flex items-center space-x-4">
+            <input
+              type="checkbox"
+              checked={selectedInvoices.includes(invoice.id)}
+              onChange={(e) => {
+                setSelectedInvoices((prev) =>
+                  e.target.checked
+                    ? [...prev, invoice.id]
+                    : prev.filter((id) => id !== invoice.id)
+                );
+              }}
+              className="h-4 w-4 text-blue-600 rounded border-gray-300"
+            />
+            <div className="flex-1">
+              <InvoiceCard
+                invoice={invoice}
+                isExpanded={expandedInvoices.includes(invoice.id)}
+                onToggleExpand={() =>
+                  setExpandedInvoices((prev) =>
+                    prev.includes(invoice.id)
+                      ? prev.filter((id) => id !== invoice.id)
+                      : [...prev, invoice.id]
+                  )
+                }
+                onTogglePaid={() => togglePaid(invoice.id)}
+                onDelete={() => removeInvoice(invoice.id)}
+                onEdit={() => setEditingInvoice(invoice)}
+                userFirm={userFirm}
+              />
+            </div>
+          </div>
         ))}
       </div>
 
