@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import type { Invoice } from "../types";
-import { useClient } from "./ClientContext";
 
 interface InvoiceContextType {
   invoices: Invoice[];
@@ -32,8 +31,24 @@ export function useInvoices() {
   return context;
 }
 
+const isValidInvoice = (invoice: any): invoice is Invoice => {
+  return (
+    invoice &&
+    typeof invoice === "object" &&
+    typeof invoice.id === "string" &&
+    typeof invoice.clientName === "string" &&
+    typeof invoice.amount === "number" &&
+    typeof invoice.date === "string" &&
+    typeof invoice.commissionPercentage === "number" &&
+    typeof invoice.invoicedByFirm === "string" &&
+    typeof invoice.referredByFirm === "string" &&
+    typeof invoice.isPaid === "boolean" &&
+    ["SKALLARS", "MKMs", "Contax"].includes(invoice.invoicedByFirm) &&
+    ["SKALLARS", "MKMs", "Contax"].includes(invoice.referredByFirm)
+  );
+};
+
 export function InvoiceProvider({ children }: { children: React.ReactNode }) {
-  const { clientHistory } = useClient();
   const [isLoading, setIsLoading] = useState(true);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
@@ -46,20 +61,7 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
         if (storedInvoices && mounted) {
           const parsedInvoices = JSON.parse(storedInvoices);
           if (Array.isArray(parsedInvoices)) {
-            const validInvoices = parsedInvoices.filter((invoice): invoice is Invoice => {
-              return (
-                invoice &&
-                typeof invoice === "object" &&
-                typeof invoice.id === "string" &&
-                typeof invoice.clientName === "string" &&
-                typeof invoice.amount === "number" &&
-                typeof invoice.date === "string" &&
-                typeof invoice.commissionPercentage === "number" &&
-                typeof invoice.invoicedByFirm === "string" &&
-                typeof invoice.referredByFirm === "string" &&
-                typeof invoice.isPaid === "boolean"
-              );
-            });
+            const validInvoices = parsedInvoices.filter(isValidInvoice);
             setInvoices(validInvoices);
           }
         }
@@ -90,17 +92,12 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
   }, [invoices, isLoading]);
 
   const addInvoice = useCallback((invoice: Invoice) => {
-    if (!invoice?.id || !invoice?.clientName) {
+    if (!isValidInvoice(invoice)) {
       console.error("Invalid invoice data:", invoice);
       return;
     }
 
-    setInvoices((prev) => {
-      if (!Array.isArray(prev)) {
-        return [invoice];
-      }
-      return [...prev, invoice];
-    });
+    setInvoices((prev) => [...prev, invoice]);
   }, []);
 
   const removeInvoice = useCallback((id: string) => {

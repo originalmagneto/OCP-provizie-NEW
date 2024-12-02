@@ -329,30 +329,23 @@ export default function InvoiceList() {
   }, [filters, currentYear, currentQuarter]);
 
   const filteredInvoices = useMemo(() => {
-    if (!Array.isArray(invoices) || isLoading) {
+    if (!Array.isArray(invoices)) {
+      console.error("Invoices is not an array:", invoices);
       return [];
     }
 
-    const validInvoices = invoices.filter(invoice => 
-      invoice && 
-      typeof invoice === 'object' && 
-      'date' in invoice &&
-      typeof invoice.date === 'string' &&
-      'clientName' in invoice &&
-      typeof invoice.clientName === 'string' &&
-      'invoicedByFirm' in invoice &&
-      typeof invoice.invoicedByFirm === 'string'
-    );
+    if (isLoading) {
+      return [];
+    }
 
-    const filtered = validInvoices.filter(filterInvoice);
-    
-    return filtered.sort((a, b) => {
-      if (!a?.date || !b?.date) return 0;
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
-      if (!dateA || !dateB || isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
-      return dateB.getTime() - dateA.getTime();
-    });
+    return invoices
+      .filter(filterInvoice)
+      .slice()
+      .sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        return dateB.getTime() - dateA.getTime();
+      });
   }, [invoices, isLoading, filterInvoice]);
 
   if (isLoading) {
