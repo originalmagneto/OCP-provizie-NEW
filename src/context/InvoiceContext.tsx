@@ -33,7 +33,7 @@ export function useInvoices() {
 }
 
 export function InvoiceProvider({ children }: { children: React.ReactNode }) {
-  const { clients } = useClient();  
+  const { clientHistory } = useClient();
   const [isLoading, setIsLoading] = useState(true);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
@@ -72,87 +72,61 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    if (clients) {  
-      loadInvoices();
-    }
+    loadInvoices();
 
     return () => {
       mounted = false;
     };
-  }, [clients]);  
+  }, []);
 
   useEffect(() => {
-    if (!isLoading && clients) {  
+    if (!isLoading) {
       try {
         localStorage.setItem("invoices", JSON.stringify(invoices));
       } catch (error) {
         console.error("Error saving invoices to localStorage:", error);
       }
     }
-  }, [invoices, isLoading, clients]);
+  }, [invoices, isLoading]);
 
   const addInvoice = useCallback((invoice: Invoice) => {
-    if (!invoice?.id || !invoice?.clientName || !clients) {  
-      console.error("Invalid invoice data or clients not loaded:", invoice);
+    if (!invoice?.id || !invoice?.clientName) {
+      console.error("Invalid invoice data:", invoice);
       return;
     }
 
     setInvoices((prev) => {
       if (!Array.isArray(prev)) {
-        console.error("Previous invoices state is invalid");
-        return [];
+        return [invoice];
       }
-
-      if (prev.some((i) => i.id === invoice.id)) {
-        console.error("Invoice with this ID already exists:", invoice.id);
-        return prev;
-      }
-
       return [...prev, invoice];
     });
-  }, [clients]);  
+  }, []);
 
   const removeInvoice = useCallback((id: string) => {
-    if (!id || !clients) return;  
-    setInvoices((prev) => {
-      if (!Array.isArray(prev)) return [];
-      return prev.filter((invoice) => invoice.id !== id);
-    });
-  }, [clients]);
+    setInvoices((prev) => prev.filter((invoice) => invoice.id !== id));
+  }, []);
 
   const updateInvoice = useCallback((id: string, updatedInvoice: Partial<Invoice>) => {
-    if (!id || !updatedInvoice || !clients) return;  
-
-    setInvoices((prev) => {
-      if (!Array.isArray(prev)) return [];
-      return prev.map((invoice) =>
+    setInvoices((prev) =>
+      prev.map((invoice) =>
         invoice.id === id ? { ...invoice, ...updatedInvoice } : invoice
-      );
-    });
-  }, [clients]);
+      )
+    );
+  }, []);
 
   const togglePaid = useCallback((id: string) => {
-    if (!id || !clients) return;  
-
-    setInvoices((prev) => {
-      if (!Array.isArray(prev)) return [];
-      return prev.map((invoice) =>
-        invoice.id === id
-          ? {
-              ...invoice,
-              isPaid: !invoice.isPaid,
-              paidDate: !invoice.isPaid ? new Date().toISOString() : undefined,
-            }
-          : invoice
-      );
-    });
-  }, [clients]);
+    setInvoices((prev) =>
+      prev.map((invoice) =>
+        invoice.id === id ? { ...invoice, isPaid: !invoice.isPaid } : invoice
+      )
+    );
+  }, []);
 
   const resetAllData = useCallback(() => {
-    if (!clients) return;  
     setInvoices([]);
     localStorage.removeItem("invoices");
-  }, [clients]);
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -167,5 +141,9 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
     [invoices, isLoading, addInvoice, removeInvoice, updateInvoice, resetAllData, togglePaid]
   );
 
-  return <InvoiceContext.Provider value={value}>{children}</InvoiceContext.Provider>;
+  return (
+    <InvoiceContext.Provider value={value}>
+      {children}
+    </InvoiceContext.Provider>
+  );
 }
