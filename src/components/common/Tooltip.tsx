@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 interface TooltipProps {
   text: string;
@@ -6,18 +6,65 @@ interface TooltipProps {
   position?: 'top' | 'bottom' | 'left' | 'right';
 }
 
-const positionClasses = {
-  top: '-top-2 left-1/2 -translate-x-1/2 -translate-y-full',
-  bottom: '-bottom-2 left-1/2 -translate-x-1/2 translate-y-full',
-  left: 'top-1/2 -left-2 -translate-x-full -translate-y-1/2',
-  right: 'top-1/2 -right-2 translate-x-full -translate-y-1/2',
-};
-
 export default function Tooltip({ text, children, position = 'top' }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isVisible && containerRef.current && tooltipRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const tooltipRect = tooltipRef.current.getBoundingClientRect();
+      
+      let top = 0;
+      let left = 0;
+
+      switch (position) {
+        case 'top':
+          top = containerRect.top - tooltipRect.height - 8;
+          left = containerRect.left + (containerRect.width - tooltipRect.width) / 2;
+          break;
+        case 'bottom':
+          top = containerRect.bottom + 8;
+          left = containerRect.left + (containerRect.width - tooltipRect.width) / 2;
+          break;
+        case 'left':
+          top = containerRect.top + (containerRect.height - tooltipRect.height) / 2;
+          left = containerRect.left - tooltipRect.width - 8;
+          break;
+        case 'right':
+          top = containerRect.top + (containerRect.height - tooltipRect.height) / 2;
+          left = containerRect.right + 8;
+          break;
+      }
+
+      // Ensure tooltip stays within viewport
+      const padding = 8;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      // Adjust horizontal position
+      if (left < padding) {
+        left = padding;
+      } else if (left + tooltipRect.width > viewportWidth - padding) {
+        left = viewportWidth - tooltipRect.width - padding;
+      }
+
+      // Adjust vertical position
+      if (top < padding) {
+        top = padding;
+      } else if (top + tooltipRect.height > viewportHeight - padding) {
+        top = viewportHeight - tooltipRect.height - padding;
+      }
+
+      setTooltipPosition({ top, left });
+    }
+  }, [isVisible, position]);
 
   return (
     <div 
+      ref={containerRef}
       className="relative inline-block"
       onMouseEnter={() => setIsVisible(true)}
       onMouseLeave={() => setIsVisible(false)}
@@ -25,33 +72,23 @@ export default function Tooltip({ text, children, position = 'top' }: TooltipPro
       {children}
       {isVisible && (
         <div
-          className={`
-            fixed z-50 px-3 py-2 text-sm font-medium text-white
-            bg-gray-900 rounded-md shadow-lg
-            transform -translate-y-full -translate-x-1/2
-            whitespace-nowrap pointer-events-none
-            ${position === 'top' ? 'mb-2' : ''}
-            ${position === 'bottom' ? 'mt-2' : ''}
-            ${position === 'left' ? 'mr-2' : ''}
-            ${position === 'right' ? 'ml-2' : ''}
-          `}
+          ref={tooltipRef}
+          className="fixed z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-md shadow-lg whitespace-nowrap pointer-events-none"
           style={{
-            left: position === 'left' ? 'auto' : '50%',
-            top: position === 'bottom' ? 'auto' : '-10px',
-            right: position === 'right' ? '-10px' : 'auto',
-            bottom: position === 'top' ? 'auto' : '-10px',
+            top: `${tooltipPosition.top}px`,
+            left: `${tooltipPosition.left}px`,
           }}
         >
-          <div
-            className={`
-              absolute w-2 h-2 bg-gray-900 transform rotate-45
-              ${position === 'top' ? 'bottom-[-4px] left-1/2 -translate-x-1/2' :
-                position === 'bottom' ? 'top-[-4px] left-1/2 -translate-x-1/2' :
-                position === 'left' ? 'right-[-4px] top-1/2 -translate-y-1/2' :
-                'left-[-4px] top-1/2 -translate-y-1/2'}
-            `}
-          />
           {text}
+          <div
+            className="absolute w-2 h-2 bg-gray-900 transform rotate-45"
+            style={{
+              ...(position === 'top' && { bottom: '-4px', left: '50%', transform: 'translateX(-50%)' }),
+              ...(position === 'bottom' && { top: '-4px', left: '50%', transform: 'translateX(-50%)' }),
+              ...(position === 'left' && { right: '-4px', top: '50%', transform: 'translateY(-50%)' }),
+              ...(position === 'right' && { left: '-4px', top: '50%', transform: 'translateY(-50%)' }),
+            }}
+          />
         </div>
       )}
     </div>
