@@ -274,7 +274,7 @@ function InvoiceCard({
 export default function InvoiceList() {
   const { invoices, deleteInvoice, togglePaid } = useInvoices();
   const { userFirm } = useAuth();
-  const { selectedYear } = useYear();
+  const { currentYear, currentQuarter } = useYear();
   const [editingInvoice, setEditingInvoice] = useState<any>(null);
   const [expandedInvoices, setExpandedInvoices] = useState<string[]>([]);
   const [filters, setFilters] = useState<FilterState>({
@@ -287,8 +287,10 @@ export default function InvoiceList() {
     return invoices.filter((invoice) => {
       const invoiceDate = new Date(invoice.date);
       
-      // Check if invoice is in selected year
-      if (invoiceDate.getFullYear() !== selectedYear) return false;
+      // Check if invoice is in current year and quarter
+      if (!isInQuarter(invoiceDate, currentYear, currentQuarter)) {
+        return false;
+      }
 
       // Search filter
       if (filters.search) {
@@ -319,7 +321,7 @@ export default function InvoiceList() {
 
       return true;
     });
-  }, [invoices, filters, selectedYear]);
+  }, [invoices, filters, currentYear, currentQuarter]);
 
   // Calculate summary statistics
   const summaryStats = useMemo(() => {
