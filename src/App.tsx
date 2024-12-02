@@ -7,7 +7,6 @@ import { ClientProvider } from "./context/ClientContext";
 import { SettlementProvider } from "./context/SettlementContext";
 import LoginForm from "./components/LoginForm";
 import Dashboard from "./components/Dashboard";
-import QuarterlySettlements from './components/QuarterlySettlements';
 import { useAuth } from "./context/AuthContext";
 
 function AppContent() {
@@ -27,9 +26,6 @@ function App() {
                   <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
                     <div className="px-4 sm:px-0">
                       <AppContent />
-                      <div className="mt-8">
-                        <QuarterlySettlements />
-                      </div>
                     </div>
                   </div>
                 </div>

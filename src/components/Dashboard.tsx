@@ -8,6 +8,7 @@ import InvoiceList from "./InvoiceList";
 import QuarterlySnapshot from "./QuarterlySnapshot";
 import UnpaidInvoicesList from "./UnpaidInvoicesList";
 import DashboardCharts from "./DashboardCharts";
+import QuarterlySettlements from "./QuarterlySettlements";
 import type { FirmType } from "../types";
 
 const firmThemes = {
@@ -131,6 +132,12 @@ export default function Dashboard() {
               <div className="text-sm text-gray-500">{quarterLabel}</div>
             </div>
             <InvoiceList />
+          </div>
+
+          {/* Quarterly Settlements Section */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-lg font-medium mb-4">Quarterly Settlements</h2>
+            <QuarterlySettlements />
           </div>
         </div>
 
