@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { formatCurrency } from '../utils/formatters';
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
@@ -60,12 +60,23 @@ function FirmSummaryCard({
   quarterlyData: Record<string, QuarterlyData>;
   currentUserFirm: FirmType;
 }) {
+  const [isSettled, setIsSettled] = useState(false);
+
+  const handleSettleCommissions = () => {
+    setIsSettled(true);
+    // Here you would typically update the state or make an API call to mark as settled
+  };
+
   const formatEUR = (amount: number) => {
     return new Intl.NumberFormat("de-DE", {
       style: "currency",
       currency: "EUR",
     }).format(amount);
   };
+
+  const firmData = quarterlyData[`${new Date().getFullYear()}-Q${Math.floor(new Date().getMonth() / 3) + 1}`];
+  const receivable = firmData?.commissionsReceivable[firm] || { amount: 0, count: 0 };
+  const payable = firmData?.commissionsPayable[firm] || { amount: 0, count: 0 };
 
   return (
     <div
@@ -182,6 +193,17 @@ function FirmSummaryCard({
               </div>
             </div>
           ))}
+        <div className="mt-4">
+          <p className="text-sm text-gray-500">Receivable: {formatEUR(receivable.amount)}</p>
+          <p className="text-sm text-gray-500">Payable: {formatEUR(payable.amount)}</p>
+        </div>
+        <button
+          onClick={handleSettleCommissions}
+          className={`w-full py-2 text-white rounded-md transition-colors ${isSettled ? 'bg-green-400' : 'bg-blue-600 hover:bg-blue-700'}`}
+          disabled={isSettled}
+        >
+          {isSettled ? 'Settled' : 'Settle Commissions'}
+        </button>
       </div>
     </div>
   );
