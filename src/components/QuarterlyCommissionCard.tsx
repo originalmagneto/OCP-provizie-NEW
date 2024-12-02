@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckCircle, TrendingUp, TrendingDown, Euro } from "lucide-react";
+import { CheckCircleIcon, TrendingUpIcon, TrendingDownIcon, EuroIcon } from "lucide-react";
 import type { FirmType } from "../types";
 import { useCommissions } from "../context/CommissionContext";
 
@@ -88,9 +88,10 @@ export function QuarterlyCommissionCard({
           </div>
           <div className="text-right">
             <p className="text-sm text-gray-500">Revenue</p>
-            <p className="text-lg font-semibold text-emerald-600">
-              {formatter.format(revenue)}
-            </p>
+            <div className="flex items-center space-x-2">
+              <EuroIcon className="h-5 w-5 text-gray-400" />
+              <span className="text-lg font-medium">{formatter.format(revenue)}</span>
+            </div>
           </div>
         </div>
 
@@ -98,15 +99,17 @@ export function QuarterlyCommissionCard({
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-indigo-50 rounded-lg p-4">
             <p className="text-sm text-indigo-600 font-medium">Receivable</p>
-            <p className="text-lg font-semibold text-indigo-700">
-              {formatter.format(receivableCommissions)}
-            </p>
+            <div className="flex items-center space-x-2">
+              <EuroIcon className="h-5 w-5 text-gray-400" />
+              <span className="text-lg font-medium">{formatter.format(receivableCommissions)}</span>
+            </div>
           </div>
           <div className="bg-amber-50 rounded-lg p-4">
             <p className="text-sm text-amber-600 font-medium">Payable</p>
-            <p className="text-lg font-semibold text-amber-700">
-              {formatter.format(payableCommissions)}
-            </p>
+            <div className="flex items-center space-x-2">
+              <EuroIcon className="h-5 w-5 text-gray-400" />
+              <span className="text-lg font-medium">{formatter.format(payableCommissions)}</span>
+            </div>
           </div>
         </div>
 
@@ -124,10 +127,13 @@ export function QuarterlyCommissionCard({
                 </p>
               </div>
               <div className="text-right">
-                <p className="font-semibold">{formatter.format(amount)}</p>
+                <div className="flex items-center space-x-2">
+                  <EuroIcon className="h-5 w-5 text-gray-400" />
+                  <span className="font-medium">{formatter.format(amount)}</span>
+                </div>
                 {isSettled ? (
-                  <div className="flex items-center text-emerald-600 text-sm">
-                    <CheckCircle className="w-4 h-4 mr-1" />
+                  <div className="flex items-center space-x-2">
+                    <CheckCircleIcon className="h-5 w-5 text-green-500" />
                     <span>Settled</span>
                   </div>
                 ) : (
@@ -146,7 +152,7 @@ export function QuarterlyCommissionCard({
         {/* Quarter Settlement Status */}
         {isCurrentQuarterSettled ? (
           <div className="flex items-center justify-center space-x-2 bg-emerald-100 text-emerald-700 py-2 px-4 rounded-lg">
-            <CheckCircle className="w-5 h-5" />
+            <CheckCircleIcon className="h-5 w-5" />
             <span className="font-medium">Quarter Settled</span>
           </div>
         ) : null}

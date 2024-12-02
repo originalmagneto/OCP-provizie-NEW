@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon } from "lucide-react";
 
 interface YearStats {
   totalRevenue: number;
@@ -28,19 +28,27 @@ export default function YearSelector({
     }).format(amount);
   };
 
+  const handlePrevYear = () => {
+    onYearChange(currentYear - 1);
+  };
+
+  const handleNextYear = () => {
+    onYearChange(currentYear + 1);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-4">
       <div className="flex items-center justify-between mb-4">
         <button
-          onClick={() => onYearChange(currentYear - 1)}
+          onClick={handlePrevYear}
           disabled={!availableYears.includes(currentYear - 1)}
-          className="p-2 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-2 hover:bg-gray-100 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <ChevronLeft className="h-5 w-5 text-gray-600" />
+          <ChevronLeftIcon className="h-5 w-5 text-gray-500" />
         </button>
 
         <div className="flex items-center space-x-2">
-          <Calendar className="h-5 w-5 text-indigo-600" />
+          <CalendarIcon className="h-5 w-5 text-gray-500 mr-2" />
           <select
             value={currentYear}
             onChange={(e) => onYearChange(Number(e.target.value))}
@@ -55,11 +63,11 @@ export default function YearSelector({
         </div>
 
         <button
-          onClick={() => onYearChange(currentYear + 1)}
+          onClick={handleNextYear}
           disabled={!availableYears.includes(currentYear + 1)}
-          className="p-2 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-2 hover:bg-gray-100 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <ChevronRight className="h-5 w-5 text-gray-600" />
+          <ChevronRightIcon className="h-5 w-5 text-gray-500" />
         </button>
       </div>
 

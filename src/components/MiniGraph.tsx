@@ -7,7 +7,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUpIcon, TrendingDownIcon } from "lucide-react";
 
 interface MiniGraphProps {
   data: Array<{ amount: number; date: string }>;
@@ -60,6 +60,7 @@ function TrendIndicator({
   const lastValue = data[data.length - 1].amount;
   const percentageChange = ((lastValue - firstValue) / firstValue) * 100;
   const isPositive = percentageChange >= 0;
+  const trend = isPositive ? 'up' : 'down';
 
   return (
     <div
@@ -67,10 +68,11 @@ function TrendIndicator({
         isPositive ? "text-green-600" : "text-red-600"
       }`}
     >
-      {isPositive ? (
-        <TrendingUp className="h-4 w-4" />
-      ) : (
-        <TrendingDown className="h-4 w-4" />
+      {trend === 'up' && (
+        <TrendingUpIcon className="h-5 w-5 text-green-500" />
+      )}
+      {trend === 'down' && (
+        <TrendingDownIcon className="h-5 w-5 text-red-500" />
       )}
       <span className="font-medium">
         {Math.abs(percentageChange).toFixed(1)}%

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Disclosure, Transition } from "@headlessui/react";
 import { useAuth } from "../context/AuthContext";
 import { useYear } from "../context/YearContext";
-import { LogOut, Trash2, AlertTriangle, ChevronDown } from "lucide-react";
+import { LogOutIcon, Trash2Icon, AlertTriangleIcon, ChevronDownIcon } from "lucide-react";
 import InvoiceForm from "./InvoiceForm";
 import InvoiceList from "./InvoiceList";
 import QuarterlySnapshot from "./QuarterlySnapshot";
@@ -80,15 +80,15 @@ export default function Dashboard() {
                 onClick={() => setShowResetConfirmation(true)}
                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Reset Data
+                <Trash2Icon className="h-5 w-5 text-red-500" />
+                <span className="ml-2">Reset Data</span>
               </button>
               <button
                 onClick={logout}
                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
+                <LogOutIcon className="h-5 w-5 text-gray-500" />
+                <span className="ml-2">Sign Out</span>
               </button>
             </div>
           </div>
@@ -148,7 +148,7 @@ export default function Dashboard() {
               <>
                 <Disclosure.Button className="flex w-full justify-between rounded-lg bg-gray-100 px-4 py-2 text-left text-sm font-medium hover:bg-gray-200 focus:outline-none focus-visible:ring focus-visible:ring-indigo-500 focus-visible:ring-opacity-75">
                   <span>View Detailed Analytics</span>
-                  <ChevronDown
+                  <ChevronDownIcon
                     className={`${
                       open ? "transform rotate-180" : ""
                     } h-5 w-5 text-gray-500 transition-transform duration-200`}
@@ -178,7 +178,7 @@ export default function Dashboard() {
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3 text-center">
               <div className="flex items-center justify-center text-red-500 mb-4">
-                <AlertTriangle size={48} />
+                <AlertTriangleIcon className="h-5 w-5 text-yellow-500" />
               </div>
               <h3 className="text-lg leading-6 font-medium text-gray-900">
                 Reset All Data

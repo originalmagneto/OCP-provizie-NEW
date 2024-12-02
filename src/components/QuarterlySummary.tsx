@@ -1,7 +1,8 @@
 import React, { useMemo } from "react";
+import { formatCurrency } from '../utils/formatters';
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
-import { ArrowRight, Euro, Clock, Check } from "lucide-react";
+import { ArrowRightIcon, EuroIcon, ClockIcon, CheckIcon } from "lucide-react";
 import type { FirmType } from "../types";
 
 const firmThemes = {
@@ -98,19 +99,19 @@ function FirmSummaryCard({
                         <span className={firmThemes[fromFirm as FirmType].text}>
                           {fromFirm}
                         </span>
-                        <ArrowRight className="h-3 w-3 mx-1 text-gray-400" />
+                        <ArrowRightIcon className="h-3 w-3 mx-1 text-gray-400" />
                         <span className="font-medium">
                           {formatEUR(details.amount)}
                         </span>
                       </div>
                       {details.isPaid ? (
                         <span className="flex items-center text-green-600">
-                          <Check className="h-4 w-4 mr-1" />
+                          <CheckIcon className="h-4 w-4 mr-1" />
                           Received
                         </span>
                       ) : (
                         <span className="flex items-center text-gray-500">
-                          <Clock className="h-4 w-4 mr-1" />
+                          <ClockIcon className="h-4 w-4 mr-1" />
                           Pending
                         </span>
                       )}
@@ -132,7 +133,7 @@ function FirmSummaryCard({
                   >
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center">
-                        <Euro className="h-3 w-3 mr-1 text-gray-400" />
+                        <EuroIcon className="h-3 w-3 mr-1 text-gray-400" />
                         <span className={firmThemes[toFirm as FirmType].text}>
                           {toFirm}
                         </span>
@@ -143,12 +144,12 @@ function FirmSummaryCard({
                       </div>
                       {details.isPaid ? (
                         <span className="flex items-center text-green-600">
-                          <Check className="h-4 w-4 mr-1" />
+                          <CheckIcon className="h-4 w-4 mr-1" />
                           Paid
                         </span>
                       ) : (
                         <span className="flex items-center text-orange-500">
-                          <Clock className="h-4 w-4 mr-1" />
+                          <ClockIcon className="h-4 w-4 mr-1" />
                           Due
                         </span>
                       )}

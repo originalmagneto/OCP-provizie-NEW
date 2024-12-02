@@ -1,6 +1,6 @@
 import React from "react";
 import { useInvoices } from "../context/InvoiceContext";
-import { TrendingUp, Users, FileText, PieChart } from "lucide-react";
+import { TrendingUpIcon, UsersIcon, FileTextIcon, PieChartIcon } from "lucide-react";
 
 export default function QuickStats() {
   const { invoices } = useInvoices();
@@ -27,7 +27,7 @@ export default function QuickStats() {
         style: "currency",
         currency: "EUR",
       }).format(stats.totalRevenue),
-      icon: TrendingUp,
+      icon: "revenue",
       change: "+12.3%",
       changeType: "increase",
     },
@@ -37,21 +37,21 @@ export default function QuickStats() {
         style: "currency",
         currency: "EUR",
       }).format(stats.totalCommissions),
-      icon: PieChart,
+      icon: "commission",
       change: "+8.2%",
       changeType: "increase",
     },
     {
       name: "Active Clients",
       value: stats.totalClients,
-      icon: Users,
+      icon: "clients",
       change: "+3",
       changeType: "increase",
     },
     {
       name: "Pending Invoices",
       value: stats.pendingInvoices,
-      icon: FileText,
+      icon: "invoices",
       change: "-2",
       changeType: "decrease",
     },
@@ -66,17 +66,18 @@ export default function QuickStats() {
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div
-                className={`
-                p-2 rounded-lg
-                ${item.name === "Total Revenue" ? "bg-green-100 text-green-600" : ""}
-                ${item.name === "Total Commissions" ? "bg-blue-100 text-blue-600" : ""}
-                ${item.name === "Active Clients" ? "bg-purple-100 text-purple-600" : ""}
-                ${item.name === "Pending Invoices" ? "bg-orange-100 text-orange-600" : ""}
-              `}
-              >
-                <item.icon className="h-6 w-6" />
-              </div>
+              {item.icon === "revenue" && (
+                <TrendingUpIcon className="h-5 w-5 text-blue-500" />
+              )}
+              {item.icon === "clients" && (
+                <UsersIcon className="h-5 w-5 text-green-500" />
+              )}
+              {item.icon === "invoices" && (
+                <FileTextIcon className="h-5 w-5 text-purple-500" />
+              )}
+              {item.icon === "commission" && (
+                <PieChartIcon className="h-5 w-5 text-orange-500" />
+              )}
             </div>
             <div
               className={`text-sm font-medium ${
