@@ -25,17 +25,6 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
-  // Sort invoices by date
-  const sortInvoices = useCallback((invoicesToSort: Invoice[]): Invoice[] => {
-    return [...invoicesToSort].sort((a, b) => {
-      if (!a?.date || !b?.date) return 0;
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
-      if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
-      return dateB.getTime() - dateA.getTime();
-    });
-  }, []);
-
   // Initialize invoices from localStorage
   useEffect(() => {
     try {
@@ -43,7 +32,6 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
       if (storedInvoices) {
         const parsedInvoices = JSON.parse(storedInvoices);
         if (Array.isArray(parsedInvoices)) {
-          // Validate and sanitize each invoice
           const validInvoices = parsedInvoices.filter((invoice): invoice is Invoice => {
             return (
               invoice &&
@@ -55,11 +43,10 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
               typeof invoice.commissionPercentage === "number" &&
               typeof invoice.invoicedByFirm === "string" &&
               typeof invoice.referredByFirm === "string" &&
-              typeof invoice.isPaid === "boolean" &&
-              !isNaN(new Date(invoice.date).getTime())
+              typeof invoice.isPaid === "boolean"
             );
           });
-          setInvoices(sortInvoices(validInvoices));
+          setInvoices(validInvoices);
         }
       }
     } catch (error) {
@@ -67,7 +54,7 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [sortInvoices]);
+  }, []);
 
   // Save invoices to localStorage whenever they change
   useEffect(() => {
@@ -81,52 +68,43 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
   }, [invoices, isLoading]);
 
   const addInvoice = useCallback((invoice: Invoice) => {
-    if (!invoice || typeof invoice !== "object") {
-      console.error("Invalid invoice object:", invoice);
+    if (!invoice?.id || !invoice?.clientName) {
+      console.error("Invalid invoice data:", invoice);
       return;
     }
 
-    setInvoices((prev) => {
-      // Ensure we don't duplicate IDs
-      if (prev.some((i) => i.id === invoice.id)) {
+    setInvoices(prev => {
+      // Check for duplicate ID
+      if (prev.some(i => i.id === invoice.id)) {
         console.error("Invoice with this ID already exists:", invoice.id);
         return prev;
       }
-      return sortInvoices([...prev, invoice]);
+      return [...prev, invoice];
     });
-  }, [sortInvoices]);
+  }, []);
 
   const removeInvoice = useCallback((id: string) => {
-    if (!id) {
-      console.error("Invalid invoice ID for removal:", id);
-      return;
-    }
-    setInvoices((prev) => prev.filter((invoice) => invoice.id !== id));
+    if (!id) return;
+    setInvoices(prev => prev.filter(invoice => invoice.id !== id));
   }, []);
 
   const updateInvoice = useCallback((id: string, updatedInvoice: Partial<Invoice>) => {
-    if (!id || !updatedInvoice || typeof updatedInvoice !== "object") {
-      console.error("Invalid update parameters:", { id, updatedInvoice });
-      return;
-    }
-
-    setInvoices((prev) =>
-      sortInvoices(
-        prev.map((invoice) =>
-          invoice.id === id ? { ...invoice, ...updatedInvoice } : invoice
-        )
+    if (!id || !updatedInvoice) return;
+    
+    setInvoices(prev => 
+      prev.map(invoice => 
+        invoice.id === id 
+          ? { ...invoice, ...updatedInvoice }
+          : invoice
       )
     );
-  }, [sortInvoices]);
+  }, []);
 
   const togglePaid = useCallback((id: string) => {
-    if (!id) {
-      console.error("Invalid invoice ID for toggle:", id);
-      return;
-    }
-
-    setInvoices((prev) =>
-      prev.map((invoice) =>
+    if (!id) return;
+    
+    setInvoices(prev =>
+      prev.map(invoice =>
         invoice.id === id
           ? {
               ...invoice,
@@ -140,11 +118,7 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
 
   const resetAllData = useCallback(() => {
     setInvoices([]);
-    try {
-      localStorage.removeItem("invoices");
-    } catch (error) {
-      console.error("Error resetting invoice data:", error);
-    }
+    localStorage.removeItem("invoices");
   }, []);
 
   const value = {

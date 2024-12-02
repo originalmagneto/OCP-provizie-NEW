@@ -329,17 +329,17 @@ export default function InvoiceList() {
   }, [filters, currentYear, currentQuarter]);
 
   const filteredInvoices = useMemo(() => {
-    if (isLoading || !Array.isArray(invoices)) {
+    if (!Array.isArray(invoices) || isLoading) {
       return [];
     }
 
-    try {
-      return invoices.filter(filterInvoice);
-    } catch (error) {
-      console.error("Error processing invoices:", error);
-      return [];
-    }
-  }, [isLoading, invoices, filterInvoice]);
+    return invoices
+      .filter(filterInvoice)
+      .sort((a, b) => {
+        if (!a?.date || !b?.date) return 0;
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      });
+  }, [invoices, isLoading, filterInvoice]);
 
   if (isLoading) {
     return (
