@@ -97,7 +97,10 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    setInvoices((prev) => [...prev, invoice]);
+    setInvoices((prevInvoices) => {
+      const newInvoices = Array.isArray(prevInvoices) ? prevInvoices : [];
+      return [...newInvoices, { ...invoice }];
+    });
   }, []);
 
   const removeInvoice = useCallback((id: string) => {
