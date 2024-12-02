@@ -333,11 +333,23 @@ export default function InvoiceList() {
       return [];
     }
 
-    return invoices
+    const validInvoices = invoices.filter(invoice => 
+      invoice && 
+      typeof invoice === 'object' && 
+      typeof invoice.date === 'string'
+    );
+
+    return validInvoices
       .filter(filterInvoice)
       .sort((a, b) => {
-        if (!a?.date || !b?.date) return 0;
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
+        try {
+          const dateA = new Date(a.date).getTime();
+          const dateB = new Date(b.date).getTime();
+          if (isNaN(dateA) || isNaN(dateB)) return 0;
+          return dateB - dateA;
+        } catch {
+          return 0;
+        }
       });
   }, [invoices, isLoading, filterInvoice]);
 
