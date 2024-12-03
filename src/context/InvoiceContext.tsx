@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
-import type { Invoice } from "../types";
+import type { Invoice, FirmType } from "../types";
 
 interface InvoiceContextType {
   invoices: Invoice[];
@@ -9,7 +9,6 @@ interface InvoiceContextType {
   updateInvoice: (id: string, updatedInvoice: Partial<Invoice>) => void;
   resetAllData: () => void;
   togglePaid: (id: string) => void;
-  calculateCommissions: Record<string, number>;
 }
 
 const defaultContext: InvoiceContextType = {
@@ -20,7 +19,6 @@ const defaultContext: InvoiceContextType = {
   updateInvoice: () => {},
   resetAllData: () => {},
   togglePaid: () => {},
-  calculateCommissions: {},
 };
 
 const InvoiceContext = createContext<InvoiceContextType>(defaultContext);
@@ -33,22 +31,83 @@ export function useInvoices() {
   return context;
 }
 
+// Validate individual fields
+const validateDate = (date: string): boolean => {
+  try {
+    const parsedDate = new Date(date);
+    return !isNaN(parsedDate.getTime());
+  } catch {
+    return false;
+  }
+};
+
+const validateNumber = (value: number): boolean => {
+  return typeof value === 'number' && !isNaN(value) && isFinite(value);
+};
+
+const validateFirm = (firm: string): firm is FirmType => {
+  return ["SKALLARS", "MKMs", "Contax"].includes(firm);
+};
+
+// Main invoice validation
 const isValidInvoice = (invoice: any): invoice is Invoice => {
-  return (
-    invoice &&
-    typeof invoice === "object" &&
-    typeof invoice.id === "string" &&
-    typeof invoice.clientName === "string" &&
-    typeof invoice.amount === "number" &&
-    typeof invoice.date === "string" &&
-    !isNaN(new Date(invoice.date).getTime()) && // Ensure date is valid
-    typeof invoice.commissionPercentage === "number" &&
-    typeof invoice.invoicedByFirm === "string" &&
-    typeof invoice.referredByFirm === "string" &&
-    typeof invoice.isPaid === "boolean" &&
-    ["SKALLARS", "MKMs", "Contax"].includes(invoice.invoicedByFirm) &&
-    ["SKALLARS", "MKMs", "Contax"].includes(invoice.referredByFirm)
-  );
+  try {
+    if (!invoice || typeof invoice !== "object") return false;
+
+    // Required string fields
+    if (
+      typeof invoice.id !== "string" ||
+      typeof invoice.clientName !== "string" ||
+      typeof invoice.date !== "string"
+    ) {
+      return false;
+    }
+
+    // Validate date
+    if (!validateDate(invoice.date)) {
+      return false;
+    }
+
+    // Validate numbers
+    if (
+      !validateNumber(invoice.amount) ||
+      !validateNumber(invoice.commissionPercentage)
+    ) {
+      return false;
+    }
+
+    // Validate firms
+    if (
+      !validateFirm(invoice.invoicedByFirm) ||
+      !validateFirm(invoice.referredByFirm)
+    ) {
+      return false;
+    }
+
+    // Validate boolean
+    if (typeof invoice.isPaid !== "boolean") {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error validating invoice:", error);
+    return false;
+  }
+};
+
+// Normalize invoice data
+const normalizeInvoice = (invoice: Invoice): Invoice => {
+  return {
+    ...invoice,
+    date: new Date(invoice.date).toISOString(),
+    amount: Number(invoice.amount),
+    commissionPercentage: Number(invoice.commissionPercentage),
+    isPaid: Boolean(invoice.isPaid),
+    // Ensure these are the correct string literals
+    invoicedByFirm: invoice.invoicedByFirm as FirmType,
+    referredByFirm: invoice.referredByFirm as FirmType,
+  };
 };
 
 export function InvoiceProvider({ children }: { children: React.ReactNode }) {
@@ -65,16 +124,10 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
         if (storedInvoices && mounted) {
           const parsedInvoices = JSON.parse(storedInvoices);
           if (Array.isArray(parsedInvoices)) {
-            // Filter out invalid invoices and ensure they're properly initialized
+            // Filter out invalid invoices and normalize the valid ones
             const validInvoices = parsedInvoices
               .filter(isValidInvoice)
-              .map(invoice => ({
-                ...invoice,
-                date: new Date(invoice.date).toISOString(), // Normalize date format
-                amount: Number(invoice.amount), // Ensure amount is a number
-                commissionPercentage: Number(invoice.commissionPercentage), // Ensure commission is a number
-                isPaid: Boolean(invoice.isPaid) // Ensure isPaid is a boolean
-              }));
+              .map(normalizeInvoice);
             setInvoices(validInvoices);
           }
         }
@@ -107,85 +160,71 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
   }, [invoices, isLoading]);
 
   const addInvoice = useCallback((invoice: Invoice) => {
-    if (!isValidInvoice(invoice)) {
-      console.error("Invalid invoice data:", invoice);
-      return;
+    try {
+      if (!isValidInvoice(invoice)) {
+        console.error("Invalid invoice data:", invoice);
+        return;
+      }
+
+      const normalizedInvoice = normalizeInvoice(invoice);
+
+      setInvoices(prevInvoices => {
+        const newInvoices = Array.isArray(prevInvoices) ? prevInvoices : [];
+        return [...newInvoices, normalizedInvoice];
+      });
+    } catch (error) {
+      console.error("Error adding invoice:", error);
     }
-
-    const normalizedInvoice = {
-      ...invoice,
-      date: new Date(invoice.date).toISOString(),
-      amount: Number(invoice.amount),
-      commissionPercentage: Number(invoice.commissionPercentage),
-      isPaid: Boolean(invoice.isPaid)
-    };
-
-    setInvoices(prevInvoices => {
-      const newInvoices = Array.isArray(prevInvoices) ? prevInvoices : [];
-      return [...newInvoices, normalizedInvoice];
-    });
   }, []);
 
   const removeInvoice = useCallback((id: string) => {
-    setInvoices(prev => prev.filter(invoice => invoice.id !== id));
+    try {
+      setInvoices(prev => prev.filter(invoice => invoice.id !== id));
+    } catch (error) {
+      console.error("Error removing invoice:", error);
+    }
   }, []);
 
   const updateInvoice = useCallback((id: string, updatedInvoice: Partial<Invoice>) => {
-    setInvoices(prev =>
-      prev.map(invoice =>
-        invoice.id === id
-          ? {
-              ...invoice,
-              ...updatedInvoice,
-              date: updatedInvoice.date 
-                ? new Date(updatedInvoice.date).toISOString()
-                : invoice.date,
-              amount: updatedInvoice.amount !== undefined
-                ? Number(updatedInvoice.amount)
-                : invoice.amount,
-              commissionPercentage: updatedInvoice.commissionPercentage !== undefined
-                ? Number(updatedInvoice.commissionPercentage)
-                : invoice.commissionPercentage,
-              isPaid: updatedInvoice.isPaid !== undefined
-                ? Boolean(updatedInvoice.isPaid)
-                : invoice.isPaid
-            }
-          : invoice
-      )
-    );
+    try {
+      setInvoices(prev =>
+        prev.map(invoice => {
+          if (invoice.id !== id) return invoice;
+
+          const updated = {
+            ...invoice,
+            ...updatedInvoice,
+          };
+
+          // Only normalize if the field was updated
+          return normalizeInvoice(updated);
+        })
+      );
+    } catch (error) {
+      console.error("Error updating invoice:", error);
+    }
   }, []);
 
   const togglePaid = useCallback((id: string) => {
-    setInvoices(prev =>
-      prev.map(invoice =>
-        invoice.id === id ? { ...invoice, isPaid: !invoice.isPaid } : invoice
-      )
-    );
+    try {
+      setInvoices(prev =>
+        prev.map(invoice =>
+          invoice.id === id ? { ...invoice, isPaid: !invoice.isPaid } : invoice
+        )
+      );
+    } catch (error) {
+      console.error("Error toggling invoice paid status:", error);
+    }
   }, []);
 
   const resetAllData = useCallback(() => {
-    setInvoices([]);
-    localStorage.removeItem("invoices");
+    try {
+      setInvoices([]);
+      localStorage.removeItem("invoices");
+    } catch (error) {
+      console.error("Error resetting data:", error);
+    }
   }, []);
-
-  const calculateCommissions = (invoices: Invoice[]): Record<string, number> => {
-    const commissions: Record<string, number> = {};
-
-    invoices.forEach((invoice) => {
-      if (!invoice.isPaid) return;
-
-      const commission = invoice.amount * (invoice.commissionPercentage / 100);
-      const firmKey = `${invoice.referredByFirm}-${invoice.invoicedByFirm}`;
-
-      if (!commissions[firmKey]) {
-        commissions[firmKey] = 0;
-      }
-
-      commissions[firmKey] += commission;
-    });
-
-    return commissions;
-  };
 
   const value = useMemo(
     () => ({
@@ -196,7 +235,6 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
       updateInvoice,
       resetAllData,
       togglePaid,
-      calculateCommissions: calculateCommissions(invoices),
     }),
     [invoices, isLoading, addInvoice, removeInvoice, updateInvoice, resetAllData, togglePaid]
   );
@@ -206,9 +244,4 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
       {children}
     </InvoiceContext.Provider>
   );
-}
-
-export function useCommissions() {
-  const { calculateCommissions } = useInvoices();
-  return calculateCommissions;
 }

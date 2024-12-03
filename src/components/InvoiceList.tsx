@@ -307,54 +307,65 @@ export default function InvoiceList() {
   );
 
   const processedInvoices = useMemo(() => {
-    if (!Array.isArray(invoices) || isLoading) {
-      return [];
-    }
-
-    // First, ensure all invoices are valid
-    const validInvoices = invoices.filter((invoice): invoice is Invoice => {
-      if (!invoice || typeof invoice !== 'object') return false;
-
-      try {
-        const date = new Date(invoice.date);
-        if (isNaN(date.getTime())) return false;
-
-        return (
-          typeof invoice.id === 'string' &&
-          typeof invoice.clientName === 'string' &&
-          typeof invoice.invoicedByFirm === 'string' &&
-          typeof invoice.referredByFirm === 'string' &&
-          typeof invoice.amount === 'number' &&
-          !isNaN(invoice.amount) &&
-          typeof invoice.commissionPercentage === 'number' &&
-          !isNaN(invoice.commissionPercentage) &&
-          typeof invoice.isPaid === 'boolean'
-        );
-      } catch (error) {
-        console.error('Error validating invoice:', error);
-        return false;
-      }
-    });
-
-    // Then apply filters
-    const filtered = validInvoices.filter(filterInvoice);
-
-    // Finally sort, with error handling
     try {
-      return [...filtered].sort((a, b) => {
-        const dateA = new Date(a.date);
-        const dateB = new Date(b.date);
-        
-        if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) {
-          console.error('Invalid date found during sort:', { a, b });
-          return 0;
+      // Create a safe copy of invoices and ensure it's an array
+      const safeInvoices = Array.isArray(invoices) ? [...invoices] : [];
+
+      // First, ensure all invoices are valid
+      const validInvoices = safeInvoices.filter((invoice): invoice is Invoice => {
+        if (!invoice || typeof invoice !== 'object') return false;
+
+        try {
+          const date = new Date(invoice.date);
+          if (isNaN(date.getTime())) return false;
+
+          return (
+            typeof invoice.id === 'string' &&
+            typeof invoice.clientName === 'string' &&
+            typeof invoice.invoicedByFirm === 'string' &&
+            typeof invoice.referredByFirm === 'string' &&
+            typeof invoice.amount === 'number' &&
+            !isNaN(invoice.amount) &&
+            typeof invoice.commissionPercentage === 'number' &&
+            !isNaN(invoice.commissionPercentage) &&
+            typeof invoice.isPaid === 'boolean'
+          );
+        } catch (error) {
+          console.error('Error validating invoice:', error);
+          return false;
         }
-        
-        return dateB.getTime() - dateA.getTime();
       });
+
+      // Then apply filters
+      const filtered = validInvoices.filter(filterInvoice);
+
+      // Finally sort, with error handling
+      try {
+        return [...filtered].sort((a, b) => {
+          try {
+            // Safely parse dates
+            const dateA = new Date(a?.date || "");
+            const dateB = new Date(b?.date || "");
+
+            // Check if dates are valid before comparing
+            if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) {
+              console.warn("Invalid date encountered during sorting");
+              return 0; // Keep original order for invalid dates
+            }
+
+            return dateB.getTime() - dateA.getTime();
+          } catch (error) {
+            console.error("Error sorting invoices:", error);
+            return 0; // Keep original order on error
+          }
+        });
+      } catch (error) {
+        console.error("Error sorting invoices:", error);
+        return filtered;
+      }
     } catch (error) {
-      console.error('Error sorting invoices:', error);
-      return filtered;
+      console.error("Error preparing invoices for sorting:", error);
+      return []; // Return empty array on error
     }
   }, [invoices, isLoading, filterInvoice]);
 
@@ -437,8 +448,13 @@ export default function InvoiceList() {
 }
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
+  } catch (error) {
+    console.error("Error formatting currency:", error);
+    return "$0.00";
+  }
 }
