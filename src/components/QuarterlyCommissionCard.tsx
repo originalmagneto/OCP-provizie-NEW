@@ -18,26 +18,6 @@ const COLORS = {
   }
 };
 
-interface CommissionSettlement {
-  firm: FirmType;
-  isSettled: boolean;
-}
-
-interface QuarterlyCommissionCardProps {
-  quarterKey: string;
-  quarter: number;
-  year: number;
-  revenue: number;
-  commissionsByFirm: {
-    firm: FirmType;
-    amount: number;
-    isPaying: boolean;
-    isSettled: boolean;
-  }[];
-  userFirm: FirmType;
-  onSettleCommission: (firm: FirmType) => void;
-}
-
 const firmColors: Record<FirmType, { bg: string; text: string; border: string; lightBg: string }> = {
   SKALLARS: {
     bg: "bg-purple-100",
@@ -59,6 +39,32 @@ const firmColors: Record<FirmType, { bg: string; text: string; border: string; l
   },
 };
 
+interface CommissionSettlement {
+  firm: FirmType;
+  isSettled: boolean;
+}
+
+interface QuarterlyCommissionCardProps {
+  quarterKey: string;
+  quarter: number;
+  year: number;
+  revenue: number;
+  commissionsByFirm: {
+    firm: FirmType;
+    amount: number;
+    isPaying: boolean;
+    isSettled: boolean;
+  }[];
+  userFirm: FirmType;
+  onSettleCommission: (firm: FirmType) => void;
+}
+
+const formatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "EUR",
+  minimumFractionDigits: 2,
+});
+
 export function QuarterlyCommissionCard({
   quarterKey,
   quarter,
@@ -69,13 +75,7 @@ export function QuarterlyCommissionCard({
   onSettleCommission,
 }: QuarterlyCommissionCardProps) {
   const { isQuarterSettled } = useCommissions();
-  const isCurrentQuarterSettled = isQuarterSettled(quarterKey);
-
-  const formatter = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: 2,
-  });
+  const isCurrentQuarterSettled = isQuarterSettled(quarterKey, userFirm);
 
   const totalCommissions = commissionsByFirm.reduce(
     (sum, { amount }) => sum + amount,

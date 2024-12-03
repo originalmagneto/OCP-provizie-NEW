@@ -22,19 +22,15 @@ export function CommissionProvider({ children }: { children: React.ReactNode }) 
   const [settledQuarters, setSettledQuarters] = useState<SettlementStatus[]>(() => {
     try {
       const stored = localStorage.getItem('settledQuarters');
-      const parsed = stored ? JSON.parse(stored) : [];
-      console.log('Loaded settled quarters from storage:', parsed);
-      return parsed;
+      return stored ? JSON.parse(stored) : [];
     } catch (error) {
       console.error('Error loading settled quarters:', error);
       return [];
     }
   });
 
-  // Save to localStorage whenever settledQuarters changes
   useEffect(() => {
     try {
-      console.log('Saving settled quarters to storage:', settledQuarters);
       localStorage.setItem('settledQuarters', JSON.stringify(settledQuarters));
     } catch (error) {
       console.error('Error saving settled quarters:', error);
@@ -42,7 +38,6 @@ export function CommissionProvider({ children }: { children: React.ReactNode }) 
   }, [settledQuarters]);
 
   const isQuarterSettled = (quarterKey: string, firm: FirmType): boolean => {
-    console.log('Checking settlement status:', { quarterKey, firm, settledQuarters });
     return settledQuarters.some(q => 
       q.quarterKey === quarterKey && 
       q.isSettled && 
@@ -51,29 +46,20 @@ export function CommissionProvider({ children }: { children: React.ReactNode }) 
   };
 
   const settleQuarter = async (quarterKey: string, firm: FirmType): Promise<void> => {
-    console.log('Settling quarter:', { quarterKey, firm });
-    
-    const newStatus: SettlementStatus = {
-      quarterKey,
-      isSettled: true,
-      settledAt: new Date().toISOString(),
-      settledBy: firm
-    };
-
-    setSettledQuarters(prev => {
-      // Remove any existing settlement for this quarter and firm
-      const filtered = prev.filter(q => q.quarterKey !== quarterKey || q.settledBy !== firm);
-      // Add the new settlement
-      const updated = [...filtered, newStatus];
-      console.log('Updated settled quarters:', updated);
-      return updated;
-    });
+    setSettledQuarters(prev => [
+      ...prev,
+      {
+        quarterKey,
+        isSettled: true,
+        settledBy: firm,
+        settledAt: new Date().toISOString()
+      }
+    ]);
   };
 
-  const unsettleQuarter = (quarterKey: string, firm: FirmType) => {
-    console.log('Unsettling quarter:', { quarterKey, firm });
+  const unsettleQuarter = (quarterKey: string, firm: FirmType): void => {
     setSettledQuarters(prev => 
-      prev.filter(q => q.quarterKey !== quarterKey || q.settledBy !== firm)
+      prev.filter(q => !(q.quarterKey === quarterKey && q.settledBy === firm))
     );
   };
 

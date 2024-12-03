@@ -89,18 +89,26 @@ function QuarterlyCommissions() {
         data[quarterKey].eligibleCommissions.push({
           fromFirm: invoice.invoicedByFirm,
           amount: invoice.amount * (invoice.commissionPercentage / 100),
-          isSettled: false,
+          isSettled: isQuarterSettled(quarterKey, invoice.invoicedByFirm),
           invoiceIds: [invoice.id]
         });
       }
     });
 
     return Object.values(data);
-  }, [invoices, user?.firm]);
+  }, [invoices, user?.firm, isQuarterSettled]);
 
   const selectedQuarterData = quarterlyData.find(
     data => data.quarter === selectedQuarter
   );
+
+  const handleSettleCommission = async (firm: FirmType) => {
+    try {
+      await settleQuarter(selectedQuarter, firm);
+    } catch (error) {
+      console.error('Error settling commission:', error);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -141,7 +149,7 @@ function QuarterlyCommissions() {
                 }
               ]}
               userFirm={user?.firm || 'SKALLARS'}
-              onSettleCommission={() => settleQuarter(selectedQuarter, fromFirm)}
+              onSettleCommission={handleSettleCommission}
             />
           ))}
         </div>
