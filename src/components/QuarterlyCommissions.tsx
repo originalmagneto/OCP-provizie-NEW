@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { useCommissions } from "../context/CommissionContext";
+import { QuarterlyCommissionCard } from "./QuarterlyCommissionCard";
 import { AlertCircle, CircleDollarSign, Clock, CheckCircle2, TrendingUp } from "lucide-react";
 import type { FirmType } from "../types";
 
@@ -101,135 +102,48 @@ function QuarterlyCommissions() {
     data => data.quarter === selectedQuarter
   );
 
-  const renderCommissionCard = (fromFirm: FirmType, amount: number, isSettled: boolean) => {
-    const firmStyle = firmColors[fromFirm];
-    
-    return (
-      <div
-        key={fromFirm}
-        className={`p-6 rounded-lg border-2 transition-all duration-200 ${firmStyle.lightBg} ${firmStyle.border} hover:shadow-lg`}
-      >
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h3 className={`text-lg font-semibold ${firmStyle.text}`}>
-              Commission to Receive
-            </h3>
-            <p className={`text-sm opacity-75 ${firmStyle.text}`}>from {fromFirm}</p>
-          </div>
-          <CircleDollarSign className={`w-6 h-6 ${firmStyle.text}`} />
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <p className={`text-3xl font-bold ${firmStyle.text}`}>
-              {formatter.format(amount)}
-            </p>
-          </div>
-          
-          {!isSettled ? (
-            <div>
-              <div className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-sm font-medium">
-                <Clock className="w-4 h-4" />
-                <span>Waiting for {fromFirm}</span>
-              </div>
-              
-              <button
-                onClick={() => settleQuarter(selectedQuarter, fromFirm)}
-                className={`mt-3 w-full py-2 px-4 rounded-lg ${firmStyle.bg} ${firmStyle.text} font-medium 
-                  hover:opacity-90 transition-opacity duration-200`}
-              >
-                Mark as Settled
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1.5 rounded-full text-sm font-medium">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Settled</span>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const totalCommissions = selectedQuarterData?.eligibleCommissions.reduce(
-    (sum, comm) => sum + comm.amount,
-    0
-  ) || 0;
-
   return (
     <div className="space-y-6">
-      {/* Quarter Selection */}
-      <div className="flex gap-4 overflow-x-auto pb-2">
-        {quarterlyData.map((data) => {
-          const [year, quarter] = data.quarter.split("-Q");
-          const isSelected = data.quarter === selectedQuarter;
-          const isSettled = isQuarterSettled(data.quarter);
-          
-          return (
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-900">Quarterly Commissions</h2>
+        <div className="flex gap-4">
+          {quarterlyData.map((data) => (
             <button
               key={data.quarter}
               onClick={() => setSelectedQuarter(data.quarter)}
-              className={`flex-none px-6 py-4 rounded-lg border-2 transition-all duration-200
-                ${isSelected 
-                  ? "border-indigo-500 bg-indigo-50 text-indigo-700" 
-                  : "border-gray-200 hover:border-indigo-200"}
-              `}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                selectedQuarter === data.quarter
+                  ? "bg-blue-100 text-blue-800"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
             >
-              <div className="text-center">
-                <p className="font-medium">Q{quarter}</p>
-                <p className="text-sm text-gray-500">{year}</p>
-              </div>
-              {isSettled && (
-                <div className="flex justify-center mt-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-500" />
-                </div>
-              )}
+              {data.quarter}
             </button>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
       {selectedQuarterData && (
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-          <div className="space-y-6">
-            {/* Quarter Header */}
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {selectedQuarter}
-                </h2>
-                <p className="text-sm text-gray-500">Commission Summary</p>
-              </div>
-              <div className="text-right">
-                <div className="flex items-center space-x-2 text-emerald-600">
-                  <TrendingUp className="h-5 w-5" />
-                  <span className="font-medium">{formatter.format(totalCommissions)}</span>
-                </div>
-                <p className="text-sm text-gray-500">Total Commissions</p>
-              </div>
-            </div>
-
-            {/* Commission Cards */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {selectedQuarterData.eligibleCommissions.map(({ fromFirm, amount, isSettled }) => (
-                renderCommissionCard(fromFirm, amount, isSettled)
-              ))}
-            </div>
-
-            {/* Quarter Settlement Status */}
-            {isQuarterSettled(selectedQuarter) ? (
-              <div className="flex items-center justify-center space-x-2 mt-4 bg-emerald-100 text-emerald-700 py-3 px-4 rounded-lg">
-                <CheckCircle2 className="h-5 w-5" />
-                <span className="font-medium">All commissions for this quarter are settled</span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center space-x-2 mt-4 bg-amber-100 text-amber-700 py-3 px-4 rounded-lg">
-                <AlertCircle className="h-5 w-5" />
-                <span className="font-medium">Some commissions are pending settlement</span>
-              </div>
-            )}
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {selectedQuarterData.eligibleCommissions.map(({ fromFirm, amount, isSettled }) => (
+            <QuarterlyCommissionCard
+              key={fromFirm}
+              quarterKey={selectedQuarter}
+              quarter={parseInt(selectedQuarter.split('-Q')[1])}
+              year={parseInt(selectedQuarter.split('-')[0])}
+              revenue={amount}
+              commissionsByFirm={[
+                {
+                  firm: fromFirm,
+                  amount,
+                  isPaying: false,
+                  isSettled
+                }
+              ]}
+              userFirm={user?.firm || 'SKALLARS'}
+              onSettleCommission={() => settleQuarter(selectedQuarter, fromFirm)}
+            />
+          ))}
         </div>
       )}
     </div>
