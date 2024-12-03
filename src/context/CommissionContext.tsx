@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { FirmType, SettlementStatus } from '../types';
 
 interface CommissionContextType {
@@ -37,31 +37,34 @@ export function CommissionProvider({ children }: { children: React.ReactNode }) 
     }
   }, [settledQuarters]);
 
-  const isQuarterSettled = (quarterKey: string, firm: FirmType): boolean => {
+  const isQuarterSettled = useCallback((quarterKey: string, firm: FirmType): boolean => {
     return settledQuarters.some(q => 
       q.quarterKey === quarterKey && 
       q.isSettled && 
       q.settledBy === firm
     );
-  };
+  }, [settledQuarters]);
 
-  const settleQuarter = async (quarterKey: string, firm: FirmType): Promise<void> => {
-    setSettledQuarters(prev => [
-      ...prev,
-      {
-        quarterKey,
-        isSettled: true,
-        settledBy: firm,
-        settledAt: new Date().toISOString()
-      }
-    ]);
-  };
+  const settleQuarter = useCallback(async (quarterKey: string, firm: FirmType): Promise<void> => {
+    const newStatus: SettlementStatus = {
+      quarterKey,
+      isSettled: true,
+      settledBy: firm,
+      settledAt: new Date().toISOString()
+    };
 
-  const unsettleQuarter = (quarterKey: string, firm: FirmType): void => {
+    setSettledQuarters(prev => {
+      // Remove any existing settlement for this quarter and firm
+      const filtered = prev.filter(q => !(q.quarterKey === quarterKey && q.settledBy === firm));
+      return [...filtered, newStatus];
+    });
+  }, []);
+
+  const unsettleQuarter = useCallback((quarterKey: string, firm: FirmType): void => {
     setSettledQuarters(prev => 
       prev.filter(q => !(q.quarterKey === quarterKey && q.settledBy === firm))
     );
-  };
+  }, []);
 
   const value = {
     settledQuarters,

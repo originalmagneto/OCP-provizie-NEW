@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { CheckCircleIcon, TrendingUpIcon, TrendingDownIcon, EuroIcon, AlertCircle, CircleDollarSign, Clock, CheckCircle2 } from "lucide-react";
 import type { FirmType } from "../types";
 import { useCommissions } from "../context/CommissionContext";
@@ -75,7 +75,10 @@ export function QuarterlyCommissionCard({
   onSettleCommission,
 }: QuarterlyCommissionCardProps) {
   const { isQuarterSettled } = useCommissions();
-  const isCurrentQuarterSettled = isQuarterSettled(quarterKey, userFirm);
+
+  const handleSettleClick = useCallback((firm: FirmType) => {
+    onSettleCommission(firm);
+  }, [onSettleCommission]);
 
   const totalCommissions = commissionsByFirm.reduce(
     (sum, { amount }) => sum + amount,
@@ -86,6 +89,8 @@ export function QuarterlyCommissionCard({
     <div className="space-y-4">
       {commissionsByFirm.map(({ firm, amount, isPaying, isSettled }) => {
         const firmStyle = firmColors[firm];
+        const quarterSettlementKey = `${quarterKey}-${firm}-${userFirm}`;
+        const isSettledForQuarter = isQuarterSettled(quarterSettlementKey, firm);
         
         return (
           <div
@@ -111,7 +116,7 @@ export function QuarterlyCommissionCard({
                 </p>
               </div>
               
-              {!isSettled ? (
+              {!isSettledForQuarter ? (
                 <div>
                   {isPaying ? (
                     <div className="flex items-center gap-2 bg-amber-100 text-amber-800 px-3 py-1.5 rounded-full text-sm font-medium">
@@ -126,7 +131,7 @@ export function QuarterlyCommissionCard({
                   )}
                   
                   <button
-                    onClick={() => onSettleCommission(firm)}
+                    onClick={() => handleSettleClick(firm)}
                     className={`mt-3 w-full py-2 px-4 rounded-lg ${firmStyle.bg} ${firmStyle.text} font-medium 
                       hover:opacity-90 transition-opacity duration-200`}
                   >

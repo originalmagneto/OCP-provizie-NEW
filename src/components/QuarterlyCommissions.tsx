@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { useCommissions } from "../context/CommissionContext";
@@ -102,13 +102,20 @@ function QuarterlyCommissions() {
     data => data.quarter === selectedQuarter
   );
 
-  const handleSettleCommission = async (firm: FirmType) => {
+  const handleSettleCommission = useCallback(async (firm: FirmType) => {
+    if (!user?.firm) return;
+    
     try {
-      await settleQuarter(selectedQuarter, firm);
+      const quarterKey = `${selectedQuarter}-${firm}-${user.firm}`;
+      await settleQuarter(quarterKey, firm);
     } catch (error) {
       console.error('Error settling commission:', error);
     }
-  };
+  }, [selectedQuarter, settleQuarter, user?.firm]);
+
+  if (!user?.firm) {
+    return null;
+  }
 
   return (
     <div className="space-y-6">
@@ -148,7 +155,7 @@ function QuarterlyCommissions() {
                   isSettled
                 }
               ]}
-              userFirm={user?.firm || 'SKALLARS'}
+              userFirm={user.firm}
               onSettleCommission={handleSettleCommission}
             />
           ))}
