@@ -294,47 +294,51 @@ export default function QuarterYearSelector() {
                   }
                 `}
               >
-                <div className="font-semibold">Q{quarter}</div>
-                <div
-                  className={`text-xs mt-1 ${isSelected ? "text-indigo-100" : "text-gray-500"}`}
-                >
-                  {dates.start} - {dates.end}
-                </div>
-                
-                {/* Status Indicators */}
-                <div className="absolute top-1 right-1 flex space-x-1">
-                  {isCurrent && (
+                <div className="flex flex-col min-h-[4rem]">
+                  <div className="flex-grow">
+                    <div className="font-semibold">Q{quarter}</div>
                     <div
-                      className={`
-                      text-xs px-1.5 py-0.5 rounded-full
-                      ${isSelected ? "bg-indigo-500 text-white" : "bg-indigo-100 text-indigo-600"}
-                    `}
+                      className={`text-xs mt-1 ${isSelected ? "text-indigo-100" : "text-gray-500"}`}
                     >
-                      Current
+                      {dates.start} - {dates.end}
                     </div>
-                  )}
-                  {status?.hasUnpaidInvoices && (
-                    <div
-                      className={`
-                      flex items-center px-1.5 py-0.5 rounded-full
-                      ${isSelected ? "bg-indigo-500" : "bg-amber-100"}
-                    `}
-                      title="Has unpaid invoices"
-                    >
-                      <AlertCircle className={`h-3 w-3 ${isSelected ? "text-white" : "text-amber-600"}`} />
-                    </div>
-                  )}
-                  {status?.hasUnsettledCommissions && (
-                    <div
-                      className={`
-                      flex items-center px-1.5 py-0.5 rounded-full
-                      ${isSelected ? "bg-indigo-500" : "bg-blue-100"}
-                    `}
-                      title="Has unsettled commissions"
-                    >
-                      <CircleDollarSign className={`h-3 w-3 ${isSelected ? "text-white" : "text-blue-600"}`} />
-                    </div>
-                  )}
+                  </div>
+                  
+                  {/* Status Indicators */}
+                  <div className="flex flex-wrap gap-1 mt-2 justify-end">
+                    {isCurrent && (
+                      <div
+                        className={`
+                        text-xs px-1.5 py-0.5 rounded-full
+                        ${isSelected ? "bg-indigo-500 text-white" : "bg-indigo-100 text-indigo-600"}
+                      `}
+                      >
+                        Current
+                      </div>
+                    )}
+                    {status?.hasUnpaidInvoices && (
+                      <div
+                        className={`
+                        flex items-center px-1.5 py-0.5 rounded-full
+                        ${isSelected ? "bg-indigo-500" : "bg-amber-100"}
+                      `}
+                        title="Has unpaid invoices"
+                      >
+                        <AlertCircle className={`h-3 w-3 ${isSelected ? "text-white" : "text-amber-600"}`} />
+                      </div>
+                    )}
+                    {status?.hasUnsettledCommissions && (
+                      <div
+                        className={`
+                        flex items-center px-1.5 py-0.5 rounded-full
+                        ${isSelected ? "bg-indigo-500" : "bg-blue-100"}
+                      `}
+                        title="Has unsettled commissions"
+                      >
+                        <CircleDollarSign className={`h-3 w-3 ${isSelected ? "text-white" : "text-blue-600"}`} />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </button>
             );
