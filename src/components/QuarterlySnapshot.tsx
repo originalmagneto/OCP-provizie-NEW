@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { useYear, isInQuarter } from "../context/YearContext";
+import { useCommissions } from "../context/CommissionContext";
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -10,6 +11,7 @@ import {
   ArrowRight,
   AlertTriangle,
   ChevronRight,
+  CheckCircle,
 } from "lucide-react";
 import QuarterYearSelector from "./QuarterYearSelector";
 import type { FirmType } from "../types";
@@ -141,6 +143,7 @@ export default function QuarterlySnapshot() {
   const { invoices } = useInvoices();
   const { user } = useAuth();
   const { currentYear, currentQuarter, selectYearAndQuarter } = useYear();
+  const { isQuarterSettled, settleQuarter } = useCommissions();
 
   const { quarterlyData, unpaidQuarters } = useMemo(() => {
     // Initialize quarterly data
@@ -226,7 +229,16 @@ export default function QuarterlySnapshot() {
     }
   };
 
+  const handleSettleQuarter = () => {
+    if (!user?.firm) return;
+    const quarterKey = `${currentYear}-Q${currentQuarter}`;
+    settleQuarter(quarterKey, user.firm);
+  };
+
   if (!user) return null;
+
+  const currentQuarterKey = `${currentYear}-Q${currentQuarter}`;
+  const isCurrentQuarterSettled = isQuarterSettled(currentQuarterKey);
 
   return (
     <div className="space-y-6">
@@ -260,6 +272,23 @@ export default function QuarterlySnapshot() {
             From paid invoices only
           </div>
         </div>
+      </div>
+
+      {/* Settlement Status */}
+      <div className="pt-4 border-t">
+        {isCurrentQuarterSettled ? (
+          <div className="flex items-center justify-center space-x-2 bg-green-100 text-green-700 py-2 px-4 rounded-lg">
+            <CheckCircle className="w-5 h-5" />
+            <span className="font-medium">Quarter Settled</span>
+          </div>
+        ) : (
+          <button
+            onClick={handleSettleQuarter}
+            className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            Mark Quarter as Settled
+          </button>
+        )}
       </div>
 
       {/* Detailed Breakdown */}
