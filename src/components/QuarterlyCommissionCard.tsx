@@ -38,21 +38,24 @@ interface QuarterlyCommissionCardProps {
   onSettleCommission: (firm: FirmType) => void;
 }
 
-const firmColors: Record<FirmType, { bg: string; text: string; border: string }> = {
+const firmColors: Record<FirmType, { bg: string; text: string; border: string; lightBg: string }> = {
   SKALLARS: {
-    bg: "bg-purple-50",
+    bg: "bg-purple-100",
     text: "text-purple-900",
     border: "border-purple-200",
+    lightBg: "bg-purple-50"
   },
   MKMs: {
-    bg: "bg-blue-50",
+    bg: "bg-blue-100",
     text: "text-blue-900",
     border: "border-blue-200",
+    lightBg: "bg-blue-50"
   },
   Contax: {
-    bg: "bg-emerald-50",
+    bg: "bg-emerald-100",
     text: "text-emerald-900",
     border: "border-emerald-200",
+    lightBg: "bg-emerald-50"
   },
 };
 
@@ -71,8 +74,7 @@ export function QuarterlyCommissionCard({
   const formatter = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "EUR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
   });
 
   const handleSettleClick = (firm: FirmType) => {
@@ -95,59 +97,56 @@ export function QuarterlyCommissionCard({
 
   const renderCommissionCard = (firm: FirmType, amount: number, isPaying: boolean, isSettled: boolean) => {
     const firmStyle = firmColors[firm];
-
-    const formatCurrency = (amount: number) => {
-      return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "EUR",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(amount);
-    };
-
-    const renderStatus = () => {
-      if (!isSettled) {
-        return (
-          <div className="flex items-center gap-2 mt-2 bg-amber-100 text-amber-800 px-3 py-1.5 rounded-full text-sm font-medium">
-            <AlertCircle className="w-4 h-4" />
-            <span>Commission payment required</span>
-          </div>
-        );
-      }
-      return (
-        <div className="flex items-center gap-2 mt-2 bg-green-100 text-green-800 px-3 py-1.5 rounded-full text-sm font-medium">
-          <CheckCircle2 className="w-4 h-4" />
-          <span>Settled</span>
-        </div>
-      );
-    };
-
+    
     return (
       <div
-        className={`p-6 rounded-lg border-2 transition-all duration-200 ${firmStyle.bg} ${firmStyle.border} hover:shadow-lg`}
+        key={firm}
+        className={`p-6 rounded-lg border-2 transition-all duration-200 ${firmStyle.lightBg} ${firmStyle.border} hover:shadow-lg`}
       >
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h3 className={`text-lg font-semibold ${firmStyle.text}`}>{firm}</h3>
-            <p className={`text-sm opacity-75 ${firmStyle.text}`}>{isPaying ? "To Pay" : "To Receive"}</p>
+            <h3 className={`text-lg font-semibold ${firmStyle.text}`}>
+              {isPaying ? "Commission to Pay" : "Commission to Receive"}
+            </h3>
+            <p className={`text-sm opacity-75 ${firmStyle.text}`}>with {firm}</p>
           </div>
           <CircleDollarSign className={`w-6 h-6 ${firmStyle.text}`} />
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
             <p className={`text-3xl font-bold ${firmStyle.text}`}>
-              {formatCurrency(amount)}
+              {formatter.format(amount)}
             </p>
           </div>
-          {renderStatus()}
-          {!isSettled && (
-            <button
-              onClick={() => handleSettleClick(firm)}
-              className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
-            >
-              Mark as Settled
-            </button>
+          
+          {!isSettled ? (
+            <div>
+              {isPaying ? (
+                <div className="flex items-center gap-2 bg-amber-100 text-amber-800 px-3 py-1.5 rounded-full text-sm font-medium">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Payment Required</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-sm font-medium">
+                  <Clock className="w-4 h-4" />
+                  <span>Waiting for {firm}</span>
+                </div>
+              )}
+              
+              <button
+                onClick={() => handleSettleClick(firm)}
+                className={`mt-3 w-full py-2 px-4 rounded-lg ${firmStyle.bg} ${firmStyle.text} font-medium 
+                  hover:opacity-90 transition-opacity duration-200`}
+              >
+                Mark as Settled
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1.5 rounded-full text-sm font-medium">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Settled</span>
+            </div>
           )}
         </div>
       </div>
@@ -157,43 +156,25 @@ export function QuarterlyCommissionCard({
   return (
     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-start">
+        {/* Quarter Header */}
+        <div className="flex justify-between items-center">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-gray-900">
               Q{quarter} {year}
-            </h3>
-            <p className="text-sm text-gray-500">Quarterly Overview</p>
+            </h2>
+            <p className="text-sm text-gray-500">Quarterly Summary</p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-gray-500">Revenue</p>
-            <div className="flex items-center space-x-2">
-              <EuroIcon className="h-5 w-5 text-gray-400" />
-              <span className="text-lg font-medium">{formatter.format(revenue)}</span>
+            <div className="flex items-center space-x-2 text-emerald-600">
+              <TrendingUpIcon className="h-5 w-5" />
+              <span className="font-medium">{formatter.format(revenue)}</span>
             </div>
+            <p className="text-sm text-gray-500">Total Revenue</p>
           </div>
         </div>
 
-        {/* Commission Summary */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-indigo-50 rounded-lg p-4">
-            <p className="text-sm text-indigo-600 font-medium">Receivable</p>
-            <div className="flex items-center space-x-2">
-              <EuroIcon className="h-5 w-5 text-gray-400" />
-              <span className="text-lg font-medium">{formatter.format(receivableCommissions)}</span>
-            </div>
-          </div>
-          <div className="bg-amber-50 rounded-lg p-4">
-            <p className="text-sm text-amber-600 font-medium">Payable</p>
-            <div className="flex items-center space-x-2">
-              <EuroIcon className="h-5 w-5 text-gray-400" />
-              <span className="text-lg font-medium">{formatter.format(payableCommissions)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Commission Details */}
-        <div className="space-y-3">
+        {/* Commission Cards */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {commissionsByFirm.map(({ firm, amount, isPaying, isSettled }) => (
             renderCommissionCard(firm, amount, isPaying, isSettled)
           ))}
@@ -201,14 +182,16 @@ export function QuarterlyCommissionCard({
 
         {/* Summary */}
         <div className="mt-6 pt-6 border-t border-gray-200">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-sm text-gray-600">Total to Pay</p>
-              <p className="text-lg font-semibold">{formatter.format(payableCommissions)}</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 rounded-lg bg-red-50 border border-red-100">
+              <p className="text-sm text-red-600 font-medium">Total to Pay</p>
+              <p className="text-lg font-semibold text-red-700">
+                {formatter.format(payableCommissions)}
+              </p>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Total to Receive</p>
-              <p className="text-lg font-semibold">
+            <div className="p-4 rounded-lg bg-green-50 border border-green-100">
+              <p className="text-sm text-green-600 font-medium">Total to Receive</p>
+              <p className="text-lg font-semibold text-green-700">
                 {formatter.format(receivableCommissions)}
               </p>
             </div>
@@ -217,12 +200,12 @@ export function QuarterlyCommissionCard({
 
         {/* Quarter Settlement Status */}
         {isCurrentQuarterSettled ? (
-          <div className="flex items-center justify-center space-x-2 mt-4 bg-emerald-100 text-emerald-700 py-2 px-4 rounded-lg">
+          <div className="flex items-center justify-center space-x-2 mt-4 bg-emerald-100 text-emerald-700 py-3 px-4 rounded-lg">
             <CheckCircle2 className="h-5 w-5" />
             <span className="font-medium">All commissions for this quarter are settled</span>
           </div>
         ) : (
-          <div className="flex items-center justify-center space-x-2 mt-4 bg-amber-100 text-amber-700 py-2 px-4 rounded-lg">
+          <div className="flex items-center justify-center space-x-2 mt-4 bg-amber-100 text-amber-700 py-3 px-4 rounded-lg">
             <AlertCircle className="h-5 w-5" />
             <span className="font-medium">Some commissions are pending settlement</span>
           </div>
