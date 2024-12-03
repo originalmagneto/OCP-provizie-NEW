@@ -12,8 +12,8 @@ export interface Invoice {
 }
 
 export interface SettlementStatus {
-  quarterKey: string;  // Format: "2024-Q1-FIRMNAME" (e.g., "2024-Q1-MKMs")
+  quarterKey: string;  // Format: "2024-Q1-[PAYING_FIRM]-[RECEIVING_FIRM]" (e.g., "2024-Q1-MKMs-SKALLARS")
   isSettled: boolean;  // Whether the eligible commission has been settled
-  settledAt?: string;  // When the commission was marked as settled
-  settledBy: FirmType;  // The firm that marked the commission as settled
+  settledAt: string;  // When the commission was marked as settled
+  settledBy: FirmType;  // The firm that marked the commission as settled (should be the receiving firm)
 }

@@ -268,7 +268,10 @@ export default function QuarterlySnapshot() {
   };
 
   const handleSettleQuarter = (partnerFirm: FirmType, direction: 'receive' | 'pay') => {
-    if (!user?.firm) return;
+    if (!user?.firm) {
+      console.error('No user firm found');
+      return;
+    }
     
     // Create a quarter key that includes both firms involved
     // The key format should be: [YEAR]-Q[QUARTER]-[PAYING_FIRM]-[RECEIVING_FIRM]
@@ -276,9 +279,21 @@ export default function QuarterlySnapshot() {
       ? `${currentYear}-Q${currentQuarter}-${partnerFirm}-${user.firm}`
       : `${currentYear}-Q${currentQuarter}-${user.firm}-${partnerFirm}`;
     
+    console.log('Settling quarter with key:', quarterKey);
+    console.log('Current user firm:', user.firm);
+    console.log('Partner firm:', partnerFirm);
+    console.log('Direction:', direction);
+
     // Only the firm that is owed the commission can mark it as settled
     if (direction === 'receive') {
+      console.log('Calling settleQuarter...');
       settleQuarter(quarterKey, user.firm);
+      
+      // Force a re-render by updating the component state
+      const newQuarterKey = `${currentYear}-Q${currentQuarter}-${partnerFirm}-${user.firm}`;
+      console.log('Checking if quarter is now settled:', newQuarterKey);
+      const isNowSettled = isQuarterSettled(newQuarterKey, user.firm);
+      console.log('Quarter is now settled:', isNowSettled);
     }
   };
 

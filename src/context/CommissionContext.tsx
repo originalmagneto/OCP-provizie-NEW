@@ -24,21 +24,36 @@ export function CommissionProvider({ children }: { children: React.ReactNode }) 
     return stored ? JSON.parse(stored) : [];
   });
 
+  // Debug log the current state
+  useEffect(() => {
+    console.log('Current settled quarters:', settledQuarters);
+  }, [settledQuarters]);
+
   useEffect(() => {
     localStorage.setItem('settledQuarters', JSON.stringify(settledQuarters));
   }, [settledQuarters]);
 
   const isQuarterSettled = (quarterKey: string, firm: FirmType): boolean => {
+    console.log('Checking if quarter is settled:', { quarterKey, firm });
+    console.log('Current settled quarters:', settledQuarters);
+    
     // The quarterKey format is now: [YEAR]-Q[QUARTER]-[PAYING_FIRM]-[RECEIVING_FIRM]
-    return settledQuarters.some(q => 
+    const isSettled = settledQuarters.some(q => 
       q.quarterKey === quarterKey && 
       q.isSettled && 
       q.settledBy === firm
     );
+    
+    console.log('Quarter settled status:', isSettled);
+    return isSettled;
   };
 
   const settleQuarter = (quarterKey: string, firm: FirmType) => {
+    console.log('Settling quarter:', { quarterKey, firm });
+    
     setSettledQuarters(prev => {
+      console.log('Previous settled quarters:', prev);
+      
       // Find if this quarter-firm combination already exists
       const existingIndex = prev.findIndex(q => 
         q.quarterKey === quarterKey && 
@@ -52,15 +67,19 @@ export function CommissionProvider({ children }: { children: React.ReactNode }) 
         settledBy: firm
       };
 
+      let updatedSettlements;
       if (existingIndex >= 0) {
         // Update existing settlement
         const updated = [...prev];
         updated[existingIndex] = newStatus;
-        return updated;
+        updatedSettlements = updated;
+      } else {
+        // Add new settlement
+        updatedSettlements = [...prev, newStatus];
       }
-
-      // Add new settlement
-      return [...prev, newStatus];
+      
+      console.log('Updated settlements:', updatedSettlements);
+      return updatedSettlements;
     });
   };
 
