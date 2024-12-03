@@ -86,10 +86,11 @@ function QuarterlyCommissions() {
         existingCommission.amount += invoice.amount * (invoice.commissionPercentage / 100);
         existingCommission.invoiceIds.push(invoice.id);
       } else {
+        const settlementKey = `${quarterKey}-${invoice.invoicedByFirm}-${user.firm}`;
         data[quarterKey].eligibleCommissions.push({
           fromFirm: invoice.invoicedByFirm,
           amount: invoice.amount * (invoice.commissionPercentage / 100),
-          isSettled: isQuarterSettled(quarterKey, invoice.invoicedByFirm),
+          isSettled: isQuarterSettled(settlementKey, invoice.invoicedByFirm),
           invoiceIds: [invoice.id]
         });
       }
@@ -106,8 +107,8 @@ function QuarterlyCommissions() {
     if (!user?.firm) return;
     
     try {
-      const quarterKey = `${selectedQuarter}-${firm}-${user.firm}`;
-      await settleQuarter(quarterKey, firm);
+      const settlementKey = `${selectedQuarter}-${firm}-${user.firm}`;
+      await settleQuarter(settlementKey, firm);
     } catch (error) {
       console.error('Error settling commission:', error);
     }
@@ -118,7 +119,7 @@ function QuarterlyCommissions() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 bg-white rounded-lg shadow">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">Quarterly Commissions</h2>
         <div className="flex gap-4">
@@ -140,25 +141,30 @@ function QuarterlyCommissions() {
 
       {selectedQuarterData && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {selectedQuarterData.eligibleCommissions.map(({ fromFirm, amount, isSettled }) => (
-            <QuarterlyCommissionCard
-              key={fromFirm}
-              quarterKey={selectedQuarter}
-              quarter={parseInt(selectedQuarter.split('-Q')[1])}
-              year={parseInt(selectedQuarter.split('-')[0])}
-              revenue={amount}
-              commissionsByFirm={[
-                {
-                  firm: fromFirm,
-                  amount,
-                  isPaying: false,
-                  isSettled
-                }
-              ]}
-              userFirm={user.firm}
-              onSettleCommission={handleSettleCommission}
-            />
-          ))}
+          {selectedQuarterData.eligibleCommissions.map(({ fromFirm, amount, isSettled }) => {
+            const settlementKey = `${selectedQuarter}-${fromFirm}-${user.firm}`;
+            const isSettledForQuarter = isQuarterSettled(settlementKey, fromFirm);
+            
+            return (
+              <QuarterlyCommissionCard
+                key={fromFirm}
+                quarterKey={settlementKey}
+                quarter={parseInt(selectedQuarter.split('-Q')[1])}
+                year={parseInt(selectedQuarter.split('-')[0])}
+                revenue={amount}
+                commissionsByFirm={[
+                  {
+                    firm: fromFirm,
+                    amount,
+                    isPaying: false,
+                    isSettled: isSettledForQuarter
+                  }
+                ]}
+                userFirm={user.firm}
+                onSettleCommission={handleSettleCommission}
+              />
+            );
+          })}
         </div>
       )}
     </div>

@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import type { FirmType, SettlementStatus } from '../types';
+import type { FirmType } from '../types';
+
+interface SettlementStatus {
+  quarterKey: string;
+  isSettled: boolean;
+  settledBy: FirmType;
+  settledAt: string;
+}
 
 interface CommissionContextType {
   settledQuarters: SettlementStatus[];
@@ -46,18 +53,23 @@ export function CommissionProvider({ children }: { children: React.ReactNode }) 
   }, [settledQuarters]);
 
   const settleQuarter = useCallback(async (quarterKey: string, firm: FirmType): Promise<void> => {
-    const newStatus: SettlementStatus = {
-      quarterKey,
-      isSettled: true,
-      settledBy: firm,
-      settledAt: new Date().toISOString()
-    };
+    try {
+      const newStatus: SettlementStatus = {
+        quarterKey,
+        isSettled: true,
+        settledBy: firm,
+        settledAt: new Date().toISOString()
+      };
 
-    setSettledQuarters(prev => {
-      // Remove any existing settlement for this quarter and firm
-      const filtered = prev.filter(q => !(q.quarterKey === quarterKey && q.settledBy === firm));
-      return [...filtered, newStatus];
-    });
+      setSettledQuarters(prev => {
+        // Remove any existing settlement for this quarter and firm
+        const filtered = prev.filter(q => !(q.quarterKey === quarterKey && q.settledBy === firm));
+        return [...filtered, newStatus];
+      });
+    } catch (error) {
+      console.error('Error settling quarter:', error);
+      throw error;
+    }
   }, []);
 
   const unsettleQuarter = useCallback((quarterKey: string, firm: FirmType): void => {
