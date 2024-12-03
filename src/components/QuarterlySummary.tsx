@@ -152,6 +152,8 @@ export default function QuarterlySummary() {
 
   if (!user) return null;
 
+  console.log('Quarterly Data:', quarterlyData);
+
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-medium text-gray-900">
