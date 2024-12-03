@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { useYear, isInQuarter } from "../context/YearContext";
@@ -162,138 +162,104 @@ export default function QuarterlySnapshot() {
   const { invoices } = useInvoices();
   const { user } = useAuth();
   const { currentYear, currentQuarter, selectYearAndQuarter } = useYear();
-  const { isQuarterSettled, settleQuarter } = useCommissions();
-  const [, forceUpdate] = useState({});
+  const { isQuarterSettled, settleQuarter, settledQuarters } = useCommissions();
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const { quarterlyData, unpaidQuarters } = useMemo(() => {
-    // Initialize quarterly data
-    const currentQuarterData: QuarterlyData = {
-      toReceive: { total: 0, byFirm: {} },
-      toPay: { total: 0, byFirm: {} },
-    };
+  useEffect(() => {
+    setRefreshKey((prev) => prev + 1);
+  }, [settledQuarters]);
 
-    // Track unpaid commissions by quarter
-    const unpaidByQuarter: Record<string, UnpaidQuarterInfo> = {};
-
-    invoices.forEach((invoice) => {
-      if (invoice.referredByFirm === invoice.invoicedByFirm) return; // Skip self-referrals
-
-      const invoiceDate = new Date(invoice.date);
-      const invoiceQuarter = Math.floor(invoiceDate.getMonth() / 3) + 1;
-      const invoiceYear = invoiceDate.getFullYear();
-      const quarterKey = `Q${invoiceQuarter}`;
-      const commission = (invoice.amount * invoice.commissionPercentage) / 100;
-
-      // Handle current quarter commissions
-      if (isInQuarter(invoiceDate, currentYear, currentQuarter)) {
-        if (invoice.referredByFirm === user?.firm) {
-          // We are owed commission
-          if (!currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm]) {
-            currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm] = {
-              firm: invoice.invoicedByFirm,
-              amount: 0,
-              canSettle: invoice.isPaid,
-              isSettled: isQuarterSettled(`${currentYear}-Q${currentQuarter}-${invoice.invoicedByFirm}`, user.firm)
-            };
-          }
-          currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm].amount += commission;
-          currentQuarterData.toReceive.total += commission;
-          // Update canSettle status
-          if (!invoice.isPaid) {
-            currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm].canSettle = false;
-          }
-        }
-        if (invoice.invoicedByFirm === user?.firm) {
-          // We owe commission
-          if (!currentQuarterData.toPay.byFirm[invoice.referredByFirm]) {
-            currentQuarterData.toPay.byFirm[invoice.referredByFirm] = {
-              firm: invoice.referredByFirm,
-              amount: 0,
-              canSettle: invoice.isPaid,
-              isSettled: isQuarterSettled(`${currentYear}-Q${currentQuarter}-${user.firm}`, invoice.referredByFirm)
-            };
-          }
-          currentQuarterData.toPay.byFirm[invoice.referredByFirm].amount += commission;
-          currentQuarterData.toPay.total += commission;
-          // Update canSettle status
-          if (!invoice.isPaid) {
-            currentQuarterData.toPay.byFirm[invoice.referredByFirm].canSettle = false;
-          }
-        }
-      }
-
-      // Track unpaid commissions from previous quarters
-      if (
-        !invoice.isPaid &&
-        !isInQuarter(invoiceDate, currentYear, currentQuarter)
-      ) {
-        const key = `${quarterKey}-${invoiceYear}`;
-        if (!unpaidByQuarter[key]) {
-          unpaidByQuarter[key] = {
-            quarter: quarterKey,
-            year: invoiceYear,
-            amount: 0,
-            receivable: 0,
-            payable: 0,
-          };
-        }
-
-        if (invoice.referredByFirm === user?.firm) {
-          unpaidByQuarter[key].receivable += commission;
-          unpaidByQuarter[key].amount += commission;
-        }
-        if (invoice.invoicedByFirm === user?.firm) {
-          unpaidByQuarter[key].payable += commission;
-          unpaidByQuarter[key].amount += commission;
-        }
-      }
-    });
-
-    return {
-      quarterlyData: currentQuarterData,
-      unpaidQuarters: Object.values(unpaidByQuarter).sort(
-        (a, b) => b.year - a.year || b.quarter.localeCompare(a.quarter),
-      ),
-    };
-  }, [invoices, user?.firm, currentYear, currentQuarter, isQuarterSettled]);
-
-  const handleQuarterClick = (quarter: string, year: number) => {
-    const quarterNumber = parseInt(quarter.replace("Q", ""));
-    selectYearAndQuarter(year, quarterNumber);
-
-    // Scroll to unpaid invoices section
-    const unpaidSection = document.querySelector(".unpaid-invoices-section");
-    if (unpaidSection) {
-      unpaidSection.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
-  const handleSettleQuarter = (partnerFirm: FirmType, direction: 'receive' | 'pay') => {
+  const handleSettleQuarter = async (partnerFirm: FirmType, direction: 'receive' | 'pay') => {
     if (!user?.firm) {
       console.error('No user firm found');
       return;
     }
     
-    // Create a quarter key that includes both firms involved
-    // The key format should be: [YEAR]-Q[QUARTER]-[PAYING_FIRM]-[RECEIVING_FIRM]
-    const quarterKey = direction === 'receive' 
-      ? `${currentYear}-Q${currentQuarter}-${partnerFirm}-${user.firm}`
-      : `${currentYear}-Q${currentQuarter}-${user.firm}-${partnerFirm}`;
-    
-    console.log('Settling quarter with key:', quarterKey);
-    console.log('Current user firm:', user.firm);
-    console.log('Partner firm:', partnerFirm);
-    console.log('Direction:', direction);
-
-    // Only the firm that is owed the commission can mark it as settled
-    if (direction === 'receive') {
-      console.log('Calling settleQuarter...');
-      settleQuarter(quarterKey, user.firm);
+    try {
+      // For receiving commissions, the key format is [YEAR]-Q[QUARTER]-[PAYING_FIRM]-[RECEIVING_FIRM]
+      // For paying commissions, it's [YEAR]-Q[QUARTER]-[RECEIVING_FIRM]-[PAYING_FIRM]
+      const quarterKey = direction === 'receive'
+        ? `${currentYear}-Q${currentQuarter}-${partnerFirm}-${user.firm}`
+        : `${currentYear}-Q${currentQuarter}-${user.firm}-${partnerFirm}`;
       
-      // Force a re-render after a short delay to ensure state is updated
-      setTimeout(() => {
-        forceUpdate({});
-      }, 100);
+      console.log('Attempting to settle quarter:', {
+        quarterKey,
+        userFirm: user.firm,
+        partnerFirm,
+        direction
+      });
+
+      await settleQuarter(quarterKey, user.firm);
+      setRefreshKey(prev => prev + 1);
+      
+      console.log('Settlement completed successfully');
+    } catch (error) {
+      console.error('Error settling quarter:', error);
+    }
+  };
+
+  const quarterlyData = useMemo(() => {
+    console.log('Recalculating quarterly data with refreshKey:', refreshKey);
+    
+    const currentQuarterData: QuarterlyData = {
+      toReceive: { total: 0, byFirm: {} },
+      toPay: { total: 0, byFirm: {} },
+    };
+
+    invoices.forEach((invoice) => {
+      if (invoice.referredByFirm === invoice.invoicedByFirm) return;
+
+      if (isInQuarter(new Date(invoice.date), currentYear, currentQuarter)) {
+        if (invoice.referredByFirm === user?.firm) {
+          const key = `${currentYear}-Q${currentQuarter}-${invoice.invoicedByFirm}-${user.firm}`;
+          if (!currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm]) {
+            currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm] = {
+              firm: invoice.invoicedByFirm,
+              amount: 0,
+              canSettle: invoice.isPaid,
+              isSettled: isQuarterSettled(key, user.firm)
+            };
+          }
+          const commission = (invoice.amount * invoice.commissionPercentage) / 100;
+          currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm].amount += commission;
+          currentQuarterData.toReceive.total += commission;
+          
+          if (!invoice.isPaid) {
+            currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm].canSettle = false;
+          }
+        }
+
+        if (invoice.invoicedByFirm === user?.firm) {
+          const key = `${currentYear}-Q${currentQuarter}-${user.firm}-${invoice.referredByFirm}`;
+          if (!currentQuarterData.toPay.byFirm[invoice.referredByFirm]) {
+            currentQuarterData.toPay.byFirm[invoice.referredByFirm] = {
+              firm: invoice.referredByFirm,
+              amount: 0,
+              canSettle: invoice.isPaid,
+              isSettled: isQuarterSettled(key, invoice.referredByFirm)
+            };
+          }
+          const commission = (invoice.amount * invoice.commissionPercentage) / 100;
+          currentQuarterData.toPay.byFirm[invoice.referredByFirm].amount += commission;
+          currentQuarterData.toPay.total += commission;
+          
+          if (!invoice.isPaid) {
+            currentQuarterData.toPay.byFirm[invoice.referredByFirm].canSettle = false;
+          }
+        }
+      }
+    });
+
+    return currentQuarterData;
+  }, [invoices, user?.firm, currentYear, currentQuarter, isQuarterSettled, refreshKey]);
+
+  const handleQuarterClick = (quarter: string, year: number) => {
+    const quarterNumber = parseInt(quarter.replace("Q", ""));
+    selectYearAndQuarter(year, quarterNumber);
+
+    const unpaidSection = document.querySelector(".unpaid-invoices-section");
+    if (unpaidSection) {
+      unpaidSection.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -306,7 +272,7 @@ export default function QuarterlySnapshot() {
 
       {/* Unpaid Quarters Warning */}
       <UnpaidQuartersWarning
-        unpaidQuarters={unpaidQuarters}
+        unpaidQuarters={[]}
         onQuarterClick={handleQuarterClick}
       />
 
@@ -349,11 +315,18 @@ export default function QuarterlySnapshot() {
               <div className="flex justify-between items-center">
                 <div>
                   <h4 className="font-medium text-gray-900">{commission.firm}</h4>
-                  <p className="text-sm text-gray-500">
-                    {commission.canSettle 
-                      ? "All invoices paid" 
-                      : "Some invoices pending payment"}
-                  </p>
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-500">
+                      {commission.canSettle 
+                        ? "All invoices paid" 
+                        : "Some invoices pending payment"}
+                    </p>
+                    {commission.canSettle && !commission.isSettled && (
+                      <p className="text-sm text-red-600 font-medium">
+                        Commission payment required
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-medium text-gray-900">
