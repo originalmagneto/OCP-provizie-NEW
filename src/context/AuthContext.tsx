@@ -18,9 +18,14 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
   const [isLoading, setIsLoading] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('user') !== null;
+  });
 
   const login = async (firm: FirmType) => {
     setIsLoading(true);
@@ -36,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(mockUser);
       setIsAuthenticated(true);
+      localStorage.setItem('user', JSON.stringify(mockUser));
     } catch (error) {
       console.error("Login failed:", error);
       throw error;
@@ -47,6 +53,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
+    localStorage.removeItem('user');
+    localStorage.removeItem('settledQuarters'); // Clear settlements on logout
   };
 
   return (

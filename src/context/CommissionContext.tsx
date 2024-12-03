@@ -20,17 +20,27 @@ export function useCommissions() {
 
 export function CommissionProvider({ children }: { children: React.ReactNode }) {
   const [settledQuarters, setSettledQuarters] = useState<SettlementStatus[]>(() => {
-    const stored = localStorage.getItem('settledQuarters');
-    return stored ? JSON.parse(stored) : [];
+    try {
+      const stored = localStorage.getItem('settledQuarters');
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error('Error loading settled quarters:', error);
+      return [];
+    }
   });
+
+  // Save to localStorage whenever settledQuarters changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('settledQuarters', JSON.stringify(settledQuarters));
+    } catch (error) {
+      console.error('Error saving settled quarters:', error);
+    }
+  }, [settledQuarters]);
 
   // Debug log the current state
   useEffect(() => {
     console.log('Current settled quarters:', settledQuarters);
-  }, [settledQuarters]);
-
-  useEffect(() => {
-    localStorage.setItem('settledQuarters', JSON.stringify(settledQuarters));
   }, [settledQuarters]);
 
   const isQuarterSettled = (quarterKey: string, firm: FirmType): boolean => {
@@ -52,8 +62,6 @@ export function CommissionProvider({ children }: { children: React.ReactNode }) 
     console.log('Settling quarter:', { quarterKey, firm });
     
     setSettledQuarters(prev => {
-      console.log('Previous settled quarters:', prev);
-      
       // Find if this quarter-firm combination already exists
       const existingIndex = prev.findIndex(q => 
         q.quarterKey === quarterKey && 
@@ -70,15 +78,21 @@ export function CommissionProvider({ children }: { children: React.ReactNode }) 
       let updatedSettlements;
       if (existingIndex >= 0) {
         // Update existing settlement
-        const updated = [...prev];
-        updated[existingIndex] = newStatus;
-        updatedSettlements = updated;
+        updatedSettlements = prev.map((q, index) => 
+          index === existingIndex ? newStatus : q
+        );
       } else {
         // Add new settlement
         updatedSettlements = [...prev, newStatus];
       }
-      
-      console.log('Updated settlements:', updatedSettlements);
+
+      // Immediately save to localStorage
+      try {
+        localStorage.setItem('settledQuarters', JSON.stringify(updatedSettlements));
+      } catch (error) {
+        console.error('Error saving settled quarters:', error);
+      }
+
       return updatedSettlements;
     });
   };

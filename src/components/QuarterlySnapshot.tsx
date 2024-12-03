@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { useYear, isInQuarter } from "../context/YearContext";
@@ -163,6 +163,7 @@ export default function QuarterlySnapshot() {
   const { user } = useAuth();
   const { currentYear, currentQuarter, selectYearAndQuarter } = useYear();
   const { isQuarterSettled, settleQuarter } = useCommissions();
+  const [, forceUpdate] = useState({});
 
   const { quarterlyData, unpaidQuarters } = useMemo(() => {
     // Initialize quarterly data
@@ -289,11 +290,10 @@ export default function QuarterlySnapshot() {
       console.log('Calling settleQuarter...');
       settleQuarter(quarterKey, user.firm);
       
-      // Force a re-render by updating the component state
-      const newQuarterKey = `${currentYear}-Q${currentQuarter}-${partnerFirm}-${user.firm}`;
-      console.log('Checking if quarter is now settled:', newQuarterKey);
-      const isNowSettled = isQuarterSettled(newQuarterKey, user.firm);
-      console.log('Quarter is now settled:', isNowSettled);
+      // Force a re-render after a short delay to ensure state is updated
+      setTimeout(() => {
+        forceUpdate({});
+      }, 100);
     }
   };
 
