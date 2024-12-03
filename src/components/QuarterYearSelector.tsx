@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -7,15 +7,82 @@ import {
   Timer,
   ChevronDown,
   Check,
+  AlertCircle,
+  CircleDollarSign,
 } from "lucide-react";
-import { useYear } from "../context/YearContext";
+import { useYear, isInQuarter } from "../context/YearContext";
+import { useInvoices } from "../context/InvoiceContext";
+import { useCommissions } from "../context/CommissionContext";
+import { useAuth } from "../context/AuthContext";
+import type { FirmType } from "../types";
+
+interface QuarterStatus {
+  hasUnpaidInvoices: boolean;
+  hasUnsettledCommissions: boolean;
+}
 
 export default function QuarterYearSelector() {
-  const { currentYear, currentQuarter, availableYears, selectYearAndQuarter } =
-    useYear();
-
+  const { currentYear, currentQuarter, availableYears, selectYearAndQuarter } = useYear();
+  const { invoices } = useInvoices();
+  const { settledQuarters } = useCommissions();
+  const { user } = useAuth();
   const [isChanging, setIsChanging] = useState(false);
   const quarters = [1, 2, 3, 4];
+
+  // Calculate status for each quarter
+  const quarterStatuses = useMemo(() => {
+    const statuses: Record<number, QuarterStatus> = {};
+    
+    quarters.forEach(quarter => {
+      const status: QuarterStatus = {
+        hasUnpaidInvoices: false,
+        hasUnsettledCommissions: false
+      };
+
+      // Check for unpaid invoices
+      const hasUnpaidInvoices = invoices.some(invoice => {
+        if (!isInQuarter(new Date(invoice.date), currentYear, quarter)) return false;
+        return !invoice.isPaid && 
+               (invoice.invoicedByFirm === user?.firm || invoice.referredByFirm === user?.firm);
+      });
+
+      // Check for unsettled commissions
+      const hasUnsettledCommissions = invoices.some(invoice => {
+        if (!isInQuarter(new Date(invoice.date), currentYear, quarter)) return false;
+        if (!invoice.isPaid) return false;
+
+        if (invoice.referredByFirm === user?.firm && invoice.invoicedByFirm !== user.firm) {
+          // Check if we need to receive commission
+          const key = `${currentYear}-Q${quarter}-${invoice.invoicedByFirm}-${user.firm}`;
+          const isSettled = settledQuarters.some(q => 
+            q.quarterKey === key && 
+            q.isSettled && 
+            q.settledBy === user.firm
+          );
+          return !isSettled;
+        }
+
+        if (invoice.invoicedByFirm === user?.firm && invoice.referredByFirm !== user.firm) {
+          // Check if we need to pay commission
+          const key = `${currentYear}-Q${quarter}-${user.firm}-${invoice.referredByFirm}`;
+          const isSettled = settledQuarters.some(q => 
+            q.quarterKey === key && 
+            q.isSettled && 
+            q.settledBy === invoice.referredByFirm
+          );
+          return !isSettled;
+        }
+
+        return false;
+      });
+
+      status.hasUnpaidInvoices = hasUnpaidInvoices;
+      status.hasUnsettledCommissions = hasUnsettledCommissions;
+      statuses[quarter] = status;
+    });
+
+    return statuses;
+  }, [currentYear, invoices, settledQuarters, user?.firm]);
 
   const handleQuarterChange = (year: number, quarter: number) => {
     setIsChanging(true);
@@ -207,6 +274,7 @@ export default function QuarterYearSelector() {
             const dates = getQuarterDates(quarter);
             const isCurrent = isCurrentQuarter(quarter);
             const isSelected = currentQuarter === quarter;
+            const status = quarterStatuses[quarter];
 
             return (
               <button
@@ -232,16 +300,42 @@ export default function QuarterYearSelector() {
                 >
                   {dates.start} - {dates.end}
                 </div>
-                {isCurrent && (
-                  <div
-                    className={`
-                    absolute top-1 right-1 text-xs px-1.5 py-0.5 rounded-full
-                    ${isSelected ? "bg-indigo-500 text-white" : "bg-indigo-100 text-indigo-600"}
-                  `}
-                  >
-                    Current
-                  </div>
-                )}
+                
+                {/* Status Indicators */}
+                <div className="absolute top-1 right-1 flex space-x-1">
+                  {isCurrent && (
+                    <div
+                      className={`
+                      text-xs px-1.5 py-0.5 rounded-full
+                      ${isSelected ? "bg-indigo-500 text-white" : "bg-indigo-100 text-indigo-600"}
+                    `}
+                    >
+                      Current
+                    </div>
+                  )}
+                  {status?.hasUnpaidInvoices && (
+                    <div
+                      className={`
+                      flex items-center px-1.5 py-0.5 rounded-full
+                      ${isSelected ? "bg-indigo-500" : "bg-amber-100"}
+                    `}
+                      title="Has unpaid invoices"
+                    >
+                      <AlertCircle className={`h-3 w-3 ${isSelected ? "text-white" : "text-amber-600"}`} />
+                    </div>
+                  )}
+                  {status?.hasUnsettledCommissions && (
+                    <div
+                      className={`
+                      flex items-center px-1.5 py-0.5 rounded-full
+                      ${isSelected ? "bg-indigo-500" : "bg-blue-100"}
+                    `}
+                      title="Has unsettled commissions"
+                    >
+                      <CircleDollarSign className={`h-3 w-3 ${isSelected ? "text-white" : "text-blue-600"}`} />
+                    </div>
+                  )}
+                </div>
               </button>
             );
           })}
