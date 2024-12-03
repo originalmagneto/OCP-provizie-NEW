@@ -42,6 +42,24 @@ interface UnpaidQuarterInfo {
   payable: number;
 }
 
+interface CommissionsByFirm {
+  firm: FirmType;
+  amount: number;
+  canSettle: boolean;
+  isSettled: boolean;
+}
+
+interface QuarterlyData {
+  toReceive: {
+    total: number;
+    byFirm: Record<FirmType, CommissionsByFirm>;
+  };
+  toPay: {
+    total: number;
+    byFirm: Record<FirmType, CommissionsByFirm>;
+  };
+}
+
 interface CommissionSummary {
   toReceive: {
     total: number;
@@ -147,7 +165,7 @@ export default function QuarterlySnapshot() {
 
   const { quarterlyData, unpaidQuarters } = useMemo(() => {
     // Initialize quarterly data
-    const currentQuarterData: CommissionSummary = {
+    const currentQuarterData: QuarterlyData = {
       toReceive: { total: 0, byFirm: {} },
       toPay: { total: 0, byFirm: {} },
     };
@@ -164,22 +182,41 @@ export default function QuarterlySnapshot() {
       const quarterKey = `Q${invoiceQuarter}`;
       const commission = (invoice.amount * invoice.commissionPercentage) / 100;
 
-      // Handle current quarter commissions (paid only)
-      if (
-        isInQuarter(invoiceDate, currentYear, currentQuarter) &&
-        invoice.isPaid
-      ) {
+      // Handle current quarter commissions
+      if (isInQuarter(invoiceDate, currentYear, currentQuarter)) {
         if (invoice.referredByFirm === user?.firm) {
+          // We are owed commission
+          if (!currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm]) {
+            currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm] = {
+              firm: invoice.invoicedByFirm,
+              amount: 0,
+              canSettle: invoice.isPaid,
+              isSettled: isQuarterSettled(`${currentYear}-Q${currentQuarter}-${invoice.invoicedByFirm}`, user.firm)
+            };
+          }
+          currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm].amount += commission;
           currentQuarterData.toReceive.total += commission;
-          currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm] =
-            (currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm] || 0) +
-            commission;
+          // Update canSettle status
+          if (!invoice.isPaid) {
+            currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm].canSettle = false;
+          }
         }
         if (invoice.invoicedByFirm === user?.firm) {
+          // We owe commission
+          if (!currentQuarterData.toPay.byFirm[invoice.referredByFirm]) {
+            currentQuarterData.toPay.byFirm[invoice.referredByFirm] = {
+              firm: invoice.referredByFirm,
+              amount: 0,
+              canSettle: invoice.isPaid,
+              isSettled: isQuarterSettled(`${currentYear}-Q${currentQuarter}-${user.firm}`, invoice.referredByFirm)
+            };
+          }
+          currentQuarterData.toPay.byFirm[invoice.referredByFirm].amount += commission;
           currentQuarterData.toPay.total += commission;
-          currentQuarterData.toPay.byFirm[invoice.referredByFirm] =
-            (currentQuarterData.toPay.byFirm[invoice.referredByFirm] || 0) +
-            commission;
+          // Update canSettle status
+          if (!invoice.isPaid) {
+            currentQuarterData.toPay.byFirm[invoice.referredByFirm].canSettle = false;
+          }
         }
       }
 
@@ -216,7 +253,7 @@ export default function QuarterlySnapshot() {
         (a, b) => b.year - a.year || b.quarter.localeCompare(a.quarter),
       ),
     };
-  }, [invoices, user, currentYear, currentQuarter]);
+  }, [invoices, user?.firm, currentYear, currentQuarter, isQuarterSettled]);
 
   const handleQuarterClick = (quarter: string, year: number) => {
     const quarterNumber = parseInt(quarter.replace("Q", ""));
@@ -229,16 +266,19 @@ export default function QuarterlySnapshot() {
     }
   };
 
-  const handleSettleQuarter = () => {
+  const handleSettleQuarter = (partnerFirm: FirmType, direction: 'receive' | 'pay') => {
     if (!user?.firm) return;
-    const quarterKey = `${currentYear}-Q${currentQuarter}`;
-    settleQuarter(quarterKey, user.firm);
+    
+    // Create a quarter key that includes both firms involved
+    const quarterKey = `${currentYear}-Q${currentQuarter}-${direction === 'receive' ? partnerFirm : user.firm}`;
+    
+    // The firm that owes the commission should be the one to settle it
+    if (direction === 'pay') {
+      settleQuarter(quarterKey, user.firm);
+    }
   };
 
   if (!user) return null;
-
-  const currentQuarterKey = `${currentYear}-Q${currentQuarter}`;
-  const isCurrentQuarterSettled = isQuarterSettled(currentQuarterKey);
 
   return (
     <div className="space-y-6">
@@ -259,7 +299,7 @@ export default function QuarterlySnapshot() {
             {formatCurrency(quarterlyData.toReceive.total)}
           </div>
           <div className="mt-1 text-sm text-green-600">
-            From paid invoices only
+            From all partners
           </div>
         </div>
 
@@ -269,65 +309,92 @@ export default function QuarterlySnapshot() {
             {formatCurrency(quarterlyData.toPay.total)}
           </div>
           <div className="mt-1 text-sm text-blue-600">
-            From paid invoices only
+            To all partners
           </div>
         </div>
       </div>
 
-      {/* Settlement Status */}
-      <div className="pt-4 border-t">
-        {isCurrentQuarterSettled ? (
-          <div className="flex items-center justify-center space-x-2 bg-green-100 text-green-700 py-2 px-4 rounded-lg">
-            <CheckCircle className="w-5 h-5" />
-            <span className="font-medium">Quarter Settled</span>
-          </div>
-        ) : (
-          <button
-            onClick={handleSettleQuarter}
-            className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            Mark Quarter as Settled
-          </button>
-        )}
+      {/* Commissions To Receive */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium text-gray-900">Commissions to Receive</h3>
+        <div className="space-y-3">
+          {Object.values(quarterlyData.toReceive.byFirm).map((commission) => (
+            <div
+              key={`receive-${commission.firm}`}
+              className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm"
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <h4 className="font-medium text-gray-900">{commission.firm}</h4>
+                  <p className="text-sm text-gray-500">
+                    {commission.canSettle 
+                      ? "All invoices paid" 
+                      : "Some invoices pending payment"}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-medium text-gray-900">
+                    {formatCurrency(commission.amount)}
+                  </p>
+                  {commission.isSettled ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Settled
+                    </span>
+                  ) : commission.canSettle ? (
+                    <p className="text-sm text-amber-600">Waiting for {commission.firm} to settle</p>
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      Pending Payments
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Detailed Breakdown */}
-      <div className="space-y-3">
-        <h4 className="text-sm font-medium text-gray-700">
-          Commission Breakdown (Paid Invoices)
-        </h4>
-
-        {/* Receivables */}
-        {Object.entries(quarterlyData.toReceive.byFirm).map(
-          ([firm, amount]) => (
-            <CommissionCard
-              key={`receive-${firm}`}
-              firm={firm as FirmType}
-              amount={amount}
-              direction="receivable"
-              userFirm={user.firm}
-            />
-          ),
-        )}
-
-        {/* Payables */}
-        {Object.entries(quarterlyData.toPay.byFirm).map(([firm, amount]) => (
-          <CommissionCard
-            key={`pay-${firm}`}
-            firm={firm as FirmType}
-            amount={amount}
-            direction="payable"
-            userFirm={user.firm}
-          />
-        ))}
-
-        {Object.keys(quarterlyData.toReceive.byFirm).length === 0 &&
-          Object.keys(quarterlyData.toPay.byFirm).length === 0 && (
-            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 flex items-center text-gray-500">
-              <AlertCircle className="h-5 w-5 mr-2" />
-              No paid commission transactions for this quarter yet
+      {/* Commissions To Pay */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium text-gray-900">Commissions to Pay</h3>
+        <div className="space-y-3">
+          {Object.values(quarterlyData.toPay.byFirm).map((commission) => (
+            <div
+              key={`pay-${commission.firm}`}
+              className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm"
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <h4 className="font-medium text-gray-900">{commission.firm}</h4>
+                  <p className="text-sm text-gray-500">
+                    {commission.canSettle 
+                      ? "All invoices paid" 
+                      : "Some invoices pending payment"}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-medium text-gray-900">
+                    {formatCurrency(commission.amount)}
+                  </p>
+                  {commission.isSettled ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Settled
+                    </span>
+                  ) : (
+                    commission.canSettle && (
+                      <button
+                        onClick={() => handleSettleQuarter(commission.firm, 'pay')}
+                        className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      >
+                        Settle Commission
+                      </button>
+                    )
+                  )}
+                </div>
+              </div>
             </div>
-          )}
+          ))}
+        </div>
       </div>
     </div>
   );
