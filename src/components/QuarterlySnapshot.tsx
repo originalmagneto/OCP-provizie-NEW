@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   ChevronRight,
   CheckCircle,
+  Clock,
 } from "lucide-react";
 import QuarterYearSelector from "./QuarterYearSelector";
 import type { FirmType } from "../types";
@@ -270,10 +271,13 @@ export default function QuarterlySnapshot() {
     if (!user?.firm) return;
     
     // Create a quarter key that includes both firms involved
-    const quarterKey = `${currentYear}-Q${currentQuarter}-${direction === 'receive' ? partnerFirm : user.firm}`;
+    // The key format should be: [YEAR]-Q[QUARTER]-[PAYING_FIRM]-[RECEIVING_FIRM]
+    const quarterKey = direction === 'receive' 
+      ? `${currentYear}-Q${currentQuarter}-${partnerFirm}-${user.firm}`
+      : `${currentYear}-Q${currentQuarter}-${user.firm}-${partnerFirm}`;
     
-    // The firm that owes the commission should be the one to settle it
-    if (direction === 'pay') {
+    // Only the firm that is owed the commission can mark it as settled
+    if (direction === 'receive') {
       settleQuarter(quarterKey, user.firm);
     }
   };
@@ -321,7 +325,11 @@ export default function QuarterlySnapshot() {
           {Object.values(quarterlyData.toReceive.byFirm).map((commission) => (
             <div
               key={`receive-${commission.firm}`}
-              className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm"
+              className={`p-4 bg-white rounded-lg border ${
+                commission.canSettle && !commission.isSettled
+                  ? 'border-indigo-300 shadow-md'
+                  : 'border-gray-200 shadow-sm'
+              }`}
             >
               <div className="flex justify-between items-center">
                 <div>
@@ -338,12 +346,19 @@ export default function QuarterlySnapshot() {
                   </p>
                   {commission.isSettled ? (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <CheckCircle className="w-4 h-4 mr-1" />
                       Settled
                     </span>
                   ) : commission.canSettle ? (
-                    <p className="text-sm text-amber-600">Waiting for {commission.firm} to settle</p>
+                    <button
+                      onClick={() => handleSettleQuarter(commission.firm, 'receive')}
+                      className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      Mark as Received
+                    </button>
                   ) : (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      <Clock className="w-4 h-4 mr-1" />
                       Pending Payments
                     </span>
                   )}
@@ -351,6 +366,11 @@ export default function QuarterlySnapshot() {
               </div>
             </div>
           ))}
+          {Object.keys(quarterlyData.toReceive.byFirm).length === 0 && (
+            <div className="text-center py-4 text-gray-500">
+              No commissions to receive this quarter
+            </div>
+          )}
         </div>
       </div>
 
@@ -361,16 +381,27 @@ export default function QuarterlySnapshot() {
           {Object.values(quarterlyData.toPay.byFirm).map((commission) => (
             <div
               key={`pay-${commission.firm}`}
-              className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm"
+              className={`p-4 bg-white rounded-lg border ${
+                commission.canSettle && !commission.isSettled
+                  ? 'border-red-300 shadow-md'
+                  : 'border-gray-200 shadow-sm'
+              }`}
             >
               <div className="flex justify-between items-center">
                 <div>
                   <h4 className="font-medium text-gray-900">{commission.firm}</h4>
-                  <p className="text-sm text-gray-500">
-                    {commission.canSettle 
-                      ? "All invoices paid" 
-                      : "Some invoices pending payment"}
-                  </p>
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-500">
+                      {commission.canSettle 
+                        ? "All invoices paid" 
+                        : "Some invoices pending payment"}
+                    </p>
+                    {commission.canSettle && !commission.isSettled && (
+                      <p className="text-sm text-red-600 font-medium">
+                        Commission payment required
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-medium text-gray-900">
@@ -378,22 +409,30 @@ export default function QuarterlySnapshot() {
                   </p>
                   {commission.isSettled ? (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <CheckCircle className="w-4 h-4 mr-1" />
                       Settled
                     </span>
+                  ) : commission.canSettle ? (
+                    <div className="flex flex-col items-end space-y-1">
+                      <span className="text-sm text-red-600">
+                        Waiting for {commission.firm} to confirm
+                      </span>
+                    </div>
                   ) : (
-                    commission.canSettle && (
-                      <button
-                        onClick={() => handleSettleQuarter(commission.firm, 'pay')}
-                        className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                      >
-                        Settle Commission
-                      </button>
-                    )
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      <Clock className="w-4 h-4 mr-1" />
+                      Pending Payments
+                    </span>
                   )}
                 </div>
               </div>
             </div>
           ))}
+          {Object.keys(quarterlyData.toPay.byFirm).length === 0 && (
+            <div className="text-center py-4 text-gray-500">
+              No commissions to pay this quarter
+            </div>
+          )}
         </div>
       </div>
     </div>

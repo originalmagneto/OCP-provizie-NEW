@@ -29,14 +29,21 @@ export function CommissionProvider({ children }: { children: React.ReactNode }) 
   }, [settledQuarters]);
 
   const isQuarterSettled = (quarterKey: string, firm: FirmType): boolean => {
-    // Check if this specific quarter-firm combination is settled
-    return settledQuarters.some(q => q.quarterKey === quarterKey && q.isSettled && q.settledBy === firm);
+    // The quarterKey format is now: [YEAR]-Q[QUARTER]-[PAYING_FIRM]-[RECEIVING_FIRM]
+    return settledQuarters.some(q => 
+      q.quarterKey === quarterKey && 
+      q.isSettled && 
+      q.settledBy === firm
+    );
   };
 
   const settleQuarter = (quarterKey: string, firm: FirmType) => {
     setSettledQuarters(prev => {
       // Find if this quarter-firm combination already exists
-      const existingIndex = prev.findIndex(q => q.quarterKey === quarterKey && q.settledBy === firm);
+      const existingIndex = prev.findIndex(q => 
+        q.quarterKey === quarterKey && 
+        q.settledBy === firm
+      );
       
       const newStatus: SettlementStatus = {
         quarterKey,
