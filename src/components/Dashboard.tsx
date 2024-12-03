@@ -108,7 +108,7 @@ export default function Dashboard() {
           {/* Quarterly Commission Summary */}
           <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
             <h2 className="text-lg font-medium mb-4">
-              Current Quarter Summary
+              Quarterly Summary and Settlements
             </h2>
             <QuarterlySnapshot />
           </div>
