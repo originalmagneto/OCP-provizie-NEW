@@ -1,12 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import type { FirmType } from '../types';
-
-interface SettlementStatus {
-  quarterKey: string;
-  isSettled: boolean;
-  settledBy: FirmType;
-  settledAt: string;
-}
+import type { FirmType, SettlementStatus } from '../types';
 
 interface CommissionContextType {
   settledQuarters: SettlementStatus[];
@@ -45,16 +38,16 @@ export function CommissionProvider({ children }: { children: React.ReactNode }) 
   }, [settledQuarters]);
 
   const isQuarterSettled = useCallback((quarterKey: string, firm: FirmType): boolean => {
-    return settledQuarters.some(q => 
-      q.quarterKey === quarterKey && 
-      q.isSettled && 
-      q.settledBy === firm
+    return settledQuarters.some(settlement => 
+      settlement.quarterKey === quarterKey && 
+      settlement.isSettled && 
+      settlement.settledBy === firm
     );
   }, [settledQuarters]);
 
   const settleQuarter = useCallback(async (quarterKey: string, firm: FirmType): Promise<void> => {
     try {
-      const newStatus: SettlementStatus = {
+      const newSettlement: SettlementStatus = {
         quarterKey,
         isSettled: true,
         settledBy: firm,
@@ -63,9 +56,13 @@ export function CommissionProvider({ children }: { children: React.ReactNode }) 
 
       setSettledQuarters(prev => {
         // Remove any existing settlement for this quarter and firm
-        const filtered = prev.filter(q => !(q.quarterKey === quarterKey && q.settledBy === firm));
-        return [...filtered, newStatus];
+        const filtered = prev.filter(settlement => 
+          !(settlement.quarterKey === quarterKey && settlement.settledBy === firm)
+        );
+        return [...filtered, newSettlement];
       });
+
+      console.log('Settlement added:', newSettlement);
     } catch (error) {
       console.error('Error settling quarter:', error);
       throw error;
@@ -74,7 +71,9 @@ export function CommissionProvider({ children }: { children: React.ReactNode }) 
 
   const unsettleQuarter = useCallback((quarterKey: string, firm: FirmType): void => {
     setSettledQuarters(prev => 
-      prev.filter(q => !(q.quarterKey === quarterKey && q.settledBy === firm))
+      prev.filter(settlement => 
+        !(settlement.quarterKey === quarterKey && settlement.settledBy === firm)
+      )
     );
   }, []);
 
