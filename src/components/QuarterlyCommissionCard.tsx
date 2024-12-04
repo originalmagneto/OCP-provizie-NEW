@@ -87,34 +87,34 @@ export function QuarterlyCommissionCard({
   }, [commissionsByFirm]);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div className="p-4 border-b border-gray-200">
+    <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+      <div className="p-4 border-b border-gray-200 bg-gray-50">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
               Q{quarter} {year}
               {isCurrentQuarter && (
-                <span className="text-xs font-medium px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                <span className="text-xs font-medium px-2 py-1 bg-blue-500 text-white rounded-full">
                   Current
                 </span>
               )}
             </h3>
-            <div className="flex items-center gap-1 ml-2">
+            <div className="flex items-center gap-2 ml-2">
               {commissionsToReceive > 0 && (
-                <div className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">
+                <div className="flex items-center gap-1.5 text-sm font-medium text-green-700 bg-green-100 px-3 py-1.5 rounded-full shadow-sm">
                   <ArrowDownCircle className="w-4 h-4" />
                   <span>Receive ({commissionsToReceive})</span>
                 </div>
               )}
               {commissionsToPay > 0 && (
-                <div className="flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded ml-1">
+                <div className="flex items-center gap-1.5 text-sm font-medium text-red-700 bg-red-100 px-3 py-1.5 rounded-full shadow-sm">
                   <ArrowUpCircle className="w-4 h-4" />
                   <span>Pay ({commissionsToPay})</span>
                 </div>
               )}
             </div>
           </div>
-          <span className="text-sm font-medium text-gray-500">
+          <span className="text-base font-semibold text-gray-700">
             ${revenue.toFixed(2)}
           </span>
         </div>
@@ -124,20 +124,20 @@ export function QuarterlyCommissionCard({
         {commissionsByFirm.map((commission) => (
           <div
             key={`${commission.firm}-${commission.amount}`}
-            className={`rounded-lg p-4 ${getStatusColor(commission)}`}
+            className={`rounded-lg p-4 shadow-sm ${getStatusColor(commission)}`}
           >
             <div className="flex items-center justify-between">
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">
+                  <span className="font-medium text-base">
                     {commission.firm}
                   </span>
                   {getStatusIcon(commission)}
                 </div>
-                <div className="text-sm opacity-75">
+                <div className="text-base font-medium">
                   ${commission.amount.toFixed(2)}
                 </div>
-                <div className="text-xs opacity-60">
+                <div className="text-sm">
                   {getStatusText(commission)}
                 </div>
               </div>
@@ -145,7 +145,7 @@ export function QuarterlyCommissionCard({
               {!commission.isSettled && user?.firm === userFirm && (
                 <button
                   onClick={() => handleSettleClick(commission.firm)}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm"
                 >
                   Settle
                 </button>
