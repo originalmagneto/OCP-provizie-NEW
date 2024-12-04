@@ -91,54 +91,67 @@ function QuarterlyCommissions() {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">Quarterly Commissions</h2>
         <div className="flex gap-4">
-          {quarterlyData.map((data) => (
-            <button
-              key={data.quarter}
-              onClick={() => setSelectedQuarter(data.quarter)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedQuarter === data.quarter
-                  ? "bg-blue-100 text-blue-800"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              {data.quarter}
-            </button>
-          ))}
+          {quarterlyData.map((data) => {
+            const [year, quarterStr] = data.quarter.split('-');
+            const quarter = parseInt(quarterStr.replace('Q', ''));
+            const now = new Date();
+            const currentQuarter = Math.floor(now.getMonth() / 3) + 1;
+            const currentYear = now.getFullYear();
+            const isCurrentQuarter = parseInt(year) === currentYear && quarter === currentQuarter;
+
+            return (
+              <button
+                key={data.quarter}
+                onClick={() => setSelectedQuarter(data.quarter)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  selectedQuarter === data.quarter
+                    ? "bg-blue-100 text-blue-800"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                Q{quarter}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {quarterlyData.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          No commission data available for this quarter
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {quarterlyData
-            .find(data => data.quarter === selectedQuarter)
-            ?.eligibleCommissions.map(({ fromFirm, amount, isSettled }) => {
-              const settlementKey = `${selectedQuarter}-${fromFirm}-${user.firm}`;
-              return (
-                <QuarterlyCommissionCard
-                  key={`${settlementKey}-${amount}`}
-                  quarterKey={settlementKey}
-                  quarter={parseInt(selectedQuarter.split('-Q')[1])}
-                  year={parseInt(selectedQuarter.split('-')[0])}
-                  revenue={amount}
-                  commissionsByFirm={[
-                    {
-                      firm: fromFirm,
-                      amount,
-                      isPaying: false,
-                      isSettled: isQuarterSettled(settlementKey, fromFirm)
-                    }
-                  ]}
-                  userFirm={user.firm}
-                  onSettleCommission={handleSettleCommission}
-                />
-              );
-            })}
-        </div>
-      )}
+      {quarterlyData.map((data) => {
+        const [year, quarterStr] = data.quarter.split('-');
+        const quarter = parseInt(quarterStr.replace('Q', ''));
+        const now = new Date();
+        const currentQuarter = Math.floor(now.getMonth() / 3) + 1;
+        const currentYear = now.getFullYear();
+        const isCurrentQuarter = parseInt(year) === currentYear && quarter === currentQuarter;
+
+        // Calculate total revenue for the quarter
+        const totalRevenue = data.eligibleCommissions.reduce(
+          (sum, commission) => sum + commission.amount,
+          0
+        );
+
+        // Transform eligible commissions into the format expected by QuarterlyCommissionCard
+        const commissionsByFirm = data.eligibleCommissions.map((commission) => ({
+          firm: commission.fromFirm,
+          amount: commission.amount,
+          isPaying: commission.fromFirm === user?.firm,
+          isSettled: commission.isSettled,
+        }));
+
+        return (
+          <QuarterlyCommissionCard
+            key={data.quarter}
+            quarterKey={data.quarter}
+            quarter={quarter}
+            year={parseInt(year)}
+            revenue={totalRevenue}
+            commissionsByFirm={commissionsByFirm}
+            userFirm={user?.firm || "SKALLARS"}
+            onSettleCommission={handleSettleCommission}
+            isCurrentQuarter={isCurrentQuarter}
+          />
+        );
+      })}
     </div>
   );
 }

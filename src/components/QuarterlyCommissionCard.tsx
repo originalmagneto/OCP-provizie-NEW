@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useCommissions } from "../context/CommissionContext";
-import { AlertCircle, CircleDollarSign, Clock, CheckCircle2 } from "lucide-react";
+import { AlertCircle, CircleDollarSign, Clock, CheckCircle2, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import type { FirmType } from "../types";
 
 interface Commission {
@@ -19,6 +19,7 @@ interface QuarterlyCommissionCardProps {
   commissionsByFirm: Commission[];
   userFirm: FirmType;
   onSettleCommission: (firm: FirmType) => void;
+  isCurrentQuarter?: boolean;
 }
 
 export function QuarterlyCommissionCard({
@@ -28,7 +29,8 @@ export function QuarterlyCommissionCard({
   revenue,
   commissionsByFirm,
   userFirm,
-  onSettleCommission
+  onSettleCommission,
+  isCurrentQuarter = false
 }: QuarterlyCommissionCardProps) {
   const { user } = useAuth();
   const { isQuarterSettled } = useCommissions();
@@ -68,13 +70,50 @@ export function QuarterlyCommissionCard({
     return "bg-gray-50 text-gray-700";
   };
 
+  const { commissionsToReceive, commissionsToPay } = useMemo(() => {
+    return commissionsByFirm.reduce(
+      (acc, commission) => {
+        if (!commission.isSettled) {
+          if (commission.isPaying) {
+            acc.commissionsToPay += 1;
+          } else {
+            acc.commissionsToReceive += 1;
+          }
+        }
+        return acc;
+      },
+      { commissionsToReceive: 0, commissionsToPay: 0 }
+    );
+  }, [commissionsByFirm]);
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       <div className="p-4 border-b border-gray-200">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Q{quarter} {year}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              Q{quarter} {year}
+              {isCurrentQuarter && (
+                <span className="text-xs font-medium px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                  Current
+                </span>
+              )}
+            </h3>
+            <div className="flex items-center gap-1">
+              {commissionsToReceive > 0 && (
+                <div className="flex items-center gap-1 text-xs font-medium text-green-600">
+                  <ArrowDownCircle className="w-4 h-4" />
+                  {commissionsToReceive}
+                </div>
+              )}
+              {commissionsToPay > 0 && (
+                <div className="flex items-center gap-1 text-xs font-medium text-red-600">
+                  <ArrowUpCircle className="w-4 h-4" />
+                  {commissionsToPay}
+                </div>
+              )}
+            </div>
+          </div>
           <span className="text-sm font-medium text-gray-500">
             ${revenue.toFixed(2)}
           </span>
