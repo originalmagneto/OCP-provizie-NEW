@@ -179,10 +179,32 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
       const normalizedInvoice = normalizeInvoice(invoice);
 
       setInvoices(prevInvoices => {
-        const newInvoices = Array.isArray(prevInvoices) ? prevInvoices : [];
-        return [...newInvoices, normalizedInvoice].sort((a, b) => 
-          new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
+        try {
+          const newInvoices = Array.isArray(prevInvoices) ? prevInvoices : [];
+          const combinedInvoices = [...newInvoices, normalizedInvoice];
+          
+          // Safe sorting function that handles potential invalid dates
+          return combinedInvoices.sort((a, b) => {
+            try {
+              const dateA = new Date(a.date).getTime();
+              const dateB = new Date(b.date).getTime();
+              
+              // Check for invalid dates
+              if (isNaN(dateA) || isNaN(dateB)) {
+                console.error('Invalid date found during sort:', { a: a.date, b: b.date });
+                return 0; // Keep original order if dates are invalid
+              }
+              
+              return dateB - dateA;
+            } catch (error) {
+              console.error('Error during invoice sort:', error);
+              return 0; // Keep original order on error
+            }
+          });
+        } catch (error) {
+          console.error('Error processing invoices array:', error);
+          return prevInvoices; // Return original array on error
+        }
       });
     } catch (error) {
       console.error("Error adding invoice:", error);
