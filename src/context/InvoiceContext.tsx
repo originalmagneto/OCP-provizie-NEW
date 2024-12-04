@@ -60,11 +60,13 @@ const isValidInvoice = (invoice: any): invoice is Invoice => {
       typeof invoice.clientName !== "string" ||
       typeof invoice.date !== "string"
     ) {
+      console.error("Invalid required string fields:", { id: invoice.id, clientName: invoice.clientName, date: invoice.date });
       return false;
     }
 
     // Validate date
     if (!validateDate(invoice.date)) {
+      console.error("Invalid date:", invoice.date);
       return false;
     }
 
@@ -73,6 +75,7 @@ const isValidInvoice = (invoice: any): invoice is Invoice => {
       !validateNumber(invoice.amount) ||
       !validateNumber(invoice.commissionPercentage)
     ) {
+      console.error("Invalid numbers:", { amount: invoice.amount, commissionPercentage: invoice.commissionPercentage });
       return false;
     }
 
@@ -81,12 +84,13 @@ const isValidInvoice = (invoice: any): invoice is Invoice => {
       !validateFirm(invoice.invoicedByFirm) ||
       !validateFirm(invoice.referredByFirm)
     ) {
+      console.error("Invalid firms:", { invoicedByFirm: invoice.invoicedByFirm, referredByFirm: invoice.referredByFirm });
       return false;
     }
 
     // Validate boolean
     if (typeof invoice.isPaid !== "boolean") {
-      return false;
+      invoice.isPaid = false; // Set default value if missing
     }
 
     return true;
@@ -99,14 +103,14 @@ const isValidInvoice = (invoice: any): invoice is Invoice => {
 // Normalize invoice data
 const normalizeInvoice = (invoice: Invoice): Invoice => {
   return {
-    ...invoice,
+    id: invoice.id,
+    clientName: invoice.clientName.trim(),
     date: new Date(invoice.date).toISOString(),
     amount: Number(invoice.amount),
     commissionPercentage: Number(invoice.commissionPercentage),
     isPaid: Boolean(invoice.isPaid),
-    // Ensure these are the correct string literals
-    invoicedByFirm: invoice.invoicedByFirm as FirmType,
-    referredByFirm: invoice.referredByFirm as FirmType,
+    invoicedByFirm: invoice.invoicedByFirm,
+    referredByFirm: invoice.referredByFirm,
   };
 };
 
@@ -126,7 +130,13 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
           if (Array.isArray(parsedInvoices)) {
             // Filter out invalid invoices and normalize the valid ones
             const validInvoices = parsedInvoices
-              .filter(isValidInvoice)
+              .filter((invoice) => {
+                const isValid = isValidInvoice(invoice);
+                if (!isValid) {
+                  console.error("Invalid invoice found:", invoice);
+                }
+                return isValid;
+              })
               .map(normalizeInvoice);
             setInvoices(validInvoices);
           }
@@ -170,7 +180,9 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
 
       setInvoices(prevInvoices => {
         const newInvoices = Array.isArray(prevInvoices) ? prevInvoices : [];
-        return [...newInvoices, normalizedInvoice];
+        return [...newInvoices, normalizedInvoice].sort((a, b) => 
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
       });
     } catch (error) {
       console.error("Error adding invoice:", error);
@@ -194,9 +206,13 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
           const updated = {
             ...invoice,
             ...updatedInvoice,
-          };
+          } as Invoice;
 
-          // Only normalize if the field was updated
+          if (!isValidInvoice(updated)) {
+            console.error("Invalid updated invoice:", updated);
+            return invoice;
+          }
+
           return normalizeInvoice(updated);
         })
       );
@@ -206,38 +222,23 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const togglePaid = useCallback((id: string) => {
-    try {
-      setInvoices(prev =>
-        prev.map(invoice =>
-          invoice.id === id ? { ...invoice, isPaid: !invoice.isPaid } : invoice
-        )
-      );
-    } catch (error) {
-      console.error("Error toggling invoice paid status:", error);
-    }
-  }, []);
+    updateInvoice(id, { isPaid: true });
+  }, [updateInvoice]);
 
   const resetAllData = useCallback(() => {
-    try {
-      setInvoices([]);
-      localStorage.removeItem("invoices");
-    } catch (error) {
-      console.error("Error resetting data:", error);
-    }
+    setInvoices([]);
+    localStorage.removeItem("invoices");
   }, []);
 
-  const value = useMemo(
-    () => ({
-      invoices,
-      isLoading,
-      addInvoice,
-      removeInvoice,
-      updateInvoice,
-      resetAllData,
-      togglePaid,
-    }),
-    [invoices, isLoading, addInvoice, removeInvoice, updateInvoice, resetAllData, togglePaid]
-  );
+  const value = {
+    invoices,
+    isLoading,
+    addInvoice,
+    removeInvoice,
+    updateInvoice,
+    resetAllData,
+    togglePaid,
+  };
 
   return (
     <InvoiceContext.Provider value={value}>
