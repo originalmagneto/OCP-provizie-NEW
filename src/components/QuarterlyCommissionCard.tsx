@@ -99,17 +99,17 @@ export function QuarterlyCommissionCard({
                 </span>
               )}
             </h3>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 ml-2">
               {commissionsToReceive > 0 && (
-                <div className="flex items-center gap-1 text-xs font-medium text-green-600">
+                <div className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">
                   <ArrowDownCircle className="w-4 h-4" />
-                  {commissionsToReceive}
+                  <span>Receive ({commissionsToReceive})</span>
                 </div>
               )}
               {commissionsToPay > 0 && (
-                <div className="flex items-center gap-1 text-xs font-medium text-red-600">
+                <div className="flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded ml-1">
                   <ArrowUpCircle className="w-4 h-4" />
-                  {commissionsToPay}
+                  <span>Pay ({commissionsToPay})</span>
                 </div>
               )}
             </div>
