@@ -24,6 +24,7 @@ export default function EditInvoiceModal({
     commissionPercentage: invoice.commissionPercentage,
     date: new Date(invoice.date),
     referredByFirm: invoice.referredByFirm,
+    isPaid: invoice.isPaid,
   });
 
   const firms: FirmType[] = ["SKALLARS", "MKMs", "Contax"];
@@ -115,6 +116,20 @@ export default function EditInvoiceModal({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
               dateFormat="dd/MM/yyyy"
             />
+          </div>
+
+          <div>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={formData.isPaid}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, isPaid: e.target.checked }))
+                }
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              />
+              <span className="text-sm font-medium text-gray-700">Invoice Paid</span>
+            </label>
           </div>
 
           <div>

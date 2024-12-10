@@ -4,13 +4,16 @@ import App from './App.tsx';
 import './index.css';
 import { AuthProvider } from './context/AuthContext';
 import { InvoiceProvider } from './context/InvoiceContext';
+import { ClientProvider } from './context/ClientContext';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
-      <InvoiceProvider>
-        <App />
-      </InvoiceProvider>
+      <ClientProvider>
+        <InvoiceProvider>
+          <App />
+        </InvoiceProvider>
+      </ClientProvider>
     </AuthProvider>
   </StrictMode>
 );

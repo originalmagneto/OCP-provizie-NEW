@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { useYear, isInQuarter } from "../context/YearContext";
+import { useCommissions } from '../context/CommissionContext';
 import CustomDropdown from "./common/CustomDropdown";
 import StatusBadge from "./common/StatusBadge";
 import Tooltip from "./common/Tooltip";
@@ -50,10 +51,11 @@ interface InvoiceCardProps {
   invoice: Invoice;
   isExpanded: boolean;
   onToggleExpand: () => void;
-  onTogglePaid: () => void;
+  onTogglePaid: (invoice: Invoice) => void;
   onDelete: () => void;
   onEdit: () => void;
   userFirm: FirmType;
+  canTogglePaid: boolean;
 }
 
 function FilterBar({
@@ -125,11 +127,33 @@ function InvoiceCard({
   onDelete,
   onEdit,
   userFirm,
+  canTogglePaid,
 }: InvoiceCardProps) {
+  console.log("InvoiceCard render:", { 
+    invoiceId: invoice.id,
+    userFirm,
+    invoicedByFirm: invoice.invoicedByFirm,
+    canTogglePaid,
+    isPaid: invoice.isPaid
+  });
+
   const theme = firmThemes[invoice.invoicedByFirm];
   const isOverdue =
     !invoice.isPaid &&
     new Date(invoice.date).getTime() < Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+  const handlePaidClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Paid button clicked', {
+      invoiceId: invoice.id,
+      currentStatus: invoice.isPaid,
+      canTogglePaid,
+      userFirm,
+      invoicedByFirm: invoice.invoicedByFirm
+    });
+    onTogglePaid(invoice);
+  };
 
   return (
     <div
@@ -158,9 +182,28 @@ function InvoiceCard({
               <p className="text-lg font-semibold">
                 {formatCurrency(invoice.amount)}
               </p>
-              <StatusBadge 
-                status={invoice.isPaid ? 'paid' : (isOverdue ? 'overdue' : 'pending')} 
-              />
+              {userFirm === invoice.invoicedByFirm ? (
+                canTogglePaid ? (
+                  <button
+                    onClick={handlePaidClick}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                      invoice.isPaid
+                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                        : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                    }`}
+                  >
+                    {invoice.isPaid ? 'Paid' : 'Mark as Paid'}
+                  </button>
+                ) : (
+                  <StatusBadge 
+                    status={invoice.isPaid ? 'paid' : (isOverdue ? 'overdue' : 'pending')} 
+                  />
+                )
+              ) : (
+                <StatusBadge 
+                  status={invoice.isPaid ? 'paid' : (isOverdue ? 'overdue' : 'pending')} 
+                />
+              )}
             </div>
 
             <div className="flex items-center space-x-2">
@@ -199,49 +242,23 @@ function InvoiceCard({
             </div>
           </div>
         </div>
-
-        {isExpanded && (
-          <div className="mt-4 pt-4 border-t">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500">Commission</p>
-                <p className="font-medium">
-                  {invoice.commissionPercentage}% (€
-                  {formatCurrency(
-                    (invoice.amount * invoice.commissionPercentage) / 100
-                  )}
-                  )
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Referred By</p>
-                <p className="font-medium">{invoice.referredByFirm}</p>
-              </div>
-            </div>
-
-            {userFirm === invoice.invoicedByFirm && (
-              <button
-                onClick={onTogglePaid}
-                className={`mt-4 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  invoice.isPaid
-                    ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    : "bg-green-50 text-green-700 hover:bg-green-100"
-                }`}
-              >
-                {invoice.isPaid ? "Mark as Unpaid" : "Mark as Paid"}
-              </button>
-            )}
-          </div>
-        )}
       </div>
+
+      {isExpanded && (
+        <div className="px-4 pb-4">
+          <InvoiceSummary invoice={invoice} />
+        </div>
+      )}
     </div>
   );
 }
 
 export default function InvoiceList() {
-  const { invoices, isLoading, removeInvoice, togglePaid } = useInvoices();
-  const { userFirm } = useAuth();
+  const { invoices, isLoading: invoicesLoading, removeInvoice, togglePaid, updateInvoice } = useInvoices();
+  const { user, isAuthenticated } = useAuth();
+  const userFirm = user?.firm;
   const { currentYear, currentQuarter } = useYear();
+  const { isQuarterSettled } = useCommissions();
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [expandedInvoices, setExpandedInvoices] = useState<string[]>([]);
   const [filters, setFilters] = useState<FilterState>({
@@ -249,6 +266,57 @@ export default function InvoiceList() {
     status: "all",
     firm: "all",
   });
+
+  console.log("InvoiceList render:", { 
+    userFirm, 
+    user, 
+    isAuthenticated,
+    invoicesCount: invoices.length 
+  });
+
+  const handleTogglePaid = useCallback((invoice: Invoice) => {
+    console.log("handleTogglePaid called with:", { 
+      invoice, 
+      userFirm,
+      user,
+      isAuthenticated 
+    });
+    
+    if (!isAuthenticated) {
+      console.error("Cannot toggle paid status: Not authenticated");
+      return;
+    }
+
+    if (!userFirm) {
+      console.error("Cannot toggle paid status: No user firm");
+      return;
+    }
+    
+    if (!invoice) {
+      console.error("No invoice provided to toggle");
+      return;
+    }
+    
+    // Don't allow toggling if the invoice's commission has been settled
+    if (isQuarterSettled(invoice.quarterKey, userFirm, invoice.id)) {
+      console.log("Cannot toggle: Invoice commission is settled", {
+        quarterKey: invoice.quarterKey,
+        userFirm,
+        invoiceId: invoice.id
+      });
+      alert('Cannot change paid status of an invoice with settled commissions');
+      return;
+    }
+    
+    console.log("About to toggle paid status for invoice:", {
+      id: invoice.id,
+      firm: userFirm,
+      currentStatus: invoice.isPaid,
+      invoicedByFirm: invoice.invoicedByFirm
+    });
+    
+    togglePaid(invoice.id, userFirm);
+  }, [userFirm, user, isAuthenticated, isQuarterSettled, togglePaid]);
 
   const filterInvoice = useCallback(
     (invoice: Invoice): boolean => {
@@ -266,39 +334,40 @@ export default function InvoiceList() {
         return false;
       }
 
-      // Search filter
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        const clientName = invoice.clientName.toLowerCase();
-        const invoicedByFirm = invoice.invoicedByFirm.toLowerCase();
+      // Apply search filter
+      const searchLower = filters.search.toLowerCase();
+      const matchesSearch =
+        !searchLower ||
+        invoice.clientName.toLowerCase().includes(searchLower) ||
+        invoice.id.toLowerCase().includes(searchLower);
 
+      if (!matchesSearch) return false;
+
+      // Apply status filter
+      const isOverdue =
+        !invoice.isPaid &&
+        invoiceDate.getTime() < Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+      switch (filters.status) {
+        case "paid":
+          if (!invoice.isPaid) return false;
+          break;
+        case "pending":
+          if (invoice.isPaid || isOverdue) return false;
+          break;
+        case "overdue":
+          if (!isOverdue) return false;
+          break;
+      }
+
+      // Apply firm filter
+      if (filters.firm !== "all") {
         if (
-          !clientName.includes(searchLower) &&
-          !invoicedByFirm.includes(searchLower)
+          invoice.invoicedByFirm !== filters.firm &&
+          invoice.referredByFirm !== filters.firm
         ) {
           return false;
         }
-      }
-
-      // Status filter
-      if (filters.status !== "all") {
-        const isOverdue =
-          !invoice.isPaid &&
-          new Date(invoice.date).getTime() <
-            Date.now() - 30 * 24 * 60 * 60 * 1000;
-
-        if (
-          (filters.status === "paid" && !invoice.isPaid) ||
-          (filters.status === "pending" && (invoice.isPaid || isOverdue)) ||
-          (filters.status === "overdue" && (!isOverdue || invoice.isPaid))
-        ) {
-          return false;
-        }
-      }
-
-      // Firm filter
-      if (filters.firm !== "all" && invoice.invoicedByFirm !== filters.firm) {
-        return false;
       }
 
       return true;
@@ -308,10 +377,9 @@ export default function InvoiceList() {
 
   const processedInvoices = useMemo(() => {
     try {
-      // Create a safe copy of invoices and ensure it's an array
-      const safeInvoices = Array.isArray(invoices) ? [...invoices] : [];
+      // First ensure we have valid data
+      const safeInvoices = invoices || [];
 
-      // First, ensure all invoices are valid
       const validInvoices = safeInvoices.filter((invoice): invoice is Invoice => {
         if (!invoice || typeof invoice !== 'object') return false;
 
@@ -367,12 +435,22 @@ export default function InvoiceList() {
       console.error("Error preparing invoices for sorting:", error);
       return []; // Return empty array on error
     }
-  }, [invoices, isLoading, filterInvoice]);
+  }, [invoices, filterInvoice]);
 
-  if (isLoading) {
+  // Show loading state if invoices are loading
+  if (invoicesLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  // Show message if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-gray-600">Please log in to view invoices</div>
       </div>
     );
   }
@@ -420,29 +498,23 @@ export default function InvoiceList() {
               <InvoiceCard
                 invoice={invoice}
                 isExpanded={expandedInvoices.includes(invoice.id)}
-                onToggleExpand={() =>
+                onToggleExpand={() => {
                   setExpandedInvoices((prev) =>
                     prev.includes(invoice.id)
                       ? prev.filter((id) => id !== invoice.id)
                       : [...prev, invoice.id]
-                  )
-                }
-                onTogglePaid={() => togglePaid(invoice.id)}
+                  );
+                }}
+                onTogglePaid={() => handleTogglePaid(invoice)}
                 onDelete={() => removeInvoice(invoice.id)}
                 onEdit={() => setEditingInvoice(invoice)}
-                userFirm={userFirm}
+                userFirm={userFirm || ""}
+                canTogglePaid={true}
               />
             </div>
           </div>
         ))}
       </div>
-
-      {editingInvoice && (
-        <EditInvoiceModal
-          invoice={editingInvoice}
-          onClose={() => setEditingInvoice(null)}
-        />
-      )}
     </div>
   );
 }

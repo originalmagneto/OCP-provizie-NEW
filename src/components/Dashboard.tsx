@@ -8,6 +8,7 @@ import InvoiceList from "./InvoiceList";
 import QuarterlySnapshot from "./QuarterlySnapshot";
 import UnpaidInvoicesList from "./UnpaidInvoicesList";
 import DashboardCharts from "./DashboardCharts";
+import CommissionsLists from "./CommissionsLists";
 import type { FirmType } from "../types";
 
 const firmThemes = {
@@ -97,20 +98,29 @@ export default function Dashboard() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Primary Action Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
           {/* New Invoice Form */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <h2 className="text-lg font-medium mb-4">Create New Invoice</h2>
-            <InvoiceForm />
+          <div className="lg:col-span-1 h-full">
+            <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 h-full">
+              <h2 className="text-lg font-medium mb-4">Create New Invoice</h2>
+              <InvoiceForm />
+            </div>
           </div>
 
           {/* Quarterly Commission Summary */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <h2 className="text-lg font-medium mb-4">
-              Quarterly Summary and Settlements
-            </h2>
-            <QuarterlySnapshot />
+          <div className="lg:col-span-2 h-full">
+            <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 h-full">
+              <h2 className="text-lg font-medium mb-4">
+                Quarterly Summary and Settlements
+              </h2>
+              <QuarterlySnapshot />
+            </div>
           </div>
+        </div>
+
+        {/* Commissions Lists Section */}
+        <div className="w-full mb-8">
+          <CommissionsLists />
         </div>
 
         {/* Invoice Management Section */}

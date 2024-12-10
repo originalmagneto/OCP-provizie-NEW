@@ -1,11 +1,22 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import type { FirmType, SettlementStatus } from '../types';
+import type { FirmType } from '../types';
+
+interface SettlementStatus {
+  quarterKey: string;
+  settledBy: FirmType;
+  isSettled: boolean;
+  settledAt: string;
+  settledInvoiceIds: string[];
+  batchKey: string; 
+}
 
 interface CommissionContextType {
   settledQuarters: SettlementStatus[];
-  isQuarterSettled: (quarterKey: string, firm: FirmType) => boolean;
-  settleQuarter: (quarterKey: string, firm: FirmType) => Promise<void>;
-  unsettleQuarter: (quarterKey: string, firm: FirmType) => void;
+  isQuarterSettled: (quarterKey: string, firm: FirmType, invoiceId: string) => boolean;
+  getSettledInvoiceIds: (quarterKey: string, firm: FirmType) => string[];
+  getSettlementBatch: (quarterKey: string, firm: FirmType, invoiceId: string) => string | null;
+  settleQuarter: (quarterKey: string, firm: FirmType, invoiceIds: string[]) => Promise<void>;
+  unsettleQuarter: (quarterKey: string, firm: FirmType, batchKey: string) => void;
 }
 
 const CommissionContext = createContext<CommissionContextType | undefined>(undefined);
@@ -37,49 +48,78 @@ export function CommissionProvider({ children }: { children: React.ReactNode }) 
     }
   }, [settledQuarters]);
 
-  const isQuarterSettled = useCallback((quarterKey: string, firm: FirmType): boolean => {
-    return settledQuarters.some(settlement => 
-      settlement.quarterKey === quarterKey && 
-      settlement.isSettled && 
-      settlement.settledBy === firm
+  const isQuarterSettled = useCallback((quarterKey: string, firm: FirmType, invoiceId?: string): boolean => {
+    // If checking a specific invoice
+    if (invoiceId) {
+      const settlement = settledQuarters.find(s => 
+        s.quarterKey === quarterKey && 
+        s.settledBy === firm &&
+        s.settledInvoiceIds.includes(invoiceId)
+      );
+      return settlement?.isSettled ?? false;
+    }
+    
+    // If checking an entire quarter
+    const quarterSettlements = settledQuarters.filter(s => 
+      s.quarterKey === quarterKey && 
+      s.settledBy === firm
     );
+    
+    return quarterSettlements.length > 0 && 
+           quarterSettlements.every(s => s.isSettled);
   }, [settledQuarters]);
 
-  const settleQuarter = useCallback(async (quarterKey: string, firm: FirmType): Promise<void> => {
+  const getSettledInvoiceIds = useCallback((quarterKey: string, firm: FirmType): string[] => {
+    return settledQuarters
+      .filter(s => s.quarterKey === quarterKey && s.settledBy === firm)
+      .flatMap(s => s.settledInvoiceIds);
+  }, [settledQuarters]);
+
+  const getSettlementBatch = useCallback((quarterKey: string, firm: FirmType, invoiceId: string): string | null => {
+    const settlement = settledQuarters.find(s => 
+      s.quarterKey === quarterKey && 
+      s.settledBy === firm && 
+      s.settledInvoiceIds.includes(invoiceId)
+    );
+    return settlement ? settlement.batchKey : null;
+  }, [settledQuarters]);
+
+  const settleQuarter = useCallback(async (quarterKey: string, firm: FirmType, invoiceIds: string[]): Promise<void> => {
     try {
+      const timestamp = Date.now();
+      const batchKey = `${quarterKey}-${firm}-${timestamp}`; 
       const newSettlement: SettlementStatus = {
         quarterKey,
-        isSettled: true,
         settledBy: firm,
-        settledAt: new Date().toISOString()
+        isSettled: true,
+        settledAt: new Date().toISOString(),
+        settledInvoiceIds: invoiceIds,
+        batchKey
       };
 
-      setSettledQuarters(prev => {
-        // Remove any existing settlement for this quarter and firm
-        const filtered = prev.filter(settlement => 
-          !(settlement.quarterKey === quarterKey && settlement.settledBy === firm)
-        );
-        return [...filtered, newSettlement];
-      });
-
-      console.log('Settlement added:', newSettlement);
+      setSettledQuarters(prev => [...prev, newSettlement]);
+      console.log('Quarter settled successfully:', newSettlement);
     } catch (error) {
       console.error('Error settling quarter:', error);
       throw error;
     }
   }, []);
 
-  const unsettleQuarter = useCallback((quarterKey: string, firm: FirmType): void => {
+  const unsettleQuarter = useCallback((quarterKey: string, firm: FirmType, batchKey: string): void => {
     setSettledQuarters(prev => 
-      prev.filter(settlement => 
-        !(settlement.quarterKey === quarterKey && settlement.settledBy === firm)
-      )
+      prev.filter(s => !(
+        s.quarterKey === quarterKey && 
+        s.settledBy === firm && 
+        s.batchKey === batchKey
+      ))
     );
   }, []);
 
   const value = {
     settledQuarters,
     isQuarterSettled,
+    getSettledInvoiceIds,
+    getSettlementBatch,
     settleQuarter,
     unsettleQuarter
   };

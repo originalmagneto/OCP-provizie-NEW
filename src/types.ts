@@ -1,19 +1,34 @@
-export type FirmType = "SKALLARS" | "MKMs" | "Contax";
+export type FirmType = 'OCP' | 'Provizie';
 
 export interface Invoice {
   id: string;
-  clientName: string;
-  amount: number;
   date: string;
+  amount: number;
   commissionPercentage: number;
-  invoicedByFirm: FirmType;  // The firm that sent the invoice to the client
-  referredByFirm: FirmType;  // The firm that referred the client
-  isPaid: boolean;  // Whether the client has paid the invoice
+  referredByFirm: FirmType;
+  invoicedByFirm: FirmType;
+  isPaid: boolean;
+  quarterKey: string;
+}
+
+export interface Commission {
+  invoiceId: string;
+  amount: number;
+  type: 'to_pay' | 'to_receive';
+  firm: FirmType;
 }
 
 export interface SettlementStatus {
-  quarterKey: string;  // Format: "2024-Q1-[PAYING_FIRM]-[RECEIVING_FIRM]" (e.g., "2024-Q1-MKMs-SKALLARS")
-  isSettled: boolean;  // Whether the eligible commission has been settled
-  settledAt: string;  // When the commission was marked as settled
-  settledBy: FirmType;  // The firm that marked the commission as settled (should be the receiving firm)
+  quarterKey: string;
+  settledBy: FirmType;
+  isSettled: boolean;
+  settledAt: string;
+  settledInvoiceIds: string[];
+  batchKey: string;
+}
+
+export interface CommissionGroup {
+  batchKey: string | null;
+  commissions: Commission[];
+  isSettled: boolean;
 }

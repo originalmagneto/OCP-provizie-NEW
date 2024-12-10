@@ -157,7 +157,7 @@ export default function InvoiceForm() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Commission % (Default: 10%)
+              Commission %
             </label>
             <input
               type="number"

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { useYear, isInQuarter } from "../context/YearContext";
@@ -44,8 +44,8 @@ interface UnpaidInvoiceCardProps {
 }
 
 interface FilterState {
-  firm: "all" | FirmType;
-  sortBy: "date" | "amount" | "overdue";
+  firm: string;
+  sortBy: string;
 }
 
 function FilterBar({
@@ -63,7 +63,7 @@ function FilterBar({
             label=""
             value={filters.firm === "all" ? "All Firms" : filters.firm}
             onChange={(value) => {
-              const firm = value === "All Firms" ? "all" : (value as FirmType);
+              const firm = value === "All Firms" ? "all" : value;
               onFilterChange({ ...filters, firm });
             }}
             options={["All Firms", "SKALLARS", "MKMs", "Contax"]}
@@ -193,13 +193,40 @@ function UnpaidInvoiceCard({
 }
 
 export default function UnpaidInvoicesList() {
-  const { invoices, updateInvoice } = useInvoices();
+  const { invoices, togglePaid } = useInvoices();
   const { user } = useAuth();
   const { currentYear, currentQuarter } = useYear();
   const [filters, setFilters] = useState<FilterState>({
     firm: "all",
     sortBy: "date",
   });
+
+  console.log("UnpaidInvoicesList render:", { 
+    userFirm: user?.firm,
+    invoicesCount: invoices.length 
+  });
+
+  const calculateDaysOverdue = (date: string) => {
+    const invoiceDate = new Date(date);
+    const today = new Date();
+    const diffTime = today.getTime() - invoiceDate.getTime();
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const handleMarkAsPaid = useCallback((invoice: any) => {
+    console.log("Attempting to mark as paid:", {
+      invoiceId: invoice.id,
+      userFirm: user?.firm,
+      invoicedByFirm: invoice.invoicedByFirm
+    });
+
+    if (!user?.firm) {
+      console.error("Cannot mark as paid: No user firm");
+      return;
+    }
+
+    togglePaid(invoice.id, user.firm);
+  }, [user?.firm, togglePaid]);
 
   const unpaidInvoices = useMemo(() => {
     let filtered = invoices.filter(
@@ -235,13 +262,6 @@ export default function UnpaidInvoicesList() {
     });
   }, [invoices, currentYear, currentQuarter, filters]);
 
-  const calculateDaysOverdue = (date: string) => {
-    const invoiceDate = new Date(date);
-    const today = new Date();
-    const diffTime = today.getTime() - invoiceDate.getTime();
-    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  };
-
   if (!user) return null;
 
   return (
@@ -260,7 +280,7 @@ export default function UnpaidInvoicesList() {
             <UnpaidInvoiceCard
               key={invoice.id}
               invoice={invoice}
-              onMarkAsPaid={() => updateInvoice(invoice.id, { isPaid: true })}
+              onMarkAsPaid={() => handleMarkAsPaid(invoice)}
               userFirm={user.firm}
               daysOverdue={calculateDaysOverdue(invoice.date)}
             />

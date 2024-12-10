@@ -1,158 +1,134 @@
-import React, { useCallback, useMemo } from "react";
-import { useAuth } from "../context/AuthContext";
-import { useCommissions } from "../context/CommissionContext";
-import { AlertCircle, CircleDollarSign, Clock, CheckCircle2, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
-import type { FirmType } from "../types";
-
-interface Commission {
-  firm: FirmType;
-  amount: number;
-  isPaying: boolean;
-  isSettled: boolean;
-}
+import React from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useCommissions } from '../context/CommissionContext';
+import { formatCurrency } from '../utils/formatters';
+import { CircleDollarSign, Lock, Unlock } from 'lucide-react';
+import type { Commission } from '../types';
 
 interface QuarterlyCommissionCardProps {
   quarterKey: string;
-  quarter: number;
-  year: number;
-  revenue: number;
-  commissionsByFirm: Commission[];
-  userFirm: FirmType;
-  onSettleCommission: (firm: FirmType) => void;
-  isCurrentQuarter?: boolean;
+  commissions: Commission[];
+  isSettled: boolean;
+  batchKey: string | null;
 }
 
-export function QuarterlyCommissionCard({
+export default function QuarterlyCommissionCard({
   quarterKey,
-  quarter,
-  year,
-  revenue,
-  commissionsByFirm,
-  userFirm,
-  onSettleCommission,
-  isCurrentQuarter = false
+  commissions,
+  isSettled,
+  batchKey
 }: QuarterlyCommissionCardProps) {
-  const { user } = useAuth();
-  const { isQuarterSettled } = useCommissions();
+  const { firm } = useAuth();
+  const { settleQuarter, unsettleQuarter } = useCommissions();
 
-  const handleSettleClick = useCallback((firm: FirmType) => {
-    console.log('Settling commission for firm:', firm, 'Quarter key:', quarterKey);
-    onSettleCommission(firm);
-  }, [onSettleCommission, quarterKey]);
+  const totalToPay = commissions
+    .filter(c => c.type === 'to_pay')
+    .reduce((sum, c) => sum + c.amount, 0);
 
-  const getStatusIcon = (commission: Commission) => {
-    if (commission.isSettled) {
-      return <CheckCircle2 className="w-5 h-5 text-green-500" />;
+  const totalToReceive = commissions
+    .filter(c => c.type === 'to_receive')
+    .reduce((sum, c) => sum + c.amount, 0);
+
+  const handleSettle = async () => {
+    try {
+      if (!firm) return;
+      
+      // Get unique invoice IDs from the commissions
+      const invoiceIds = [...new Set(commissions.map(c => c.invoiceId))];
+      
+      if (invoiceIds.length === 0) {
+        console.error('No invoices to settle');
+        return;
+      }
+
+      await settleQuarter(quarterKey, firm, invoiceIds);
+    } catch (error) {
+      console.error('Error settling commissions:', error);
     }
-    if (commission.isPaying) {
-      return <CircleDollarSign className="w-5 h-5 text-yellow-500" />;
-    }
-    return <Clock className="w-5 h-5 text-gray-400" />;
   };
 
-  const getStatusText = (commission: Commission) => {
-    if (commission.isSettled) {
-      return "Settled";
+  const handleUnsettle = () => {
+    try {
+      if (!firm || !batchKey) {
+        console.error('Missing firm or batchKey for unsettling');
+        return;
+      }
+      unsettleQuarter(quarterKey, firm, batchKey);
+    } catch (error) {
+      console.error('Error unsettling commissions:', error);
     }
-    if (commission.isPaying) {
-      return "Pending";
-    }
-    return "Awaiting Settlement";
   };
-
-  const getStatusColor = (commission: Commission) => {
-    if (commission.isSettled) {
-      return "bg-green-50 text-green-700";
-    }
-    if (commission.isPaying) {
-      return "bg-yellow-50 text-yellow-700";
-    }
-    return "bg-gray-50 text-gray-700";
-  };
-
-  const { commissionsToReceive, commissionsToPay } = useMemo(() => {
-    return commissionsByFirm.reduce(
-      (acc, commission) => {
-        if (!commission.isSettled) {
-          if (commission.isPaying) {
-            acc.commissionsToPay += 1;
-          } else {
-            acc.commissionsToReceive += 1;
-          }
-        }
-        return acc;
-      },
-      { commissionsToReceive: 0, commissionsToPay: 0 }
-    );
-  }, [commissionsByFirm]);
 
   return (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
-      <div className="p-4 border-b border-gray-200 bg-gray-50">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              Q{quarter} {year}
-              {isCurrentQuarter && (
-                <span className="text-xs font-medium px-2 py-1 bg-blue-500 text-white rounded-full">
-                  Current
-                </span>
-              )}
-            </h3>
-            <div className="flex items-center gap-2 ml-2">
-              {commissionsToReceive > 0 && (
-                <div className="flex items-center gap-1.5 text-sm font-medium text-green-700 bg-green-100 px-3 py-1.5 rounded-full shadow-sm">
-                  <ArrowDownCircle className="w-4 h-4" />
-                  <span>Receive ({commissionsToReceive})</span>
-                </div>
-              )}
-              {commissionsToPay > 0 && (
-                <div className="flex items-center gap-1.5 text-sm font-medium text-red-700 bg-red-100 px-3 py-1.5 rounded-full shadow-sm">
-                  <ArrowUpCircle className="w-4 h-4" />
-                  <span>Pay ({commissionsToPay})</span>
-                </div>
-              )}
-            </div>
-          </div>
-          <span className="text-base font-semibold text-gray-700">
-            ${revenue.toFixed(2)}
-          </span>
+    <div className="bg-white rounded-lg shadow-md p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <CircleDollarSign className="w-6 h-6 text-blue-500" />
+          <h3 className="text-lg font-semibold">
+            {isSettled ? 'Settled Commission' : 'Pending Commission'}
+          </h3>
+        </div>
+        <div className="flex items-center space-x-2">
+          {isSettled ? (
+            <>
+              <Lock className="w-5 h-5 text-green-500" />
+              <span className="text-sm text-green-500">Settled</span>
+              <button
+                onClick={handleUnsettle}
+                className="px-3 py-1 text-sm bg-red-50 text-red-600 rounded-md hover:bg-red-100"
+              >
+                Unsettle
+              </button>
+            </>
+          ) : (
+            <>
+              <Unlock className="w-5 h-5 text-yellow-500" />
+              <span className="text-sm text-yellow-500">Pending</span>
+              <button
+                onClick={handleSettle}
+                className="px-3 py-1 text-sm bg-green-50 text-green-600 rounded-md hover:bg-green-100"
+              >
+                Settle
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="p-4 space-y-4">
-        {commissionsByFirm.map((commission) => (
-          <div
-            key={`${commission.firm}-${commission.amount}`}
-            className={`rounded-lg p-4 shadow-sm ${getStatusColor(commission)}`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-base">
-                    {commission.firm}
-                  </span>
-                  {getStatusIcon(commission)}
-                </div>
-                <div className="text-base font-medium">
-                  ${commission.amount.toFixed(2)}
-                </div>
-                <div className="text-sm">
-                  {getStatusText(commission)}
-                </div>
-              </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="p-4 bg-red-50 rounded-lg">
+          <h4 className="text-sm font-medium text-red-700">To Pay</h4>
+          <p className="text-2xl font-bold text-red-600">
+            {formatCurrency(totalToPay)}
+          </p>
+        </div>
+        <div className="p-4 bg-green-50 rounded-lg">
+          <h4 className="text-sm font-medium text-green-700">To Receive</h4>
+          <p className="text-2xl font-bold text-green-600">
+            {formatCurrency(totalToReceive)}
+          </p>
+        </div>
+      </div>
 
-              {!commission.isSettled && user?.firm === userFirm && (
-                <button
-                  onClick={() => handleSettleClick(commission.firm)}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm"
-                >
-                  Settle
-                </button>
-              )}
+      <div className="mt-4">
+        <h4 className="text-sm font-medium text-gray-700 mb-2">Commission Details</h4>
+        <div className="space-y-2">
+          {commissions.map((commission, index) => (
+            <div
+              key={`${commission.invoiceId}-${index}`}
+              className="flex justify-between items-center p-2 bg-gray-50 rounded"
+            >
+              <span className="text-sm text-gray-600">
+                Invoice #{commission.invoiceId}
+              </span>
+              <span className={`text-sm font-medium ${
+                commission.type === 'to_pay' ? 'text-red-600' : 'text-green-600'
+              }`}>
+                {formatCurrency(commission.amount)}
+              </span>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

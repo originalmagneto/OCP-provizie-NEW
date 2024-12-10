@@ -1,14 +1,16 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
-import type { Invoice, FirmType } from "../types";
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import type { Invoice, FirmType } from '../types';
+import { useAuth } from "./AuthContext";
 
 interface InvoiceContextType {
   invoices: Invoice[];
   isLoading: boolean;
-  addInvoice: (invoice: Invoice) => void;
+  addInvoice: (invoice: Omit<Invoice, 'id'>) => void;
   removeInvoice: (id: string) => void;
-  updateInvoice: (id: string, updatedInvoice: Partial<Invoice>) => void;
+  updateInvoice: (updatedInvoice: Invoice) => void;
+  togglePaid: (id: string, firm: FirmType) => void;
+  getInvoiceById: (id: string) => Invoice | undefined;
   resetAllData: () => void;
-  togglePaid: (id: string) => void;
 }
 
 const defaultContext: InvoiceContextType = {
@@ -17,8 +19,9 @@ const defaultContext: InvoiceContextType = {
   addInvoice: () => {},
   removeInvoice: () => {},
   updateInvoice: () => {},
-  resetAllData: () => {},
   togglePaid: () => {},
+  getInvoiceById: () => undefined,
+  resetAllData: () => {},
 };
 
 const InvoiceContext = createContext<InvoiceContextType>(defaultContext);
@@ -26,7 +29,7 @@ const InvoiceContext = createContext<InvoiceContextType>(defaultContext);
 export function useInvoices() {
   const context = useContext(InvoiceContext);
   if (!context) {
-    throw new Error("useInvoices must be used within an InvoiceProvider");
+    throw new Error('useInvoices must be used within an InvoiceProvider');
   }
   return context;
 }
@@ -52,15 +55,22 @@ const validateFirm = (firm: string): firm is FirmType => {
 // Main invoice validation
 const isValidInvoice = (invoice: any): invoice is Invoice => {
   try {
-    if (!invoice || typeof invoice !== "object") return false;
+    // Special case: if we're just validating an ID
+    if (typeof invoice === "string") {
+      return true; // Allow string IDs to pass validation
+    }
+
+    if (!invoice || typeof invoice !== "object") {
+      console.error("Invoice is not an object:", invoice);
+      return false;
+    }
 
     // Required string fields
     if (
-      typeof invoice.id !== "string" ||
       typeof invoice.clientName !== "string" ||
       typeof invoice.date !== "string"
     ) {
-      console.error("Invalid required string fields:", { id: invoice.id, clientName: invoice.clientName, date: invoice.date });
+      console.error("Invalid required string fields:", { clientName: invoice.clientName, date: invoice.date });
       return false;
     }
 
@@ -93,6 +103,13 @@ const isValidInvoice = (invoice: any): invoice is Invoice => {
       invoice.isPaid = false; // Set default value if missing
     }
 
+    // For new invoices, ensure ID is a string
+    // For existing invoices, the ID must exist and be a string
+    if (invoice.id !== undefined && typeof invoice.id !== "string") {
+      console.error("Invalid invoice ID:", invoice.id);
+      return false;
+    }
+
     return true;
   } catch (error) {
     console.error("Error validating invoice:", error);
@@ -116,10 +133,19 @@ const normalizeInvoice = (invoice: Invoice): Invoice => {
 
 export function InvoiceProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>(() => {
+    try {
+      const stored = localStorage.getItem('invoices');
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error('Error loading invoices:', error);
+      return [];
+    }
+  });
+  const { user } = useAuth();
 
   // Load invoices from localStorage
-  useEffect(() => {
+  React.useEffect(() => {
     let mounted = true;
 
     const loadInvoices = () => {
@@ -158,54 +184,29 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Save invoices to localStorage
-  useEffect(() => {
+  // Save invoices to localStorage whenever they change
+  React.useEffect(() => {
     if (!isLoading) {
       try {
-        localStorage.setItem("invoices", JSON.stringify(invoices));
+        localStorage.setItem('invoices', JSON.stringify(invoices));
       } catch (error) {
-        console.error("Error saving invoices to localStorage:", error);
+        console.error('Error saving invoices:', error);
       }
     }
   }, [invoices, isLoading]);
 
-  const addInvoice = useCallback((invoice: Invoice) => {
+  const addInvoice = useCallback((invoice: Omit<Invoice, 'id'>) => {
     try {
-      if (!isValidInvoice(invoice)) {
+      if (!isValidInvoice({ ...invoice, id: crypto.randomUUID() })) {
         console.error("Invalid invoice data:", invoice);
         return;
       }
 
-      const normalizedInvoice = normalizeInvoice(invoice);
-
-      setInvoices(prevInvoices => {
-        try {
-          const newInvoices = Array.isArray(prevInvoices) ? prevInvoices : [];
-          const combinedInvoices = [...newInvoices, normalizedInvoice];
-          
-          // Safe sorting function that handles potential invalid dates
-          return combinedInvoices.sort((a, b) => {
-            try {
-              const dateA = new Date(a.date).getTime();
-              const dateB = new Date(b.date).getTime();
-              
-              // Check for invalid dates
-              if (isNaN(dateA) || isNaN(dateB)) {
-                console.error('Invalid date found during sort:', { a: a.date, b: b.date });
-                return 0; // Keep original order if dates are invalid
-              }
-              
-              return dateB - dateA;
-            } catch (error) {
-              console.error('Error during invoice sort:', error);
-              return 0; // Keep original order on error
-            }
-          });
-        } catch (error) {
-          console.error('Error processing invoices array:', error);
-          return prevInvoices; // Return original array on error
-        }
-      });
+      const newInvoice = {
+        ...invoice,
+        id: crypto.randomUUID()
+      };
+      setInvoices(prev => [...prev, newInvoice]);
     } catch (error) {
       console.error("Error adding invoice:", error);
     }
@@ -219,33 +220,77 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const updateInvoice = useCallback((id: string, updatedInvoice: Partial<Invoice>) => {
+  const updateInvoice = useCallback((updatedInvoice: Invoice) => {
     try {
-      setInvoices(prev =>
-        prev.map(invoice => {
-          if (invoice.id !== id) return invoice;
+      if (!isValidInvoice(updatedInvoice)) {
+        console.error("Invalid invoice data:", updatedInvoice);
+        return;
+      }
 
-          const updated = {
-            ...invoice,
-            ...updatedInvoice,
-          } as Invoice;
-
-          if (!isValidInvoice(updated)) {
-            console.error("Invalid updated invoice:", updated);
-            return invoice;
-          }
-
-          return normalizeInvoice(updated);
-        })
+      setInvoices(prev => 
+        prev.map(invoice => 
+          invoice.id === updatedInvoice.id ? updatedInvoice : invoice
+        )
       );
     } catch (error) {
       console.error("Error updating invoice:", error);
     }
   }, []);
 
-  const togglePaid = useCallback((id: string) => {
-    updateInvoice(id, { isPaid: true });
-  }, [updateInvoice]);
+  const togglePaid = useCallback((id: string, firm: FirmType) => {
+    try {
+      console.log("Attempting to toggle paid status for invoice:", id, "firm:", firm);
+      
+      if (!user?.firm) {
+        console.error("No user firm found");
+        return;
+      }
+
+      if (!id || typeof id !== 'string') {
+        console.error("Invalid invoice ID:", id);
+        return;
+      }
+
+      if (!validateFirm(firm)) {
+        console.error("Invalid firm:", firm);
+        return;
+      }
+
+      setInvoices(prev => {
+        const invoice = prev.find(inv => inv.id === id);
+        if (!invoice) {
+          console.error("Invoice not found:", id);
+          return prev;
+        }
+
+        if (invoice.invoicedByFirm !== firm) {
+          console.error("Firm mismatch:", invoice.invoicedByFirm, "!=", firm);
+          return prev;
+        }
+
+        console.log("Found invoice:", invoice);
+        console.log("Current paid status:", invoice.isPaid);
+
+        return prev.map(inv => {
+          if (inv.id === id) {
+            const updatedInvoice = {
+              ...inv,
+              isPaid: !inv.isPaid
+            };
+            console.log("Updated paid status to:", updatedInvoice.isPaid);
+            return updatedInvoice;
+          }
+          return inv;
+        });
+      });
+    } catch (error) {
+      console.error("Error toggling invoice paid status:", error);
+    }
+  }, [user?.firm]);
+
+  const getInvoiceById = useCallback((id: string) => {
+    return invoices.find(invoice => invoice.id === id);
+  }, [invoices]);
 
   const resetAllData = useCallback(() => {
     setInvoices([]);
@@ -258,8 +303,9 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
     addInvoice,
     removeInvoice,
     updateInvoice,
-    resetAllData,
     togglePaid,
+    getInvoiceById,
+    resetAllData
   };
 
   return (
