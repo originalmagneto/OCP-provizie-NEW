@@ -306,7 +306,7 @@ export default function InvoiceList() {
   );
 
   const processedInvoices = useMemo(() => {
-    if (!Array.isArray(invoices) || isLoading) {
+    if (!Array.isArray(invoices) || isLoading || !invoices) {
       return [];
     }
 
@@ -314,11 +314,15 @@ export default function InvoiceList() {
       return (
         invoice &&
         typeof invoice === "object" &&
+        typeof invoice.id === "string" &&
         typeof invoice.date === "string" &&
         typeof invoice.clientName === "string" &&
         typeof invoice.invoicedByFirm === "string" &&
+        typeof invoice.referredByFirm === "string" &&
         typeof invoice.amount === "number" &&
-        typeof invoice.isPaid === "boolean"
+        typeof invoice.commissionPercentage === "number" &&
+        typeof invoice.isPaid === "boolean" &&
+        !isNaN(new Date(invoice.date).getTime())
       );
     });
 
