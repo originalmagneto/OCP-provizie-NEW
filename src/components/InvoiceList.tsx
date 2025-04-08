@@ -331,14 +331,18 @@ export default function InvoiceList() {
 
       // Create a new array for sorting to avoid mutation
       return [...filtered].sort((a, b) => {
-        try {
-          const dateA = new Date(a.date);
-          const dateB = new Date(b.date);
-          return dateB.getTime() - dateA.getTime();
-        } catch (error) {
-          console.error('Error sorting invoices:', error);
-          return 0;
-        }
+          if (!a || !b) return 0;
+          if (!a.date || !b.date) return 0;
+          
+          try {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
+            return dateB.getTime() - dateA.getTime();
+          } catch (error) {
+            console.error('Error sorting invoices:', error);
+            return 0;
+          }
       });
     } catch (error) {
       console.error('Error processing invoices:', error);
