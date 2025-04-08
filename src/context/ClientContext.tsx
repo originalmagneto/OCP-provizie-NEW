@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { db } from '../config/firebase';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { clientServices } from '../services/firebaseServices';
 
 interface ClientContextType {
   clientHistory: string[];
@@ -25,42 +28,55 @@ export function useClient() {
 export function ClientProvider({ children }: { children: React.ReactNode }) {
   const [clientHistory, setClientHistory] = useState<string[]>([]);
 
-  // Load client history from localStorage
+  // Set up real-time listener for clients
   useEffect(() => {
-    try {
-      const storedClients = localStorage.getItem('clientHistory');
-      if (storedClients) {
-        const parsedClients = JSON.parse(storedClients);
-        if (Array.isArray(parsedClients)) {
-          setClientHistory(parsedClients);
-        }
+    // Create a query to get clients
+    const q = query(collection(db, "clients"), orderBy("name"));
+    
+    // Set up the listener
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      try {
+        const clients = snapshot.docs.map(doc => doc.data().name as string);
+        setClientHistory(clients);
+      } catch (error) {
+        console.error("Error processing client data from Firestore:", error);
       }
-    } catch (error) {
-      console.error('Error loading client history:', error);
-    }
+    }, (error) => {
+      console.error("Firestore client listener error:", error);
+    });
+    
+    // Clean up listener on unmount
+    return () => unsubscribe();
   }, []);
 
-  // Save client history to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('clientHistory', JSON.stringify(clientHistory));
-    } catch (error) {
-      console.error('Error saving client history:', error);
-    }
-  }, [clientHistory]);
-
-  const addClient = (clientName: string) => {
-    if (clientName && !clientHistory.includes(clientName)) {
-      setClientHistory(prev => [...prev, clientName]);
+  const addClient = async (clientName: string) => {
+    if (clientName) {
+      try {
+        await clientServices.addClient(clientName);
+        // The client will be added via the Firestore listener
+      } catch (error) {
+        console.error("Error adding client to Firestore:", error);
+      }
     }
   };
 
-  const searchClients = (query: string): string[] => {
+  const searchClients = async (query: string): Promise<string[]> => {
     if (!query) return [];
-    const normalizedQuery = query.toLowerCase();
-    return clientHistory.filter((client) =>
-      client.toLowerCase().includes(normalizedQuery)
-    );
+    
+    try {
+      // For immediate results, we can filter the local state
+      const normalizedQuery = query.toLowerCase();
+      const localResults = clientHistory.filter((client) =>
+        client.toLowerCase().includes(normalizedQuery)
+      );
+      
+      // For a more comprehensive search, we could use Firestore
+      // This is a simplified implementation
+      return localResults;
+    } catch (error) {
+      console.error("Error searching clients:", error);
+      return [];
+    }
   };
 
   const value = {

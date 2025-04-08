@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import type { Invoice } from "../types";
+import { db } from "../config/firebase";
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { invoiceServices } from "../services/firebaseServices";
+import { useAuth } from "./AuthContext";
 
 interface InvoiceContextType {
   invoices: Invoice[];
@@ -49,83 +53,103 @@ const isValidInvoice = (invoice: any): invoice is Invoice => {
 };
 
 export function InvoiceProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
+  // Set up real-time listener for invoices
   useEffect(() => {
-    let mounted = true;
-
-    const loadInvoices = () => {
+    setIsLoading(true);
+    
+    // Create a query to get invoices ordered by date
+    const q = query(collection(db, "invoices"), orderBy("date", "desc"));
+    
+    // Set up the listener
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       try {
-        const storedInvoices = localStorage.getItem("invoices");
-        if (storedInvoices && mounted) {
-          const parsedInvoices = JSON.parse(storedInvoices);
-          if (Array.isArray(parsedInvoices)) {
-            const validInvoices = parsedInvoices.filter(isValidInvoice);
-            setInvoices(validInvoices);
-          }
-        }
+        const invoiceData = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            clientName: data.clientName,
+            amount: data.amount,
+            date: data.date,
+            commissionPercentage: data.commissionPercentage,
+            invoicedByFirm: data.invoicedByFirm,
+            referredByFirm: data.referredByFirm,
+            isPaid: data.isPaid
+          } as Invoice;
+        });
+        
+        setInvoices(invoiceData.filter(isValidInvoice));
       } catch (error) {
-        console.error("Error loading invoices from localStorage:", error);
+        console.error("Error processing Firestore data:", error);
       } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
-    };
-
-    loadInvoices();
-
-    return () => {
-      mounted = false;
-    };
+    }, (error) => {
+      console.error("Firestore listener error:", error);
+      setIsLoading(false);
+    });
+    
+    // Clean up listener on unmount
+    return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (!isLoading) {
-      try {
-        localStorage.setItem("invoices", JSON.stringify(invoices));
-      } catch (error) {
-        console.error("Error saving invoices to localStorage:", error);
-      }
-    }
-  }, [invoices, isLoading]);
-
-  const addInvoice = useCallback((invoice: Invoice) => {
+  const addInvoice = useCallback(async (invoice: Invoice) => {
     if (!isValidInvoice(invoice)) {
       console.error("Invalid invoice data:", invoice);
       return;
     }
 
-    setInvoices((prevInvoices) => {
-      const newInvoices = Array.isArray(prevInvoices) ? prevInvoices : [];
-      return [...newInvoices, { ...invoice }];
-    });
+    try {
+      // The actual invoice will be added via the Firestore listener
+      await invoiceServices.addInvoice(invoice);
+    } catch (error) {
+      console.error("Error adding invoice to Firestore:", error);
+    }
   }, []);
 
-  const removeInvoice = useCallback((id: string) => {
-    setInvoices((prev) => prev.filter((invoice) => invoice.id !== id));
+  const removeInvoice = useCallback(async (id: string) => {
+    try {
+      await invoiceServices.deleteInvoice(id);
+      // The invoice will be removed via the Firestore listener
+    } catch (error) {
+      console.error("Error removing invoice from Firestore:", error);
+    }
   }, []);
 
-  const updateInvoice = useCallback((id: string, updatedInvoice: Partial<Invoice>) => {
-    setInvoices((prev) =>
-      prev.map((invoice) =>
-        invoice.id === id ? { ...invoice, ...updatedInvoice } : invoice
-      )
-    );
+  const updateInvoice = useCallback(async (id: string, updatedInvoice: Partial<Invoice>) => {
+    try {
+      await invoiceServices.updateInvoice(id, updatedInvoice);
+      // The invoice will be updated via the Firestore listener
+    } catch (error) {
+      console.error("Error updating invoice in Firestore:", error);
+    }
   }, []);
 
-  const togglePaid = useCallback((id: string) => {
-    setInvoices((prev) =>
-      prev.map((invoice) =>
-        invoice.id === id ? { ...invoice, isPaid: !invoice.isPaid } : invoice
-      )
-    );
-  }, []);
+  const togglePaid = useCallback(async (id: string) => {
+    try {
+      // Find the current invoice to get its isPaid status
+      const invoice = invoices.find(inv => inv.id === id);
+      if (invoice) {
+        await invoiceServices.togglePaid(id, !invoice.isPaid);
+        // The invoice will be updated via the Firestore listener
+      }
+    } catch (error) {
+      console.error("Error toggling invoice paid status in Firestore:", error);
+    }
+  }, [invoices]);
 
-  const resetAllData = useCallback(() => {
-    setInvoices([]);
-    localStorage.removeItem("invoices");
+  const resetAllData = useCallback(async () => {
+    try {
+      // This would require admin privileges in a real app
+      // For now, we'll just log a message
+      console.log("Reset all data requested - this would require admin privileges");
+      // In a real implementation, you might call a Cloud Function to handle this
+    } catch (error) {
+      console.error("Error resetting data in Firestore:", error);
+    }
   }, []);
 
   const value = useMemo(

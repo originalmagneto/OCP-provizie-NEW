@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { FirmType, SettlementStatus } from '../types';
+import { db } from '../config/firebase';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { settlementServices } from '../services/firebaseServices';
 
 interface CommissionContextType {
   settledQuarters: SettlementStatus[];
@@ -19,48 +22,59 @@ export function useCommissions() {
 }
 
 export function CommissionProvider({ children }: { children: React.ReactNode }) {
-  const [settledQuarters, setSettledQuarters] = useState<SettlementStatus[]>(() => {
-    const stored = localStorage.getItem('settledQuarters');
-    return stored ? JSON.parse(stored) : [];
-  });
+  const [settledQuarters, setSettledQuarters] = useState<SettlementStatus[]>([]);
 
+  // Set up real-time listener for settlements
   useEffect(() => {
-    localStorage.setItem('settledQuarters', JSON.stringify(settledQuarters));
-  }, [settledQuarters]);
+    // Create a query to get settlements
+    const q = query(collection(db, "settlements"), orderBy("quarterKey"));
+    
+    // Set up the listener
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      try {
+        const settlements = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            quarterKey: data.quarterKey,
+            isSettled: data.isSettled,
+            settledAt: data.settledAt,
+            settledBy: data.settledBy
+          } as SettlementStatus;
+        });
+        
+        setSettledQuarters(settlements);
+      } catch (error) {
+        console.error("Error processing settlement data from Firestore:", error);
+      }
+    }, (error) => {
+      console.error("Firestore settlements listener error:", error);
+    });
+    
+    // Clean up listener on unmount
+    return () => unsubscribe();
+  }, []);
 
   const isQuarterSettled = (quarterKey: string, firm: FirmType): boolean => {
     // Check if this specific quarter-firm combination is settled
     return settledQuarters.some(q => q.quarterKey === quarterKey && q.isSettled && q.settledBy === firm);
   };
 
-  const settleQuarter = (quarterKey: string, firm: FirmType) => {
-    setSettledQuarters(prev => {
-      // Find if this quarter-firm combination already exists
-      const existingIndex = prev.findIndex(q => q.quarterKey === quarterKey && q.settledBy === firm);
-      
-      const newStatus: SettlementStatus = {
-        quarterKey,
-        isSettled: true,
-        settledAt: new Date().toISOString(),
-        settledBy: firm
-      };
-
-      if (existingIndex >= 0) {
-        // Update existing settlement
-        const updated = [...prev];
-        updated[existingIndex] = newStatus;
-        return updated;
-      }
-
-      // Add new settlement
-      return [...prev, newStatus];
-    });
+  const settleQuarter = async (quarterKey: string, firm: FirmType) => {
+    try {
+      await settlementServices.settleQuarter(quarterKey, firm);
+      // The settlement will be updated via the Firestore listener
+    } catch (error) {
+      console.error("Error settling quarter in Firestore:", error);
+    }
   };
 
-  const unsettleQuarter = (quarterKey: string, firm: FirmType) => {
-    setSettledQuarters(prev => 
-      prev.filter(q => q.quarterKey !== quarterKey || q.settledBy !== firm)
-    );
+  const unsettleQuarter = async (quarterKey: string, firm: FirmType) => {
+    try {
+      await settlementServices.unsettleQuarter(quarterKey, firm);
+      // The settlement will be removed via the Firestore listener
+    } catch (error) {
+      console.error("Error unsettling quarter in Firestore:", error);
+    }
   };
 
   const value = {
