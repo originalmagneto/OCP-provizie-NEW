@@ -310,33 +310,40 @@ export default function InvoiceList() {
       return [];
     }
 
-    const validInvoices = invoices.filter((invoice): invoice is Invoice => {
-      return (
-        invoice &&
-        typeof invoice === "object" &&
-        typeof invoice.id === "string" &&
-        typeof invoice.date === "string" &&
-        typeof invoice.clientName === "string" &&
-        typeof invoice.invoicedByFirm === "string" &&
-        typeof invoice.referredByFirm === "string" &&
-        typeof invoice.amount === "number" &&
-        typeof invoice.commissionPercentage === "number" &&
-        typeof invoice.isPaid === "boolean" &&
-        !isNaN(new Date(invoice.date).getTime())
-      );
-    });
+    try {
+      const validInvoices = invoices.filter((invoice): invoice is Invoice => {
+        if (!invoice) return false;
+        return (
+          typeof invoice === "object" &&
+          typeof invoice.id === "string" &&
+          typeof invoice.date === "string" &&
+          typeof invoice.clientName === "string" &&
+          typeof invoice.invoicedByFirm === "string" &&
+          typeof invoice.referredByFirm === "string" &&
+          typeof invoice.amount === "number" &&
+          typeof invoice.commissionPercentage === "number" &&
+          typeof invoice.isPaid === "boolean" &&
+          !isNaN(new Date(invoice.date).getTime())
+        );
+      });
 
-    const filtered = validInvoices.filter(filterInvoice);
+      const filtered = validInvoices.filter(filterInvoice);
 
-    // Create a new array for sorting to avoid mutation
-    const sorted = [...filtered];
-    sorted.sort((a, b) => {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
-      return dateB.getTime() - dateA.getTime();
-    });
-
-    return sorted;
+      // Create a new array for sorting to avoid mutation
+      return [...filtered].sort((a, b) => {
+        try {
+          const dateA = new Date(a.date);
+          const dateB = new Date(b.date);
+          return dateB.getTime() - dateA.getTime();
+        } catch (error) {
+          console.error('Error sorting invoices:', error);
+          return 0;
+        }
+      });
+    } catch (error) {
+      console.error('Error processing invoices:', error);
+      return [];
+    }
   }, [invoices, isLoading, filterInvoice]);
 
   if (isLoading) {
