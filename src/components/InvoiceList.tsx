@@ -159,7 +159,7 @@ function InvoiceCard({
                 <Euro className="w-4 h-4 mr-1" />
                 {formatCurrency(invoice.amount)}
               </p>
-              <StatusBadge isPaid={invoice.isPaid} isOverdue={isOverdue} />
+              <StatusBadge status={invoice.isPaid ? 'paid' : isOverdue ? 'overdue' : 'pending'} />
             </div>
 
             <div className="flex items-center space-x-2">
