@@ -36,8 +36,19 @@ const firmThemes = {
   },
 } as const;
 
+interface Invoice {
+  id: string;
+  date: string;
+  amount: number;
+  clientName: string;
+  invoicedByFirm: FirmType;
+  referredByFirm: FirmType;
+  isPaid: boolean;
+  commissionPercentage: number;
+}
+
 interface UnpaidInvoiceCardProps {
-  invoice: any;
+  invoice: Invoice;
   onMarkAsPaid: () => void;
   userFirm: FirmType;
   daysOverdue: number;
@@ -219,14 +230,16 @@ export default function UnpaidInvoicesList() {
 
     // Apply sorting
     return filtered.sort((a, b) => {
-      const daysOverdueA = calculateDaysOverdue(a.date);
-      const daysOverdueB = calculateDaysOverdue(b.date);
+      if (!a || !b) return 0;
+      
+      const daysOverdueA = a.date ? calculateDaysOverdue(a.date) : 0;
+      const daysOverdueB = b.date ? calculateDaysOverdue(b.date) : 0;
 
       switch (filters.sortBy) {
         case "date":
-          return new Date(b.date).getTime() - new Date(a.date).getTime();
+          return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
         case "amount":
-          return b.amount - a.amount;
+          return (b.amount || 0) - (a.amount || 0);
         case "overdue":
           return daysOverdueB - daysOverdueA;
         default:
