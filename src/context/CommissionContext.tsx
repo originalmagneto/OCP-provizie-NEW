@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { FirmType, SettlementStatus } from '../types';
 import { db } from '../config/firebase';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { useAuth } from './AuthContext';
 import { settlementServices } from '../services/firebaseServices';
 
 interface CommissionContextType {
@@ -22,10 +23,15 @@ export function useCommissions() {
 }
 
 export function CommissionProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [settledQuarters, setSettledQuarters] = useState<SettlementStatus[]>([]);
 
   // Set up real-time listener for settlements
   useEffect(() => {
+    if (!user) {
+      setSettledQuarters([]);
+      return;
+    }
     // Create a query to get settlements
     const q = query(collection(db, "settlements"), orderBy("quarterKey"));
     
@@ -52,7 +58,7 @@ export function CommissionProvider({ children }: { children: React.ReactNode }) 
     
     // Clean up listener on unmount
     return () => unsubscribe();
-  }, []);
+  }, [user]); // Add user as a dependency
 
   const isQuarterSettled = (quarterKey: string, firm: FirmType): boolean => {
     // Check if this specific quarter-firm combination is settled

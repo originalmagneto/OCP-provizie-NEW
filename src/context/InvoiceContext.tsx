@@ -59,6 +59,12 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
 
   // Set up real-time listener for invoices
   useEffect(() => {
+    if (!user) {
+      setInvoices([]);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     
     // Create a query to get invoices ordered by date
@@ -94,7 +100,7 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
     
     // Clean up listener on unmount
     return () => unsubscribe();
-  }, []);
+  }, [user]); // Add user as a dependency
 
   const addInvoice = useCallback(async (invoice: Invoice) => {
     if (!isValidInvoice(invoice)) {

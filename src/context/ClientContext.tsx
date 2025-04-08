@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { db } from '../config/firebase';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { clientServices } from '../services/firebaseServices';
+import { useAuth } from './AuthContext';
 
 interface ClientContextType {
   clientHistory: string[];
@@ -26,10 +27,15 @@ export function useClient() {
 }
 
 export function ClientProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [clientHistory, setClientHistory] = useState<string[]>([]);
 
   // Set up real-time listener for clients
   useEffect(() => {
+    if (!user) {
+      setClientHistory([]);
+      return;
+    }
     // Create a query to get clients
     const q = query(collection(db, "clients"), orderBy("name"));
     
@@ -47,7 +53,7 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
     
     // Clean up listener on unmount
     return () => unsubscribe();
-  }, []);
+  }, [user]); // Add user as a dependency
 
   const addClient = async (clientName: string) => {
     if (clientName) {
