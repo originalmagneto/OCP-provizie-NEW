@@ -81,6 +81,11 @@ service cloud.firestore {
 }
 ```
 
+**IMPORTANT**: After entering these rules, click the "Publish" button to deploy them. If you don't publish the rules, they won't take effect and you'll encounter permission errors.
+
+**IMPORTANT**: After entering these rules, click the "Publish" button to deploy them. If you don't publish the rules, they won't take effect and you'll encounter permission errors.
+```
+
 ## Data Migration
 
 If you have existing data in localStorage, it will be automatically migrated to Firebase when you:
@@ -98,11 +103,42 @@ When deploying to Netlify, make sure to add your Firebase environment variables 
 2. Navigate to "Build & deploy" > "Environment variables"
 3. Add all the Firebase environment variables from your `.env` file
 
+### Authorize Netlify Domain for OAuth
+
+**IMPORTANT**: You must authorize your Netlify domain for Firebase Authentication:
+
+1. Go to the Firebase console > Authentication > Settings
+2. Scroll down to the "Authorized domains" section
+3. Click "Add domain"
+4. Add your Netlify domain (e.g., `ocp-provizie-new.netlify.app`)
+5. Click "Add"
+
+Without this step, sign-in with popup/redirect methods will not work on your deployed site.
+
 ## Troubleshooting
+
+### Common Issues
 
 - **Authentication Issues**: Make sure Email/Password authentication is enabled in Firebase
 - **Database Access Issues**: Check your Firestore security rules
 - **Environment Variables**: Ensure all Firebase config variables are correctly set in your `.env` file
+
+### Permission Denied Errors
+
+If you see errors like `FirebaseError: [code=permission-denied]: Missing or insufficient permissions`:
+
+1. **Check Security Rules**: Ensure your Firestore security rules are correctly set up as shown above
+2. **Publish Rules**: Make sure you've clicked the "Publish" button after entering your rules
+3. **Authentication**: Verify that users are properly authenticated before accessing Firestore
+4. **User Permissions**: Ensure the authenticated user has the correct permissions according to your rules
+
+### OAuth Domain Authorization
+
+If you see warnings about the current domain not being authorized for OAuth operations:
+
+1. Add your domain (e.g., `ocp-provizie-new.netlify.app`) to the authorized domains list in Firebase
+2. Go to Firebase console > Authentication > Settings > Authorized domains
+3. This is required for sign-in methods like `signInWithPopup` and `signInWithRedirect`
 
 ## Next Steps
 
