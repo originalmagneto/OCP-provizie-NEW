@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useInvoices } from "./InvoiceContext";
+import type { Invoice } from "../types";
 
 interface YearContextType {
   currentYear: number;
