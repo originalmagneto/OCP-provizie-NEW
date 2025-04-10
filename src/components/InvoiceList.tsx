@@ -59,9 +59,13 @@ interface InvoiceCardProps {
 function FilterBar({
   filters,
   onFilterChange,
+  showAllInvoices,
+  onToggleShowAll,
 }: {
   filters: FilterState;
   onFilterChange: (filters: FilterState) => void;
+  showAllInvoices: boolean;
+  onToggleShowAll: (value: boolean) => void;
 }) {
   return (
     <div className="flex flex-col md:flex-row gap-4 p-4 bg-white rounded-lg shadow">
@@ -80,7 +84,20 @@ function FilterBar({
         </div>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex gap-4 items-center">
+        <div className="flex items-center">
+          <label className="inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={showAllInvoices}
+              onChange={(e) => onToggleShowAll(e.target.checked)}
+            />
+            <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            <span className="ms-3 text-sm font-medium text-gray-700">Show All Invoices</span>
+          </label>
+        </div>
+
         <div className="w-40">
           <CustomDropdown
             value={filters.status}
@@ -243,6 +260,7 @@ export default function InvoiceList() {
   const { currentYear, currentQuarter } = useYear();
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [expandedInvoices, setExpandedInvoices] = useState<string[]>([]);
+  const [showAllInvoices, setShowAllInvoices] = useState(true); // Default to showing all invoices
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     status: "all",
@@ -261,7 +279,7 @@ export default function InvoiceList() {
       }
 
       // Check if invoice is in current year and quarter
-      if (!isInQuarter(invoiceDate, currentYear, currentQuarter)) {
+      if (!showAllInvoices && !isInQuarter(invoiceDate, currentYear, currentQuarter)) {
         return false;
       }
 
@@ -302,18 +320,21 @@ export default function InvoiceList() {
 
       return true;
     },
-    [filters, currentYear, currentQuarter]
+    [filters, currentYear, currentQuarter, showAllInvoices]
   );
 
   const processedInvoices = useMemo(() => {
     if (!Array.isArray(invoices) || isLoading || !invoices) {
+      console.log('No invoices array or still loading:', { isLoading, invoicesLength: invoices?.length });
       return [];
     }
 
     try {
+      console.log('Raw invoices from Firebase:', invoices);
+      
       const validInvoices = invoices.filter((invoice): invoice is Invoice => {
         if (!invoice) return false;
-        return (
+        const isValid = (
           typeof invoice === "object" &&
           typeof invoice.id === "string" &&
           typeof invoice.date === "string" &&
@@ -325,9 +346,34 @@ export default function InvoiceList() {
           typeof invoice.isPaid === "boolean" &&
           !isNaN(new Date(invoice.date).getTime())
         );
+        
+        if (!isValid) {
+          console.log('Invalid invoice format:', invoice);
+        }
+        return isValid;
       });
-
-      const filtered = validInvoices.filter(filterInvoice);
+      
+      console.log('Valid invoices after format check:', validInvoices);
+      console.log('Current year and quarter filter:', { currentYear, currentQuarter });
+      
+      const filtered = validInvoices.filter(invoice => {
+        const passesFilter = filterInvoice(invoice);
+        if (!passesFilter) {
+          const invoiceDate = new Date(invoice.date);
+          const inCurrentQuarter = isInQuarter(invoiceDate, currentYear, currentQuarter);
+          console.log('Invoice filtered out:', { 
+            id: invoice.id, 
+            date: invoice.date, 
+            inCurrentQuarter,
+            searchFilter: filters.search ? invoice.clientName.toLowerCase().includes(filters.search.toLowerCase()) : true,
+            statusFilter: filters.status === 'all' ? true : (filters.status === 'paid' ? invoice.isPaid : !invoice.isPaid),
+            firmFilter: filters.firm === 'all' ? true : invoice.invoicedByFirm === filters.firm
+          });
+        }
+        return passesFilter;
+      });
+      
+      console.log('Filtered invoices count:', filtered.length);
 
       // Create a new array for sorting to avoid mutation
       return [...filtered].sort((a, b) => {
@@ -348,7 +394,7 @@ export default function InvoiceList() {
       console.error('Error processing invoices:', error);
       return [];
     }
-  }, [invoices, isLoading, filterInvoice]);
+  }, [invoices, isLoading, filterInvoice, currentYear, currentQuarter, filters]);
 
   if (isLoading) {
     return (
@@ -388,7 +434,12 @@ export default function InvoiceList() {
 
   return (
     <div className="space-y-4">
-      <FilterBar filters={filters} onFilterChange={setFilters} />
+      <FilterBar 
+        filters={filters} 
+        onFilterChange={setFilters} 
+        showAllInvoices={showAllInvoices}
+        onToggleShowAll={setShowAllInvoices}
+      />
       <InvoiceSummary {...summaryStats} />
 
       <div className="space-y-4">

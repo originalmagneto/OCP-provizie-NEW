@@ -165,6 +165,15 @@ export function isInQuarter(
 ): boolean {
   const quarterStart = new Date(year, (quarter - 1) * 3, 1);
   const quarterEnd = new Date(year, quarter * 3, 0);
+  
+  // Add debugging
+  console.log('Quarter check:', {
+    date: date.toISOString(),
+    quarterStart: quarterStart.toISOString(),
+    quarterEnd: quarterEnd.toISOString(),
+    isInQuarter: date >= quarterStart && date <= quarterEnd
+  });
+  
   return date >= quarterStart && date <= quarterEnd;
 }
 
