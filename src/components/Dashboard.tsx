@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Disclosure, Transition } from "@headlessui/react";
 import { useAuth } from "../context/AuthContext";
 import { useYear } from "../context/YearContext";
-import { LogOut, Trash2, AlertTriangle, ChevronDown } from "lucide-react";
+import { LogOut, Trash2, AlertTriangle, ChevronDown, Euro } from "lucide-react";
 import InvoiceForm from "./InvoiceForm";
 import InvoiceList from "./InvoiceList";
 import QuarterlySnapshot from "./QuarterlySnapshot";
