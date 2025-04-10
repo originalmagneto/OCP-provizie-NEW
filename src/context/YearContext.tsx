@@ -46,8 +46,13 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
       yearOverYearGrowth: number;
     }> = {};
 
-    // Get years from invoices
-    const invoiceYears = invoices.map(invoice => new Date(invoice.date).getFullYear());
+    // Get years from invoices and ensure they are valid numbers
+    const invoiceYears = invoices
+      .map(invoice => {
+        const year = new Date(invoice.date).getFullYear();
+        return Number.isFinite(year) ? year : null;
+      })
+      .filter((year): year is number => year !== null);
 
     // Create a range of years
     const yearRange = Array.from(
@@ -55,8 +60,9 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
       (_, i) => currentRealYear - 5 + i
     );
 
-    // Combine and sort years
-    const allYears = [...new Set([...invoiceYears, ...yearRange])].sort((a, b) => b - a);
+    // Combine years and ensure uniqueness before sorting
+    const uniqueYears = new Set([...invoiceYears, ...yearRange]);
+    const allYears = Array.from(uniqueYears).sort((a, b) => b - a);
 
     // Initialize stats for all years
     allYears.forEach(year => {
