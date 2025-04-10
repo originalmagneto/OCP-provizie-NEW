@@ -105,64 +105,7 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
     return { availableYears: allYears, yearlyStats: stats };
   }, [invoices]);
 
-  // Calculate available years and yearly statistics together
-  const { availableYears, yearlyStats } = React.useMemo(() => {
-    const currentRealYear = new Date().getFullYear();
-    const stats: Record<number, {
-      totalRevenue: number;
-      totalCommissions: number;
-      invoiceCount: number;
-      yearOverYearGrowth: number;
-    }> = {};
 
-    // Get years from invoices
-    const invoiceYears = invoices.map(invoice => new Date(invoice.date).getFullYear());
-
-    // Create a range of years
-    const yearRange = Array.from(
-      { length: 10 },
-      (_, i) => currentRealYear - 5 + i
-    );
-
-    // Combine and sort years
-    const allYears = [...new Set([...invoiceYears, ...yearRange])].sort((a, b) => b - a);
-
-    // Initialize stats for all years
-    allYears.forEach(year => {
-      const yearInvoices = invoices.filter(
-        invoice => new Date(invoice.date).getFullYear() === year
-      );
-
-      const totalRevenue = yearInvoices.reduce(
-        (sum, inv) => sum + inv.amount,
-        0
-      );
-      const totalCommissions = yearInvoices.reduce(
-        (sum, inv) => sum + (inv.amount * inv.commissionPercentage) / 100,
-        0
-      );
-
-      const previousYear = year - 1;
-      const previousYearInvoices = invoices.filter(
-        invoice => new Date(invoice.date).getFullYear() === previousYear
-      );
-      const previousRevenue = previousYearInvoices.reduce(
-        (sum, inv) => sum + inv.amount,
-        0
-      );
-
-      stats[year] = {
-        totalRevenue,
-        totalCommissions,
-        invoiceCount: yearInvoices.length,
-        yearOverYearGrowth: previousRevenue === 0
-          ? 0
-          : ((totalRevenue - previousRevenue) / previousRevenue) * 100
-      };
-    });
-
-    return { availableYears: allYears, yearlyStats: stats };
-  }, [invoices]);
 
   // Handle year changes
   const setYear = (year: number) => {
