@@ -150,6 +150,16 @@ export default function QuarterlySnapshot() {
   const { currentYear, currentQuarter, selectYearAndQuarter } = useYear();
 
   const { quarterlyData, unpaidQuarters } = useMemo(() => {
+    if (!user?.firm || !invoices) {
+      return {
+        quarterlyData: {
+          toReceive: { total: 0, byFirm: {} as Record<FirmType, number> },
+          toPay: { total: 0, byFirm: {} as Record<FirmType, number> },
+        },
+        unpaidQuarters: [],
+      };
+    }
+
     // Initialize quarterly data
     const currentQuarterData: CommissionSummary = {
       toReceive: { total: 0, byFirm: {} as Record<FirmType, number> },
@@ -159,8 +169,14 @@ export default function QuarterlySnapshot() {
     // Track unpaid commissions by quarter
     const unpaidByQuarter: Record<string, UnpaidQuarterInfo> = {};
 
+    // Process all invoices
     invoices.forEach((invoice) => {
-      if (invoice.referredByFirm === invoice.invoicedByFirm) return; // Skip self-referrals
+      // Skip self-referrals and invalid invoices
+      if (
+        invoice.referredByFirm === invoice.invoicedByFirm ||
+        !invoice.amount ||
+        !invoice.commissionPercentage
+      ) return;
 
       const invoiceDate = new Date(invoice.date);
       const invoiceQuarter = Math.floor(invoiceDate.getMonth() / 3) + 1;
@@ -169,23 +185,24 @@ export default function QuarterlySnapshot() {
       const commission = (invoice.amount * invoice.commissionPercentage) / 100;
 
       // Handle current quarter commissions (paid only)
-      if (
-        isInQuarter(invoiceDate, currentYear, currentQuarter) &&
-        invoice.isPaid
-      ) {
-        if (invoice.referredByFirm === user?.firm) {
-          currentQuarterData.toReceive.total += commission;
-          currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm] =
-            (currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm] || 0) +
-            commission;
+      if (isInQuarter(invoiceDate, currentYear, currentQuarter)) {
+        if (invoice.isPaid) {
+          // Handle commissions to receive (when user's firm referred the client)
+          if (invoice.referredByFirm === user.firm) {
+            currentQuarterData.toReceive.total += commission;
+            currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm] =
+              (currentQuarterData.toReceive.byFirm[invoice.invoicedByFirm] || 0) +
+              commission;
+          }
+
+          // Handle commissions to pay (when user's firm was invoicing)
+          if (invoice.invoicedByFirm === user.firm) {
+            currentQuarterData.toPay.total += commission;
+            currentQuarterData.toPay.byFirm[invoice.referredByFirm] =
+              (currentQuarterData.toPay.byFirm[invoice.referredByFirm] || 0) +
+              commission;
+          }
         }
-        if (invoice.invoicedByFirm === user?.firm) {
-          currentQuarterData.toPay.total += commission;
-          currentQuarterData.toPay.byFirm[invoice.referredByFirm] =
-            (currentQuarterData.toPay.byFirm[invoice.referredByFirm] || 0) +
-            commission;
-        }
-      }
 
       // Track unpaid commissions from previous quarters
       if (
