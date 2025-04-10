@@ -137,6 +137,13 @@ function UnpaidQuartersWarning({
   );
 }
 
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(amount);
+}
+
 export default function QuarterlySnapshot() {
   const { invoices } = useInvoices();
   const { user } = useAuth();
@@ -145,8 +152,8 @@ export default function QuarterlySnapshot() {
   const { quarterlyData, unpaidQuarters } = useMemo(() => {
     // Initialize quarterly data
     const currentQuarterData: CommissionSummary = {
-      toReceive: { total: 0, byFirm: {} },
-      toPay: { total: 0, byFirm: {} },
+      toReceive: { total: 0, byFirm: {} as Record<FirmType, number> },
+      toPay: { total: 0, byFirm: {} as Record<FirmType, number> },
     };
 
     // Track unpaid commissions by quarter
@@ -263,42 +270,74 @@ export default function QuarterlySnapshot() {
       </div>
 
       {/* Detailed Breakdown */}
-      <div className="space-y-3">
-        <h4 className="text-sm font-medium text-gray-700">
-          Commission Breakdown (Paid Invoices)
-        </h4>
-
-        {/* Receivables */}
-        {Object.entries(quarterlyData.toReceive.byFirm).map(
-          ([firm, amount]) => (
-            <CommissionCard
-              key={`receive-${firm}`}
-              firm={firm as FirmType}
-              amount={amount}
-              direction="receivable"
-              userFirm={user.firm}
-            />
-          ),
-        )}
-
-        {/* Payables */}
-        {Object.entries(quarterlyData.toPay.byFirm).map(([firm, amount]) => (
-          <CommissionCard
-            key={`pay-${firm}`}
-            firm={firm as FirmType}
-            amount={amount}
-            direction="payable"
-            userFirm={user.firm}
-          />
-        ))}
-
-        {Object.keys(quarterlyData.toReceive.byFirm).length === 0 &&
-          Object.keys(quarterlyData.toPay.byFirm).length === 0 && (
-            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 flex items-center text-gray-500">
-              <AlertCircle className="h-5 w-5 mr-2" />
-              No paid commission transactions for this quarter yet
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="p-6">
+          {/* Receivable Commissions */}
+          <div className="mb-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <ArrowUpRight className="h-5 w-5 text-green-500 mr-2" />
+              To Receive
+              <span className="ml-2 text-sm text-gray-500">
+                ({formatCurrency(quarterlyData.toReceive.total)})
+              </span>
+            </h3>
+            <div className="space-y-3">
+              {Object.entries(quarterlyData.toReceive.byFirm).map(([firm, amount]) => (
+                <CommissionCard
+                  key={`receive-${firm}`}
+                  firm={firm as FirmType}
+                  amount={amount}
+                  direction="receivable"
+                  userFirm={user.firm}
+                />
+              ))}
+              {Object.keys(quarterlyData.toReceive.byFirm).length === 0 && (
+                <div className="text-sm text-gray-500 italic">
+                  No receivable commissions for this quarter
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          {/* Payable Commissions */}
+          <div className="mb-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <ArrowDownRight className="h-5 w-5 text-red-500 mr-2" />
+              To Pay
+              <span className="ml-2 text-sm text-gray-500">
+                ({formatCurrency(quarterlyData.toPay.total)})
+              </span>
+            </h3>
+            <div className="space-y-3">
+              {Object.entries(quarterlyData.toPay.byFirm).map(([firm, amount]) => (
+                <CommissionCard
+                  key={`pay-${firm}`}
+                  firm={firm as FirmType}
+                  amount={amount}
+                  direction="payable"
+                  userFirm={user.firm}
+                />
+              ))}
+              {Object.keys(quarterlyData.toPay.byFirm).length === 0 && (
+                <div className="text-sm text-gray-500 italic">
+                  No payable commissions for this quarter
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Quarter Balance */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-gray-500">Quarter Balance</span>
+              <span className="text-lg font-semibold text-gray-900">
+                {formatCurrency(
+                  quarterlyData.toReceive.total - quarterlyData.toPay.total
+                )}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
