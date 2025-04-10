@@ -255,7 +255,7 @@ function InvoiceCard({
 }
 
 export default function InvoiceList() {
-  const { invoices, isLoading, removeInvoice, togglePaid } = useInvoices();
+  const { invoices, isLoading, removeInvoice, togglePaid, updateInvoice } = useInvoices();
   const { userFirm } = useAuth();
   const { currentYear, currentQuarter } = useYear();
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
@@ -467,6 +467,11 @@ export default function InvoiceList() {
         <EditInvoiceModal
           invoice={editingInvoice}
           onClose={() => setEditingInvoice(null)}
+          onSave={(updatedInvoice) => {
+            updateInvoice(editingInvoice.id, updatedInvoice);
+            setEditingInvoice(null);
+          }}
+          userFirm={userFirm}
         />
       )}
     </div>
