@@ -256,7 +256,8 @@ function InvoiceCard({
 
 export default function InvoiceList() {
   const { invoices, isLoading, removeInvoice, togglePaid, updateInvoice } = useInvoices();
-  const { userFirm } = useAuth();
+  const { user } = useAuth();
+  const userFirm = user?.firm;
   const { currentYear, currentQuarter } = useYear();
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [expandedInvoices, setExpandedInvoices] = useState<string[]>([]);
