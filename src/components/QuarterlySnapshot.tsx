@@ -203,6 +203,7 @@ export default function QuarterlySnapshot() {
               commission;
           }
         }
+      }
 
       // Track unpaid commissions from previous quarters
       if (
