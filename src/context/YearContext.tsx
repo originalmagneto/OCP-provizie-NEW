@@ -52,11 +52,21 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
     );
 
     // Combine invoice years and range, remove duplicates, and sort
-    const allYears = [...new Set([...invoiceYears, ...yearRange])].sort(
-      (a, b) => b - a,
-    ); // Sort in descending order
+    const allYears = [...new Set([...invoiceYears, ...yearRange])];
+    
+    // Initialize stats object before sorting to prevent uninitialized variable access
+    allYears.forEach(year => {
+      if (!yearlyStats[year]) {
+        yearlyStats[year] = {
+          totalRevenue: 0,
+          totalCommissions: 0,
+          invoiceCount: 0,
+          yearOverYearGrowth: 0
+        };
+      }
+    });
 
-    return allYears;
+    return allYears.sort((a, b) => b - a); // Sort in descending order
   }, [invoices]);
 
   // Calculate yearly statistics
