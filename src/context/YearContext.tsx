@@ -36,89 +36,133 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
       : Math.floor(new Date().getMonth() / 3) + 1;
   });
 
-  // Calculate available years from invoices and include a range around the current year
-  const availableYears = React.useMemo(() => {
+  // Calculate available years and yearly statistics together to avoid circular dependencies
+  const { availableYears, yearlyStats } = React.useMemo(() => {
     const currentRealYear = new Date().getFullYear();
+    const stats: Record<number, {
+      totalRevenue: number;
+      totalCommissions: number;
+      invoiceCount: number;
+      yearOverYearGrowth: number;
+    }> = {};
 
     // Get years from invoices
-    const invoiceYears = invoices.map((invoice) =>
-      new Date(invoice.date).getFullYear(),
-    );
+    const invoiceYears = invoices.map(invoice => new Date(invoice.date).getFullYear());
 
     // Create a range of years
     const yearRange = Array.from(
-      { length: 10 }, // Adjust this number to show more/fewer years
-      (_, i) => currentRealYear - 5 + i, // Show 5 years back and 4 years forward
+      { length: 10 },
+      (_, i) => currentRealYear - 5 + i
     );
 
-    // Combine invoice years and range, remove duplicates, and sort
-    const allYears = [...new Set([...invoiceYears, ...yearRange])];
-    
-    // Initialize stats object before sorting to prevent uninitialized variable access
+    // Combine and sort years
+    const allYears = [...new Set([...invoiceYears, ...yearRange])].sort((a, b) => b - a);
+
+    // Initialize stats for all years
     allYears.forEach(year => {
-      if (!yearlyStats[year]) {
-        yearlyStats[year] = {
-          totalRevenue: 0,
-          totalCommissions: 0,
-          invoiceCount: 0,
-          yearOverYearGrowth: 0
-        };
-      }
+      stats[year] = {
+        totalRevenue: 0,
+        totalCommissions: 0,
+        invoiceCount: 0,
+        yearOverYearGrowth: 0
+      };
     });
 
-    return allYears.sort((a, b) => b - a); // Sort in descending order
-  }, [invoices]);
-
-  // Calculate yearly statistics
-  const yearlyStats = React.useMemo(() => {
-    const stats: Record<
-      number,
-      {
-        totalRevenue: number;
-        totalCommissions: number;
-        invoiceCount: number;
-        yearOverYearGrowth: number;
-      }
-    > = {};
-
-    availableYears.forEach((year) => {
+    // Calculate statistics for each year
+    allYears.forEach(year => {
       const yearInvoices = invoices.filter(
-        (invoice) => new Date(invoice.date).getFullYear() === year,
+        invoice => new Date(invoice.date).getFullYear() === year
       );
 
       const totalRevenue = yearInvoices.reduce(
         (sum, inv) => sum + inv.amount,
-        0,
+        0
       );
       const totalCommissions = yearInvoices.reduce(
         (sum, inv) => sum + (inv.amount * inv.commissionPercentage) / 100,
-        0,
+        0
       );
 
       const previousYear = year - 1;
       const previousYearInvoices = invoices.filter(
-        (invoice) => new Date(invoice.date).getFullYear() === previousYear,
+        invoice => new Date(invoice.date).getFullYear() === previousYear
       );
       const previousRevenue = previousYearInvoices.reduce(
         (sum, inv) => sum + inv.amount,
-        0,
+        0
       );
-
-      const yearOverYearGrowth =
-        previousRevenue === 0
-          ? 100
-          : ((totalRevenue - previousRevenue) / previousRevenue) * 100;
 
       stats[year] = {
         totalRevenue,
         totalCommissions,
         invoiceCount: yearInvoices.length,
-        yearOverYearGrowth,
+        yearOverYearGrowth: previousRevenue === 0
+          ? 0
+          : ((totalRevenue - previousRevenue) / previousRevenue) * 100
       };
     });
 
-    return stats;
-  }, [invoices, availableYears]);
+    return { availableYears: allYears, yearlyStats: stats };
+  }, [invoices]);
+
+  // Calculate available years and yearly statistics together
+  const { availableYears, yearlyStats } = React.useMemo(() => {
+    const currentRealYear = new Date().getFullYear();
+    const stats: Record<number, {
+      totalRevenue: number;
+      totalCommissions: number;
+      invoiceCount: number;
+      yearOverYearGrowth: number;
+    }> = {};
+
+    // Get years from invoices
+    const invoiceYears = invoices.map(invoice => new Date(invoice.date).getFullYear());
+
+    // Create a range of years
+    const yearRange = Array.from(
+      { length: 10 },
+      (_, i) => currentRealYear - 5 + i
+    );
+
+    // Combine and sort years
+    const allYears = [...new Set([...invoiceYears, ...yearRange])].sort((a, b) => b - a);
+
+    // Initialize stats for all years
+    allYears.forEach(year => {
+      const yearInvoices = invoices.filter(
+        invoice => new Date(invoice.date).getFullYear() === year
+      );
+
+      const totalRevenue = yearInvoices.reduce(
+        (sum, inv) => sum + inv.amount,
+        0
+      );
+      const totalCommissions = yearInvoices.reduce(
+        (sum, inv) => sum + (inv.amount * inv.commissionPercentage) / 100,
+        0
+      );
+
+      const previousYear = year - 1;
+      const previousYearInvoices = invoices.filter(
+        invoice => new Date(invoice.date).getFullYear() === previousYear
+      );
+      const previousRevenue = previousYearInvoices.reduce(
+        (sum, inv) => sum + inv.amount,
+        0
+      );
+
+      stats[year] = {
+        totalRevenue,
+        totalCommissions,
+        invoiceCount: yearInvoices.length,
+        yearOverYearGrowth: previousRevenue === 0
+          ? 0
+          : ((totalRevenue - previousRevenue) / previousRevenue) * 100
+      };
+    });
+
+    return { availableYears: allYears, yearlyStats: stats };
+  }, [invoices]);
 
   // Handle year changes
   const setYear = (year: number) => {
