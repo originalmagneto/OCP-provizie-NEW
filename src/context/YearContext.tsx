@@ -48,9 +48,16 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
 
     // Get years from invoices and ensure they are valid numbers
     const invoiceYears = invoices
+      .filter(invoice => invoice && invoice.date) // Ensure invoice and date exist
       .map(invoice => {
-        const year = new Date(invoice.date).getFullYear();
-        return Number.isFinite(year) ? year : null;
+        try {
+          const date = new Date(invoice.date);
+          const year = date.getFullYear();
+          return Number.isFinite(year) ? year : null;
+        } catch (e) {
+          console.error("Error parsing date:", invoice.date, e);
+          return null;
+        }
       })
       .filter((year): year is number => year !== null);
 
@@ -61,8 +68,16 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
     );
 
     // Combine years and ensure uniqueness before sorting
+    // Use a safer approach to create and sort the array
     const uniqueYears = new Set([...invoiceYears, ...yearRange]);
-    const allYears = Array.from(uniqueYears).sort((a, b) => b - a);
+    
+    // Convert to array and ensure all values are valid numbers before sorting
+    const validYears = Array.from(uniqueYears).filter(
+      (year): year is number => year !== null && year !== undefined && Number.isFinite(year)
+    );
+    
+    // Sort the years in descending order (newest first)
+    const allYears = validYears.sort((a, b) => b - a);
 
     // Initialize stats for all years
     allYears.forEach(year => {
