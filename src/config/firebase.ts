@@ -26,7 +26,12 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
-// Enable persistence
-auth.setPersistence('local');
+// Enable persistence - using proper enum from firebase/auth
+import { browserLocalPersistence } from 'firebase/auth';
+
+// Set persistence properly using the enum
+auth.setPersistence(browserLocalPersistence).catch(error => {
+  console.error("Error setting auth persistence:", error);
+});
 
 export { app, db, auth, storage };

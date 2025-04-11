@@ -91,10 +91,15 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
     // Sort the years in descending order (newest first)
     // Use a safer sorting approach that handles potential uninitialized variables
     const allYears = [...validYears].sort((a, b) => {
-      // Ensure both values are initialized and valid numbers
+      // Ensure both values are initialized and valid numbers before comparison
       if (a === undefined || a === null || !Number.isFinite(a)) return 1;
       if (b === undefined || b === null || !Number.isFinite(b)) return -1;
-      return b - a;
+      // Ensure we're comparing valid numbers
+      const numA = Number(a);
+      const numB = Number(b);
+      if (isNaN(numA)) return 1;
+      if (isNaN(numB)) return -1;
+      return numB - numA;
     });
 
     // Initialize stats for all years
