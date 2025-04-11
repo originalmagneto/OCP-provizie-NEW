@@ -53,54 +53,96 @@ const isValidInvoice = (invoice: any): invoice is Invoice => {
 };
 
 export function InvoiceProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  // Set up real-time listener for invoices
   useEffect(() => {
+    let isMounted = true;
+
     if (!user) {
       setInvoices([]);
       setIsLoading(false);
+      setError(null);
       return;
     }
 
     setIsLoading(true);
+    setError(null);
     
-    // Create a query to get invoices ordered by date
-    const q = query(collection(db, "invoices"), orderBy("date", "desc"));
-    
-    // Set up the listener
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      try {
-        const invoiceData = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            clientName: data.clientName,
-            amount: data.amount,
-            date: data.date,
-            commissionPercentage: data.commissionPercentage,
-            invoicedByFirm: data.invoicedByFirm,
-            referredByFirm: data.referredByFirm,
-            isPaid: data.isPaid
-          } as Invoice;
-        });
-        
-        setInvoices(invoiceData.filter(isValidInvoice));
-      } catch (error) {
-        console.error("Error processing Firestore data:", error);
-      } finally {
+    try {
+      const q = query(collection(db, "invoices"), orderBy("date", "desc"));
+      
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!isMounted) return;
+
+        try {
+          const validInvoices: Invoice[] = [];
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            const invoice = { ...data, id: doc.id };
+            
+            // Enhanced validation with detailed error logging
+            if (!invoice.date) {
+              console.warn(`Invoice ${doc.id} missing date`);
+              return;
+            }
+            if (!invoice.clientName) {
+              console.warn(`Invoice ${doc.id} missing clientName`);
+              return;
+            }
+            if (typeof invoice.amount !== 'number') {
+              console.warn(`Invoice ${doc.id} has invalid amount`);
+              return;
+            }
+            if (typeof invoice.commissionPercentage !== 'number') {
+              console.warn(`Invoice ${doc.id} has invalid commissionPercentage`);
+              return;
+            }
+            
+            if (isValidInvoice(invoice)) {
+              validInvoices.push(invoice as Invoice);
+            } else {
+              console.warn(`Invalid invoice data for document ${doc.id}:`, data);
+            }
+          });
+
+          // Sort invoices before setting state to ensure consistent order
+          const sortedInvoices = validInvoices.sort((a, b) => {
+            return new Date(b.date).getTime() - new Date(a.date).getTime();
+          });
+
+          setInvoices(sortedInvoices);
+          setError(null);
+        } catch (error) {
+          console.error("Error processing invoices:", error);
+          setInvoices([]);
+          setError("Error processing invoices");
+        } finally {
+          setIsLoading(false);
+        }
+      }, (error) => {
+        if (!isMounted) return;
+        console.error("Error fetching invoices:", error);
+        setInvoices([]);
+        setError("Error fetching invoices");
+        setIsLoading(false);
+      });
+
+      return () => {
+        isMounted = false;
+        unsubscribe();
+      };
+    } catch (error) {
+      if (isMounted) {
+        console.error("Error setting up invoice listener:", error);
+        setInvoices([]);
+        setError("Error setting up invoice listener");
         setIsLoading(false);
       }
-    }, (error) => {
-      console.error("Firestore listener error:", error);
-      setIsLoading(false);
-    });
-    
-    // Clean up listener on unmount
-    return () => unsubscribe();
-  }, [user]); // Add user as a dependency
+    }
+  }, [user]);
 
   const addInvoice = useCallback(async (invoice: Invoice) => {
     if (!isValidInvoice(invoice)) {

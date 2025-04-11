@@ -1,11 +1,10 @@
-import React, { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { useYear, isInQuarter } from "../context/YearContext";
 import CustomDropdown from "./common/CustomDropdown";
 import StatusBadge from "./common/StatusBadge";
 import Tooltip from "./common/Tooltip";
-import InvoiceSummary from "./InvoiceSummary";
 import EditInvoiceModal from "./EditInvoiceModal";
 import {
   Search,
@@ -257,16 +256,37 @@ function InvoiceCard({
 export default function InvoiceList() {
   const { invoices, isLoading, removeInvoice, togglePaid, updateInvoice } = useInvoices();
   const { user } = useAuth();
-  const userFirm = user?.firm;
+  const userFirm = user?.firm || 'SKALLARS';
   const { currentYear, currentQuarter } = useYear();
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [expandedInvoices, setExpandedInvoices] = useState<string[]>([]);
-  const [showAllInvoices, setShowAllInvoices] = useState(true); // Default to showing all invoices
+  const [showAllInvoices, setShowAllInvoices] = useState(true);
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     status: "all",
     firm: "all",
   });
+
+  const handleToggleExpand = useCallback((id: string) => {
+    setExpandedInvoices(prev => 
+      prev.includes(id) ? prev.filter(invId => invId !== id) : [...prev, id]
+    );
+  }, []);
+
+  const handleTogglePaid = useCallback((id: string) => {
+    togglePaid(id);
+  }, [togglePaid]);
+
+  const handleDelete = useCallback((id: string) => {
+    if (window.confirm('Are you sure you want to delete this invoice?')) {
+      removeInvoice(id);
+    }
+  }, [removeInvoice]);
+
+  const handleUpdateInvoice = useCallback((id: string, updates: Partial<Invoice>) => {
+    updateInvoice(id, updates);
+    setEditingInvoice(null);
+  }, [updateInvoice]);
 
   const filterInvoice = useCallback(
     (invoice: Invoice): boolean => {
@@ -324,154 +344,75 @@ export default function InvoiceList() {
     [filters, currentYear, currentQuarter, showAllInvoices]
   );
 
+  // Ensure invoices are valid before processing
   const processedInvoices = useMemo(() => {
-    if (!Array.isArray(invoices) || isLoading || !invoices) {
-      console.log('No invoices array or still loading:', { isLoading, invoicesLength: invoices?.length });
+    if (!Array.isArray(invoices)) {
       return [];
     }
 
     try {
-      console.log('Raw invoices from Firebase:', invoices);
-      
-      const validInvoices = invoices.filter((invoice): invoice is Invoice => {
-        if (!invoice) return false;
-        const isValid = (
-          typeof invoice === "object" &&
-          typeof invoice.id === "string" &&
-          typeof invoice.date === "string" &&
-          typeof invoice.clientName === "string" &&
-          typeof invoice.invoicedByFirm === "string" &&
-          typeof invoice.referredByFirm === "string" &&
-          typeof invoice.amount === "number" &&
-          typeof invoice.commissionPercentage === "number" &&
-          typeof invoice.isPaid === "boolean" &&
-          !isNaN(new Date(invoice.date).getTime())
-        );
-        
-        if (!isValid) {
-          console.log('Invalid invoice format:', invoice);
-        }
-        return isValid;
-      });
-      
-      console.log('Valid invoices after format check:', validInvoices);
-      console.log('Current year and quarter filter:', { currentYear, currentQuarter });
-      
-      const filtered = validInvoices.filter(invoice => {
-        const passesFilter = filterInvoice(invoice);
-        if (!passesFilter) {
-          const invoiceDate = new Date(invoice.date);
-          const inCurrentQuarter = isInQuarter(invoiceDate, currentYear, currentQuarter);
-          console.log('Invoice filtered out:', { 
-            id: invoice.id, 
-            date: invoice.date, 
-            inCurrentQuarter,
-            searchFilter: filters.search ? invoice.clientName.toLowerCase().includes(filters.search.toLowerCase()) : true,
-            statusFilter: filters.status === 'all' ? true : (filters.status === 'paid' ? invoice.isPaid : !invoice.isPaid),
-            firmFilter: filters.firm === 'all' ? true : invoice.invoicedByFirm === filters.firm
-          });
-        }
-        return passesFilter;
-      });
-      
-      console.log('Filtered invoices count:', filtered.length);
-
-      // Create a new array for sorting to avoid mutation
-      return [...filtered].sort((a, b) => {
-          if (!a || !b) return 0;
-          if (!a.date || !b.date) return 0;
-          
+      return invoices
+        .filter(invoice => {
+          if (!invoice?.date || !invoice?.clientName || !invoice?.invoicedByFirm) {
+            return false;
+          }
+          return filterInvoice(invoice);
+        })
+        .sort((a, b) => {
           try {
-            const dateA = new Date(a.date);
-            const dateB = new Date(b.date);
-            if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
-            return dateB.getTime() - dateA.getTime();
+            if (!a?.date || !b?.date) return 0;
+            return new Date(b.date).getTime() - new Date(a.date).getTime();
           } catch (error) {
             console.error('Error sorting invoices:', error);
             return 0;
           }
-      });
+        });
     } catch (error) {
       console.error('Error processing invoices:', error);
       return [];
     }
-  }, [invoices, isLoading, filterInvoice, currentYear, currentQuarter, filters]);
+  }, [invoices, filterInvoice]);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-      </div>
-    );
-  }
-
-  // Calculate summary statistics
-  const summaryStats = {
-    totalInvoices: processedInvoices.length,
-    paidCount: 0,
-    pendingCount: 0,
-    overdueCount: 0,
-    totalAmount: 0,
-    overdueAmount: 0,
-  };
-
-  processedInvoices.forEach((invoice) => {
-    const amount = invoice.amount;
-    const isOverdue =
-      !invoice.isPaid &&
-      new Date(invoice.date).getTime() < Date.now() - 30 * 24 * 60 * 60 * 1000;
-
-    if (invoice.isPaid) {
-      summaryStats.paidCount++;
-    } else if (isOverdue) {
-      summaryStats.overdueCount++;
-      summaryStats.overdueAmount += amount;
-    } else {
-      summaryStats.pendingCount++;
-    }
-
-    summaryStats.totalAmount += amount;
-  });
-
+  // Only render list if we have processed invoices
   return (
     <div className="space-y-4">
-      <FilterBar 
-        filters={filters} 
-        onFilterChange={setFilters} 
+      <FilterBar
+        filters={filters}
+        onFilterChange={setFilters}
         showAllInvoices={showAllInvoices}
         onToggleShowAll={setShowAllInvoices}
       />
-      <InvoiceSummary {...summaryStats} />
-
-      <div className="space-y-4">
-        {processedInvoices.map((invoice) => (
-          <InvoiceCard
-            key={invoice.id}
-            invoice={invoice}
-            isExpanded={expandedInvoices.includes(invoice.id)}
-            onToggleExpand={() =>
-              setExpandedInvoices((prev) =>
-                prev.includes(invoice.id)
-                  ? prev.filter((id) => id !== invoice.id)
-                  : [...prev, invoice.id]
-              )
-            }
-            onTogglePaid={() => togglePaid(invoice.id)}
-            onDelete={() => removeInvoice(invoice.id)}
-            onEdit={() => setEditingInvoice(invoice)}
-            userFirm={userFirm}
-          />
-        ))}
-      </div>
-
+      
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+      ) : processedInvoices.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          No invoices found
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {processedInvoices.map((invoice) => (
+            <InvoiceCard
+              key={invoice.id}
+              invoice={invoice}
+              isExpanded={expandedInvoices.includes(invoice.id)}
+              onToggleExpand={() => handleToggleExpand(invoice.id)}
+              onTogglePaid={() => handleTogglePaid(invoice.id)}
+              onDelete={() => handleDelete(invoice.id)}
+              onEdit={() => setEditingInvoice(invoice)}
+              userFirm={userFirm}
+            />
+          ))}
+        </div>
+      )}
+      
       {editingInvoice && (
         <EditInvoiceModal
           invoice={editingInvoice}
           onClose={() => setEditingInvoice(null)}
-          onSave={(updatedInvoice) => {
-            updateInvoice(editingInvoice.id, updatedInvoice);
-            setEditingInvoice(null);
-          }}
+          onSave={(updates) => handleUpdateInvoice(editingInvoice.id, updates)}
           userFirm={userFirm}
         />
       )}
