@@ -96,21 +96,13 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
       const yearsToBeSorted = validYears.slice();
       
       // Manual sorting to avoid any potential issues with the built-in sort method
+      // Initialize all variables before using them in the comparison
       yearsToBeSorted.sort((a, b) => {
-        // First, handle null/undefined cases
-        if (a == null && b == null) return 0;
-        if (a == null) return 1;
-        if (b == null) return -1;
+        // Ensure a and b are initialized to valid numbers before comparison
+        const numA = typeof a === 'number' ? a : 0;
+        const numB = typeof b === 'number' ? b : 0;
         
-        // Convert to numbers and handle NaN cases
-        const numA = Number(a);
-        const numB = Number(b);
-        
-        if (isNaN(numA) && isNaN(numB)) return 0;
-        if (isNaN(numA)) return 1;
-        if (isNaN(numB)) return -1;
-        
-        // Finally, do the actual comparison (descending order)
+        // Simple descending order comparison with guaranteed initialized variables
         return numB - numA;
       });
       
