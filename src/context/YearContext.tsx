@@ -89,18 +89,37 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
     );
     
     // Sort the years in descending order (newest first)
-    // Use a safer sorting approach that handles potential uninitialized variables
-    const allYears = [...validYears].sort((a, b) => {
-      // Ensure both values are initialized and valid numbers before comparison
-      if (a === undefined || a === null || !Number.isFinite(a)) return 1;
-      if (b === undefined || b === null || !Number.isFinite(b)) return -1;
-      // Ensure we're comparing valid numbers
-      const numA = Number(a);
-      const numB = Number(b);
-      if (isNaN(numA)) return 1;
-      if (isNaN(numB)) return -1;
-      return numB - numA;
-    });
+    // Use a completely safe sorting approach with defensive programming
+    let allYears = [];
+    try {
+      // Create a copy of validYears to avoid modifying the original array
+      const yearsToBeSorted = validYears.slice();
+      
+      // Manual sorting to avoid any potential issues with the built-in sort method
+      yearsToBeSorted.sort((a, b) => {
+        // First, handle null/undefined cases
+        if (a == null && b == null) return 0;
+        if (a == null) return 1;
+        if (b == null) return -1;
+        
+        // Convert to numbers and handle NaN cases
+        const numA = Number(a);
+        const numB = Number(b);
+        
+        if (isNaN(numA) && isNaN(numB)) return 0;
+        if (isNaN(numA)) return 1;
+        if (isNaN(numB)) return -1;
+        
+        // Finally, do the actual comparison (descending order)
+        return numB - numA;
+      });
+      
+      allYears = yearsToBeSorted;
+    } catch (error) {
+      console.error("Error sorting years:", error);
+      // Fallback to a simple array if sorting fails
+      allYears = Array.from(validYears);
+    }
 
     // Initialize stats for all years
     allYears.forEach(year => {
