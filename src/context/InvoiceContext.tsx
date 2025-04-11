@@ -4,6 +4,7 @@ import { db } from "../config/firebase";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { invoiceServices } from "../services/firebaseServices";
 import { useAuth } from "./AuthContext";
+import { useYear } from "./YearContext";
 
 interface InvoiceContextType {
   invoices: Invoice[];
@@ -55,23 +56,20 @@ const isValidInvoice = (invoice: any): invoice is Invoice => {
 export function InvoiceProvider({ children }: { children: React.ReactNode }) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const { updateStats } = useYear();
 
   useEffect(() => {
     let isMounted = true;
-
+    
     if (!user) {
       setInvoices([]);
       setIsLoading(false);
-      setError(null);
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
-    
     try {
+      setIsLoading(true);
       const q = query(collection(db, "invoices"), orderBy("date", "desc"));
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -79,46 +77,24 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
 
         try {
           const validInvoices: Invoice[] = [];
+          
           snapshot.forEach((doc) => {
             const data = doc.data();
             const invoice = { ...data, id: doc.id };
             
-            // Enhanced validation with detailed error logging
-            if (!invoice.date) {
-              console.warn(`Invoice ${doc.id} missing date`);
-              return;
-            }
-            if (!invoice.clientName) {
-              console.warn(`Invoice ${doc.id} missing clientName`);
-              return;
-            }
-            if (typeof invoice.amount !== 'number') {
-              console.warn(`Invoice ${doc.id} has invalid amount`);
-              return;
-            }
-            if (typeof invoice.commissionPercentage !== 'number') {
-              console.warn(`Invoice ${doc.id} has invalid commissionPercentage`);
-              return;
-            }
-            
             if (isValidInvoice(invoice)) {
-              validInvoices.push(invoice as Invoice);
+              validInvoices.push(invoice);
             } else {
               console.warn(`Invalid invoice data for document ${doc.id}:`, data);
             }
           });
 
-          // Sort invoices before setting state to ensure consistent order
-          const sortedInvoices = validInvoices.sort((a, b) => {
-            return new Date(b.date).getTime() - new Date(a.date).getTime();
-          });
-
-          setInvoices(sortedInvoices);
-          setError(null);
+          setInvoices(validInvoices);
+          // Update year stats with new invoices
+          updateStats(validInvoices);
         } catch (error) {
           console.error("Error processing invoices:", error);
           setInvoices([]);
-          setError("Error processing invoices");
         } finally {
           setIsLoading(false);
         }
@@ -126,7 +102,6 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
         if (!isMounted) return;
         console.error("Error fetching invoices:", error);
         setInvoices([]);
-        setError("Error fetching invoices");
         setIsLoading(false);
       });
 
@@ -138,11 +113,10 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
       if (isMounted) {
         console.error("Error setting up invoice listener:", error);
         setInvoices([]);
-        setError("Error setting up invoice listener");
         setIsLoading(false);
       }
     }
-  }, [user]);
+  }, [user, updateStats]);
 
   const addInvoice = useCallback(async (invoice: Invoice) => {
     if (!isValidInvoice(invoice)) {
