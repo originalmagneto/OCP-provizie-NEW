@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState } from "react";
 import { useInvoices } from "./InvoiceContext";
 import type { Invoice } from "../types";
 
@@ -23,7 +23,7 @@ interface YearContextType {
 const YearContext = createContext<YearContextType | undefined>(undefined);
 
 export function YearProvider({ children }: { children: React.ReactNode }) {
-  const { invoices } = useInvoices();
+  const { invoices = [] } = useInvoices();
   const [currentYear, setCurrentYear] = useState(() => {
     const savedYear = localStorage.getItem("selectedYear");
     return savedYear ? parseInt(savedYear) : new Date().getFullYear();
@@ -36,7 +36,7 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
       : Math.floor(new Date().getMonth() / 3) + 1;
   });
 
-  // Calculate available years and yearly statistics together to avoid circular dependencies
+  // Calculate available years and yearly statistics together
   const { availableYears, yearlyStats } = React.useMemo(() => {
     const currentRealYear = new Date().getFullYear();
     const stats: Record<number, {
@@ -46,32 +46,40 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
       yearOverYearGrowth: number;
     }> = {};
 
+    // Initialize with current year if no invoices yet
+    if (!invoices.length) {
+      return {
+        availableYears: [currentRealYear],
+        yearlyStats: {
+          [currentRealYear]: {
+            totalRevenue: 0,
+            totalCommissions: 0,
+            invoiceCount: 0,
+            yearOverYearGrowth: 0
+          }
+        }
+      };
+    }
+
     // Get years from invoices and ensure they are valid numbers
     const invoiceYears = invoices
-      .filter(invoice => {
-        // More thorough validation of invoice and date
-        return invoice && 
-               typeof invoice === 'object' && 
-               invoice.date && 
-               typeof invoice.date === 'string' && 
-               invoice.date.trim() !== '';
-      })
-      .map(invoice => {
-        try {
-          const date = new Date(invoice.date);
-          // Verify date is valid
-          if (isNaN(date.getTime())) {
-            console.error("Invalid date format:", invoice.date);
-            return null;
+      .map(invoice => new Date(invoice.date).getFullYear())
+      .filter(year => !isNaN(year));
+
+    // If we still have no valid years, return current year
+    if (!invoiceYears.length) {
+      return {
+        availableYears: [currentRealYear],
+        yearlyStats: {
+          [currentRealYear]: {
+            totalRevenue: 0,
+            totalCommissions: 0,
+            invoiceCount: 0,
+            yearOverYearGrowth: 0
           }
-          const year = date.getFullYear();
-          return Number.isFinite(year) ? year : null;
-        } catch (e) {
-          console.error("Error parsing date:", invoice.date, e);
-          return null;
         }
-      })
-      .filter((year): year is number => year !== null && Number.isFinite(year));
+      };
+    }
 
     // Create a range of years
     const yearRange = Array.from(
