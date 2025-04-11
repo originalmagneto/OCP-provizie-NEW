@@ -15,26 +15,24 @@ function AppContent() {
   }
 
   return user ? (
-    <YearProvider>
-      <InvoiceProvider>
+    <InvoiceProvider>
+      <YearProvider>
         <ClientProvider>
           <CommissionProvider>
             <Dashboard />
           </CommissionProvider>
         </ClientProvider>
-      </InvoiceProvider>
-    </YearProvider>
+      </YearProvider>
+    </InvoiceProvider>
   ) : (
     <LoginForm />
   );
 }
 
-function App() {
+export default function App() {
   return (
     <AuthProvider>
       <AppContent />
     </AuthProvider>
   );
 }
-
-export default App;

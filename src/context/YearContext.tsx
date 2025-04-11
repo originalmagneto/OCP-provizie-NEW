@@ -1,5 +1,5 @@
-import { createContext, useContext, useState } from "react";
-import type { Invoice } from "../types";
+import { createContext, useContext, useState, useEffect } from "react";
+import { useInvoices } from "./InvoiceContext";
 
 interface YearContextType {
   currentYear: number;
@@ -17,12 +17,12 @@ interface YearContextType {
   setYear: (year: number) => void;
   setQuarter: (quarter: number) => void;
   selectYearAndQuarter: (year: number, quarter: number) => void;
-  updateStats: (invoices: Invoice[]) => void;  // New function to update stats
 }
 
 const YearContext = createContext<YearContextType | undefined>(undefined);
 
 export function YearProvider({ children }: { children: React.ReactNode }) {
+  const { invoices } = useInvoices();
   const [currentYear, setCurrentYear] = useState(() => {
     const savedYear = localStorage.getItem("selectedYear");
     return savedYear ? parseInt(savedYear) : new Date().getFullYear();
@@ -38,7 +38,7 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
   const [yearlyStats, setYearlyStats] = useState<YearContextType["yearlyStats"]>({});
   const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
 
-  const updateStats = (invoices: Invoice[]) => {
+  useEffect(() => {
     if (!Array.isArray(invoices)) return;
 
     const currentRealYear = new Date().getFullYear();
@@ -94,7 +94,7 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error updating year stats:', error);
     }
-  };
+  }, [invoices]);
 
   const selectYearAndQuarter = (year: number, quarter: number) => {
     setCurrentYear(year);
@@ -111,7 +111,6 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
     setYear: (year: number) => selectYearAndQuarter(year, currentQuarter),
     setQuarter: (quarter: number) => selectYearAndQuarter(currentYear, quarter),
     selectYearAndQuarter,
-    updateStats,
   };
 
   return (

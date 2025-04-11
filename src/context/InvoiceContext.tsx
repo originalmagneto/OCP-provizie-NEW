@@ -4,7 +4,6 @@ import { db } from "../config/firebase";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { invoiceServices } from "../services/firebaseServices";
 import { useAuth } from "./AuthContext";
-import { useYear } from "./YearContext";
 
 interface InvoiceContextType {
   invoices: Invoice[];
@@ -57,7 +56,6 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  const { updateStats } = useYear();
 
   useEffect(() => {
     let isMounted = true;
@@ -90,8 +88,6 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
           });
 
           setInvoices(validInvoices);
-          // Update year stats with new invoices
-          updateStats(validInvoices);
         } catch (error) {
           console.error("Error processing invoices:", error);
           setInvoices([]);
@@ -116,7 +112,7 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       }
     }
-  }, [user, updateStats]);
+  }, [user]);
 
   const addInvoice = useCallback(async (invoice: Invoice) => {
     if (!isValidInvoice(invoice)) {
