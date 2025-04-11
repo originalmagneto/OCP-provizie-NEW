@@ -48,10 +48,22 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
 
     // Get years from invoices and ensure they are valid numbers
     const invoiceYears = invoices
-      .filter(invoice => invoice && invoice.date) // Ensure invoice and date exist
+      .filter(invoice => {
+        // More thorough validation of invoice and date
+        return invoice && 
+               typeof invoice === 'object' && 
+               invoice.date && 
+               typeof invoice.date === 'string' && 
+               invoice.date.trim() !== '';
+      })
       .map(invoice => {
         try {
           const date = new Date(invoice.date);
+          // Verify date is valid
+          if (isNaN(date.getTime())) {
+            console.error("Invalid date format:", invoice.date);
+            return null;
+          }
           const year = date.getFullYear();
           return Number.isFinite(year) ? year : null;
         } catch (e) {
@@ -59,7 +71,7 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
           return null;
         }
       })
-      .filter((year): year is number => year !== null);
+      .filter((year): year is number => year !== null && Number.isFinite(year));
 
     // Create a range of years
     const yearRange = Array.from(
@@ -77,7 +89,13 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
     );
     
     // Sort the years in descending order (newest first)
-    const allYears = validYears.sort((a, b) => b - a);
+    // Use a safer sorting approach that handles potential uninitialized variables
+    const allYears = [...validYears].sort((a, b) => {
+      // Ensure both values are initialized and valid numbers
+      if (a === undefined || a === null || !Number.isFinite(a)) return 1;
+      if (b === undefined || b === null || !Number.isFinite(b)) return -1;
+      return b - a;
+    });
 
     // Initialize stats for all years
     allYears.forEach(year => {
@@ -91,25 +109,45 @@ export function YearProvider({ children }: { children: React.ReactNode }) {
 
     // Calculate statistics for each year
     allYears.forEach(year => {
-      const yearInvoices = invoices.filter(
-        invoice => new Date(invoice.date).getFullYear() === year
-      );
+      // Ensure year is a valid number before processing
+      if (year === undefined || year === null || !Number.isFinite(year)) {
+        console.error("Invalid year encountered:", year);
+        return; // Skip this iteration
+      }
+
+      const yearInvoices = invoices.filter(invoice => {
+        if (!invoice || !invoice.date) return false;
+        try {
+          const invoiceYear = new Date(invoice.date).getFullYear();
+          return invoiceYear === year;
+        } catch (e) {
+          console.error("Error processing invoice date:", invoice.date, e);
+          return false;
+        }
+      });
 
       const totalRevenue = yearInvoices.reduce(
-        (sum, inv) => sum + inv.amount,
+        (sum, inv) => sum + (inv.amount || 0),
         0
       );
       const totalCommissions = yearInvoices.reduce(
-        (sum, inv) => sum + (inv.amount * inv.commissionPercentage) / 100,
+        (sum, inv) => sum + ((inv.amount || 0) * (inv.commissionPercentage || 0)) / 100,
         0
       );
 
       const previousYear = year - 1;
-      const previousYearInvoices = invoices.filter(
-        invoice => new Date(invoice.date).getFullYear() === previousYear
-      );
+      const previousYearInvoices = invoices.filter(invoice => {
+        if (!invoice || !invoice.date) return false;
+        try {
+          const invoiceYear = new Date(invoice.date).getFullYear();
+          return invoiceYear === previousYear;
+        } catch (e) {
+          console.error("Error processing invoice date for previous year:", invoice.date, e);
+          return false;
+        }
+      });
       const previousRevenue = previousYearInvoices.reduce(
-        (sum, inv) => sum + inv.amount,
+        (sum, inv) => sum + (inv.amount || 0),
         0
       );
 
