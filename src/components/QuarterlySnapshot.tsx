@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useYear, isInQuarter } from "../context/YearContext";
 import { useAuth } from "../context/AuthContext";
-import { Euro } from "lucide-react";
+import { Euro, CheckCircle2, XCircle } from "lucide-react";
 import type { Invoice } from "../types";
 
 function formatCurrency(amount: number): string {
@@ -10,6 +10,24 @@ function formatCurrency(amount: number): string {
     style: "currency",
     currency: "EUR",
   }).format(amount);
+}
+
+function QuarterCircle({ quarter, currentQuarter }: { quarter: number; currentQuarter: number }) {
+  const isCurrent = quarter === currentQuarter;
+  const isPast = quarter < currentQuarter;
+  
+  return (
+    <div className={`relative w-12 h-12 rounded-full flex items-center justify-center font-medium text-lg
+      ${isCurrent ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-500' : 
+        isPast ? 'bg-gray-100 text-gray-600' : 'bg-gray-50 text-gray-400'}`}>
+      {quarter}
+      {isPast && (
+        <div className="absolute -bottom-1 -right-1">
+          <CheckCircle2 className="w-4 h-4 text-green-500" />
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function QuarterlySnapshot() {
@@ -26,6 +44,8 @@ export default function QuarterlySnapshot() {
         paidCount: 0,
         unpaidCount: 0,
         quarterInvoices: [],
+        paidCommissions: 0,
+        unpaidCommissions: 0
       };
     }
 
@@ -45,6 +65,14 @@ export default function QuarterlySnapshot() {
         );
       });
 
+      const paidCommissions = validInvoices
+        .filter(inv => inv.isPaid)
+        .reduce((sum, inv) => sum + (inv.amount * inv.commissionPercentage) / 100, 0);
+
+      const unpaidCommissions = validInvoices
+        .filter(inv => !inv.isPaid)
+        .reduce((sum, inv) => sum + (inv.amount * inv.commissionPercentage) / 100, 0);
+
       return {
         totalRevenue: validInvoices.reduce((sum, inv) => sum + inv.amount, 0),
         totalCommissions: validInvoices.reduce(
@@ -55,6 +83,8 @@ export default function QuarterlySnapshot() {
         paidCount: validInvoices.filter(inv => inv.isPaid).length,
         unpaidCount: validInvoices.filter(inv => !inv.isPaid).length,
         quarterInvoices: validInvoices,
+        paidCommissions,
+        unpaidCommissions
       };
     } catch (error) {
       console.error('Error calculating quarter stats:', error);
@@ -65,63 +95,95 @@ export default function QuarterlySnapshot() {
         paidCount: 0,
         unpaidCount: 0,
         quarterInvoices: [],
+        paidCommissions: 0,
+        unpaidCommissions: 0
       };
     }
   }, [invoices, currentYear, currentQuarter, user?.firm, isLoading]);
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-          <div className="space-y-3">
-            <div className="h-8 bg-gray-200 rounded"></div>
-            <div className="h-8 bg-gray-200 rounded w-5/6"></div>
-          </div>
+      <div className="animate-pulse space-y-4">
+        <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+        <div className="space-y-3">
+          <div className="h-8 bg-gray-200 rounded"></div>
+          <div className="h-8 bg-gray-200 rounded w-5/6"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Q{currentQuarter} {currentYear} Overview
-        </h2>
+    <div className="space-y-6">
+      {/* Quarters Progress */}
+      <div className="flex items-center justify-center space-x-4">
+        {[1, 2, 3, 4].map((quarter) => (
+          <div key={quarter} className="flex items-center">
+            <QuarterCircle quarter={quarter} currentQuarter={currentQuarter} />
+            {quarter < 4 && (
+              <div className={`w-8 h-0.5 ${quarter < currentQuarter ? 'bg-green-500' : 'bg-gray-200'}`} />
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-gray-500">Paid Commissions</h3>
+            <CheckCircle2 className="w-5 h-5 text-green-500" />
+          </div>
+          <p className="text-2xl font-semibold text-gray-900 flex items-center">
+            <Euro className="w-5 h-5 mr-1 text-gray-400" />
+            {formatCurrency(quarterStats.paidCommissions)}
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-gray-500">Pending Commissions</h3>
+            <XCircle className="w-5 h-5 text-amber-500" />
+          </div>
+          <p className="text-2xl font-semibold text-gray-900 flex items-center">
+            <Euro className="w-5 h-5 mr-1 text-gray-400" />
+            {formatCurrency(quarterStats.unpaidCommissions)}
+          </p>
+        </div>
+      </div>
+
+      {/* Invoice Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t">
+        <div>
+          <p className="text-sm text-gray-500">Total Revenue</p>
+          <p className="text-lg font-semibold text-gray-900 flex items-center">
+            <Euro className="w-4 h-4 mr-1 text-gray-400" />
+            {formatCurrency(quarterStats.totalRevenue)}
+          </p>
+        </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="space-y-2">
-            <p className="text-sm text-gray-500">Total Revenue</p>
-            <p className="text-2xl font-semibold text-gray-900 flex items-center">
-              <Euro className="w-5 h-5 mr-1 text-gray-400" />
-              {formatCurrency(quarterStats.totalRevenue)}
-            </p>
-          </div>
-          
-          <div className="space-y-2">
-            <p className="text-sm text-gray-500">Total Commissions</p>
-            <p className="text-2xl font-semibold text-gray-900 flex items-center">
-              <Euro className="w-5 h-5 mr-1 text-gray-400" />
-              {formatCurrency(quarterStats.totalCommissions)}
-            </p>
-          </div>
-          
-          <div className="space-y-2">
-            <p className="text-sm text-gray-500">Invoice Status</p>
-            <div className="flex items-center space-x-4">
-              <div>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {quarterStats.paidCount}
-                </p>
-                <p className="text-sm text-gray-500">Paid</p>
-              </div>
-              <div>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {quarterStats.unpaidCount}
-                </p>
-                <p className="text-sm text-gray-500">Pending</p>
-              </div>
+        <div>
+          <p className="text-sm text-gray-500">Total Commissions</p>
+          <p className="text-lg font-semibold text-gray-900 flex items-center">
+            <Euro className="w-4 h-4 mr-1 text-gray-400" />
+            {formatCurrency(quarterStats.totalCommissions)}
+          </p>
+        </div>
+        
+        <div>
+          <p className="text-sm text-gray-500">Invoice Status</p>
+          <div className="flex items-center space-x-4">
+            <div>
+              <p className="text-lg font-semibold text-gray-900">
+                {quarterStats.paidCount}
+              </p>
+              <p className="text-xs text-gray-500">Paid</p>
+            </div>
+            <div>
+              <p className="text-lg font-semibold text-gray-900">
+                {quarterStats.unpaidCount}
+              </p>
+              <p className="text-xs text-gray-500">Pending</p>
             </div>
           </div>
         </div>
