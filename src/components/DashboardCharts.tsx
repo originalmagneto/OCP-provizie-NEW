@@ -103,7 +103,7 @@ function ChartContainer({
 }
 
 export default function DashboardCharts() {
-  const { invoices } = useInvoices();
+  const { invoices, isLoading } = useInvoices();
   const { user } = useAuth();
   const [selectedTimeRange, setSelectedTimeRange] = useState<
     "1M" | "3M" | "6M" | "1Y" | "ALL"
@@ -122,62 +122,115 @@ export default function DashboardCharts() {
   }, [selectedTimeRange]);
 
   const filteredInvoices = useMemo(() => {
-    return invoices.filter(
-      (invoice) => invoice.isPaid && new Date(invoice.date) >= timeRangeFilter,
-    );
-  }, [invoices, timeRangeFilter]);
+    if (!Array.isArray(invoices) || isLoading) {
+      return [];
+    }
+
+    try {
+      return invoices.filter(invoice => {
+        if (!invoice?.date || !invoice?.isPaid) return false;
+        const invoiceDate = new Date(invoice.date);
+        return !isNaN(invoiceDate.getTime()) && invoiceDate >= timeRangeFilter;
+      });
+    } catch (error) {
+      console.error('Error filtering invoices:', error);
+      return [];
+    }
+  }, [invoices, timeRangeFilter, isLoading]);
 
   const metrics = useMemo(() => {
-    const totalRevenue = filteredInvoices.reduce(
-      (sum, inv) => sum + inv.amount,
-      0,
-    );
-    const totalCommissions = filteredInvoices.reduce(
-      (sum, inv) => sum + (inv.amount * inv.commissionPercentage) / 100,
-      0,
-    );
-    const avgCommissionRate =
-      filteredInvoices.reduce((sum, inv) => sum + inv.commissionPercentage, 0) /
-      (filteredInvoices.length || 1);
+    if (!Array.isArray(filteredInvoices) || filteredInvoices.length === 0) {
+      return [
+        {
+          label: "Total Revenue",
+          value: "€0.00",
+          change: 0,
+          trend: "up" as const,
+          icon: DollarSign,
+        },
+        {
+          label: "Total Commissions",
+          value: "€0.00",
+          change: 0,
+          trend: "up" as const,
+          icon: TrendingUp,
+        },
+        {
+          label: "Average Commission Rate",
+          value: "0%",
+          change: 0,
+          trend: "up" as const,
+          icon: Activity,
+        },
+        {
+          label: "Invoice Count",
+          value: "0",
+          change: 0,
+          trend: "up" as const,
+          icon: Calendar,
+        },
+      ];
+    }
 
-    return [
-      {
-        label: "Total Revenue",
-        value: new Intl.NumberFormat("de-DE", {
-          style: "currency",
-          currency: "EUR",
-        }).format(totalRevenue),
-        change: 12.5,
-        trend: "up" as const,
-        icon: DollarSign,
-      },
-      {
-        label: "Total Commissions",
-        value: new Intl.NumberFormat("de-DE", {
-          style: "currency",
-          currency: "EUR",
-        }).format(totalCommissions),
-        change: 8.3,
-        trend: "up" as const,
-        icon: TrendingUp,
-      },
-      {
-        label: "Average Commission Rate",
-        value: `${avgCommissionRate.toFixed(1)}%`,
-        change: 2.1,
-        trend: "down" as const,
-        icon: Activity,
-      },
-      {
-        label: "Active Clients",
-        value: new Set(
-          filteredInvoices.map((inv) => inv.clientName),
-        ).size.toString(),
-        change: 15.0,
-        trend: "up" as const,
-        icon: Calendar,
-      },
-    ];
+    try {
+      const totalRevenue = filteredInvoices.reduce((sum, inv) => {
+        const amount = typeof inv?.amount === 'number' ? inv.amount : 0;
+        return sum + amount;
+      }, 0);
+
+      const totalCommissions = filteredInvoices.reduce((sum, inv) => {
+        const amount = typeof inv?.amount === 'number' ? inv.amount : 0;
+        const percentage = typeof inv?.commissionPercentage === 'number' ? inv.commissionPercentage : 0;
+        return sum + (amount * percentage) / 100;
+      }, 0);
+
+      const avgCommissionRate = filteredInvoices.reduce((sum, inv) => {
+        const percentage = typeof inv?.commissionPercentage === 'number' ? inv.commissionPercentage : 0;
+        return sum + percentage;
+      }, 0) / (filteredInvoices.length || 1);
+
+      return [
+        {
+          label: "Total Revenue",
+          value: new Intl.NumberFormat("de-DE", {
+            style: "currency",
+            currency: "EUR",
+          }).format(totalRevenue),
+          change: 12.5,
+          trend: "up" as const,
+          icon: DollarSign,
+        },
+        {
+          label: "Total Commissions",
+          value: new Intl.NumberFormat("de-DE", {
+            style: "currency",
+            currency: "EUR",
+          }).format(totalCommissions),
+          change: 8.3,
+          trend: "up" as const,
+          icon: TrendingUp,
+        },
+        {
+          label: "Average Commission Rate",
+          value: `${avgCommissionRate.toFixed(1)}%`,
+          change: 2.1,
+          trend: "down" as const,
+          icon: Activity,
+        },
+        {
+          label: "Active Clients",
+          value: new Set(
+            filteredInvoices.map((inv) => inv.clientName),
+          ).size.toString(),
+          change: 15.0,
+          trend: "up" as const,
+          icon: Calendar,
+        },
+      ];
+    } catch (error) {
+      console.error('Error calculating metrics:', error);
+      return [];
+    }
   }, [filteredInvoices]);
 
   const monthlyData = useMemo(() => {

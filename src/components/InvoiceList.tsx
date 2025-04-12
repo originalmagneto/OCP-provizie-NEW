@@ -256,7 +256,7 @@ function InvoiceCard({
 export default function InvoiceList() {
   const { invoices, isLoading, removeInvoice, togglePaid, updateInvoice } = useInvoices();
   const { user } = useAuth();
-  const userFirm = user?.firm || 'SKALLARS';
+  const userFirm = user?.firm;
   const { currentYear, currentQuarter } = useYear();
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [expandedInvoices, setExpandedInvoices] = useState<string[]>([]);
@@ -267,101 +267,97 @@ export default function InvoiceList() {
     firm: "all",
   });
 
-  const handleToggleExpand = useCallback((id: string) => {
-    setExpandedInvoices(prev => 
-      prev.includes(id) ? prev.filter(invId => invId !== id) : [...prev, id]
-    );
-  }, []);
-
-  const handleTogglePaid = useCallback((id: string) => {
-    togglePaid(id);
-  }, [togglePaid]);
-
-  const handleDelete = useCallback((id: string) => {
-    if (window.confirm('Are you sure you want to delete this invoice?')) {
-      removeInvoice(id);
-    }
-  }, [removeInvoice]);
-
-  const handleUpdateInvoice = useCallback((id: string, updates: Partial<Invoice>) => {
-    updateInvoice(id, updates);
-    setEditingInvoice(null);
-  }, [updateInvoice]);
-
   const filterInvoice = useCallback(
     (invoice: Invoice): boolean => {
       if (!invoice?.date || !invoice?.clientName || !invoice?.invoicedByFirm) {
         return false;
       }
 
-      const invoiceDate = new Date(invoice.date);
-      if (isNaN(invoiceDate.getTime())) {
-        return false;
-      }
-
-      // Check if invoice is in current year and quarter
-      if (!showAllInvoices && !isInQuarter(invoiceDate, currentYear, currentQuarter)) {
-        return false;
-      }
-
-      // Search filter
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        const clientName = invoice.clientName.toLowerCase();
-        const invoicedByFirm = invoice.invoicedByFirm.toLowerCase();
-
-        if (
-          !clientName.includes(searchLower) &&
-          !invoicedByFirm.includes(searchLower)
-        ) {
+      try {
+        const invoiceDate = new Date(invoice.date);
+        if (isNaN(invoiceDate.getTime())) {
           return false;
         }
-      }
 
-      // Status filter
-      if (filters.status !== "all") {
-        const isOverdue =
-          !invoice.isPaid &&
-          new Date(invoice.date).getTime() <
-            Date.now() - 30 * 24 * 60 * 60 * 1000;
-
-        if (
-          (filters.status === "paid" && !invoice.isPaid) ||
-          (filters.status === "pending" && (invoice.isPaid || isOverdue)) ||
-          (filters.status === "overdue" && (!isOverdue || invoice.isPaid))
-        ) {
+        // Check if invoice is in current year and quarter
+        if (!showAllInvoices && !isInQuarter(invoiceDate, currentYear, currentQuarter)) {
           return false;
         }
-      }
 
-      // Firm filter
-      if (filters.firm !== "all" && invoice.invoicedByFirm !== filters.firm) {
+        // Search filter
+        if (filters.search) {
+          const searchLower = filters.search.toLowerCase();
+          const clientName = (invoice.clientName || "").toLowerCase();
+          const invoicedByFirm = (invoice.invoicedByFirm || "").toLowerCase();
+
+          if (
+            !clientName.includes(searchLower) &&
+            !invoicedByFirm.includes(searchLower)
+          ) {
+            return false;
+          }
+        }
+
+        // Status filter
+        if (filters.status !== "all") {
+          const isOverdue =
+            !invoice.isPaid &&
+            invoiceDate.getTime() < Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+          if (
+            (filters.status === "paid" && !invoice.isPaid) ||
+            (filters.status === "pending" && (invoice.isPaid || isOverdue)) ||
+            (filters.status === "overdue" && (!isOverdue || invoice.isPaid))
+          ) {
+            return false;
+          }
+        }
+
+        // Firm filter
+        if (filters.firm !== "all" && invoice.invoicedByFirm !== filters.firm) {
+          return false;
+        }
+
+        return true;
+      } catch (error) {
+        console.error('Error filtering invoice:', error, invoice);
         return false;
       }
-
-      return true;
     },
     [filters, currentYear, currentQuarter, showAllInvoices]
   );
 
-  // Ensure invoices are valid before processing
   const processedInvoices = useMemo(() => {
-    if (!Array.isArray(invoices)) {
+    if (!Array.isArray(invoices) || isLoading || !userFirm) {
       return [];
     }
 
     try {
-      return invoices
-        .filter(invoice => {
-          if (!invoice?.date || !invoice?.clientName || !invoice?.invoicedByFirm) {
-            return false;
-          }
-          return filterInvoice(invoice);
-        })
+      // First ensure we have valid invoices
+      const validInvoices = invoices.filter((invoice): invoice is Invoice => {
+        return (
+          invoice &&
+          typeof invoice.id === 'string' &&
+          typeof invoice.clientName === 'string' &&
+          typeof invoice.date === 'string' &&
+          typeof invoice.amount === 'number' &&
+          typeof invoice.commissionPercentage === 'number' &&
+          typeof invoice.invoicedByFirm === 'string' &&
+          typeof invoice.isPaid === 'boolean'
+        );
+      });
+
+      // Then apply filters and sort
+      return validInvoices
+        .filter(filterInvoice)
         .sort((a, b) => {
           try {
-            if (!a?.date || !b?.date) return 0;
-            return new Date(b.date).getTime() - new Date(a.date).getTime();
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) {
+              return 0;
+            }
+            return dateB.getTime() - dateA.getTime();
           } catch (error) {
             console.error('Error sorting invoices:', error);
             return 0;
@@ -371,7 +367,7 @@ export default function InvoiceList() {
       console.error('Error processing invoices:', error);
       return [];
     }
-  }, [invoices, filterInvoice]);
+  }, [invoices, isLoading, userFirm, filterInvoice]);
 
   // Only render list if we have processed invoices
   return (
