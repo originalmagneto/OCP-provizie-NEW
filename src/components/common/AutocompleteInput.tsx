@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useClient } from '../../context/ClientContext';
 
 interface AutocompleteInputProps {
   value: string;
   onChange: (value: string) => void;
+  onSearch?: (query: string) => Promise<string[]>;
   placeholder?: string;
   className?: string;
 }
@@ -11,10 +11,10 @@ interface AutocompleteInputProps {
 export default function AutocompleteInput({
   value,
   onChange,
+  onSearch,
   placeholder = '',
   className = '',
 }: AutocompleteInputProps) {
-  const { searchClients } = useClient();
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -32,12 +32,12 @@ export default function AutocompleteInput({
     };
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     onChange(newValue);
     
-    if (newValue.trim()) {
-      const matches = searchClients(newValue);
+    if (newValue.trim() && onSearch) {
+      const matches = await onSearch(newValue);
       setSuggestions(matches);
       setShowSuggestions(true);
     } else {
@@ -53,21 +53,21 @@ export default function AutocompleteInput({
   };
 
   return (
-    <div ref={wrapperRef} className="relative w-full">
+    <div ref={wrapperRef} className="relative">
       <input
         type="text"
         value={value}
         onChange={handleInputChange}
         placeholder={placeholder}
-        className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+        className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 ${className}`}
       />
       {showSuggestions && suggestions.length > 0 && (
-        <ul className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+        <ul className="absolute z-10 w-full mt-1 bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
           {suggestions.map((suggestion, index) => (
             <li
               key={index}
               onClick={() => handleSuggestionClick(suggestion)}
-              className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+              className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-indigo-50"
             >
               {suggestion}
             </li>

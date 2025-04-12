@@ -12,27 +12,34 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-function QuarterCircle({ quarter, currentQuarter }: { quarter: number; currentQuarter: number }) {
+function QuarterCircle({ quarter, currentQuarter, onSelect }: { 
+  quarter: number; 
+  currentQuarter: number;
+  onSelect: () => void;
+}) {
   const isCurrent = quarter === currentQuarter;
   const isPast = quarter < currentQuarter;
   
   return (
-    <div className={`relative w-12 h-12 rounded-full flex items-center justify-center font-medium text-lg
-      ${isCurrent ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-500' : 
-        isPast ? 'bg-gray-100 text-gray-600' : 'bg-gray-50 text-gray-400'}`}>
+    <button
+      onClick={onSelect}
+      className={`relative w-12 h-12 rounded-full flex items-center justify-center font-medium text-lg transition-all
+        ${isCurrent ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-500' : 
+          isPast ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}
+    >
       {quarter}
       {isPast && (
         <div className="absolute -bottom-1 -right-1">
           <CheckCircle2 className="w-4 h-4 text-green-500" />
         </div>
       )}
-    </div>
+    </button>
   );
 }
 
 export default function QuarterlySnapshot() {
   const { invoices, isLoading } = useInvoices();
-  const { currentYear, currentQuarter } = useYear();
+  const { currentYear, currentQuarter, selectYearAndQuarter, availableYears } = useYear();
   const { user } = useAuth();
 
   const quarterStats = useMemo(() => {
@@ -116,15 +123,38 @@ export default function QuarterlySnapshot() {
   return (
     <div className="space-y-6">
       {/* Quarters Progress */}
-      <div className="flex items-center justify-center space-x-4">
-        {[1, 2, 3, 4].map((quarter) => (
-          <div key={quarter} className="flex items-center">
-            <QuarterCircle quarter={quarter} currentQuarter={currentQuarter} />
-            {quarter < 4 && (
-              <div className={`w-8 h-0.5 ${quarter < currentQuarter ? 'bg-green-500' : 'bg-gray-200'}`} />
-            )}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <select
+            value={currentYear}
+            onChange={(e) => selectYearAndQuarter(parseInt(e.target.value), currentQuarter)}
+            className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+          >
+            {availableYears.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+          <div className="text-sm text-gray-500">
+            Click on a quarter to view its details
           </div>
-        ))}
+        </div>
+        
+        <div className="flex items-center justify-center space-x-4">
+          {[1, 2, 3, 4].map((quarter) => (
+            <div key={quarter} className="flex items-center">
+              <QuarterCircle 
+                quarter={quarter} 
+                currentQuarter={currentQuarter}
+                onSelect={() => selectYearAndQuarter(currentYear, quarter)}
+              />
+              {quarter < 4 && (
+                <div className={`w-8 h-0.5 ${quarter < currentQuarter ? 'bg-green-500' : 'bg-gray-200'}`} />
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Stats Grid */}

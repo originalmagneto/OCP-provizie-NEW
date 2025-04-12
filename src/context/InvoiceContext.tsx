@@ -8,7 +8,7 @@ import { useAuth } from "./AuthContext";
 interface InvoiceContextType {
   invoices: Invoice[];
   isLoading: boolean;
-  addInvoice: (invoice: Invoice) => void;
+  addInvoice: (invoice: Omit<Invoice, 'id'>) => Promise<void>;
   removeInvoice: (id: string) => void;
   updateInvoice: (id: string, updatedInvoice: Partial<Invoice>) => void;
   resetAllData: () => void;
@@ -18,7 +18,7 @@ interface InvoiceContextType {
 const defaultContext: InvoiceContextType = {
   invoices: [],
   isLoading: true,
-  addInvoice: () => {},
+  addInvoice: async () => {},
   removeInvoice: () => {},
   updateInvoice: () => {},
   resetAllData: () => {},
@@ -114,12 +114,7 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
-  const addInvoice = useCallback(async (invoice: Invoice) => {
-    if (!isValidInvoice(invoice)) {
-      console.error("Invalid invoice data:", invoice);
-      return;
-    }
-
+  const addInvoice = useCallback(async (invoice: Omit<Invoice, 'id'>) => {
     try {
       // The actual invoice will be added via the Firestore listener
       await invoiceServices.addInvoice(invoice);

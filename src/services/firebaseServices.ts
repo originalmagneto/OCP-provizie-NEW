@@ -12,11 +12,9 @@ import {
   orderBy, 
   serverTimestamp,
   setDoc,
-  DocumentReference,
-  DocumentData
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import type { Invoice, SettlementStatus, FirmType } from '../types';
+import type { Invoice, SettlementStatus, FirmType, Client } from '../types/index';
 
 // Collection references
 const invoicesCollection = collection(db, 'invoices');
@@ -25,7 +23,6 @@ const settlementsCollection = collection(db, 'settlements');
 
 // Invoice services
 export const invoiceServices = {
-  // Get all invoices
   getInvoices: async () => {
     const snapshot = await getDocs(invoicesCollection);
     return snapshot.docs.map(doc => ({
@@ -34,7 +31,6 @@ export const invoiceServices = {
     })) as Invoice[];
   },
 
-  // Get invoices by firm
   getInvoicesByFirm: async (firm: FirmType) => {
     const q = query(
       invoicesCollection, 
@@ -48,75 +44,73 @@ export const invoiceServices = {
     })) as Invoice[];
   },
 
-  // Add a new invoice
   addInvoice: async (invoice: Omit<Invoice, 'id'>) => {
-    const docRef = await addDoc(invoicesCollection, {
-      ...invoice,
-      createdAt: serverTimestamp()
-    });
-    return docRef.id;
+    await addDoc(invoicesCollection, invoice);
   },
 
-  // Update an invoice
   updateInvoice: async (id: string, data: Partial<Invoice>) => {
-    const docRef = doc(db, 'invoices', id);
-    await updateDoc(docRef, {
-      ...data,
-      updatedAt: serverTimestamp()
-    });
+    const invoiceRef = doc(invoicesCollection, id);
+    await updateDoc(invoiceRef, data);
   },
 
-  // Delete an invoice
   deleteInvoice: async (id: string) => {
-    const docRef = doc(db, 'invoices', id);
-    await deleteDoc(docRef);
+    const invoiceRef = doc(invoicesCollection, id);
+    await deleteDoc(invoiceRef);
   },
 
-  // Toggle paid status
   togglePaid: async (id: string, isPaid: boolean) => {
-    const docRef = doc(db, 'invoices', id);
-    await updateDoc(docRef, {
-      isPaid,
-      updatedAt: serverTimestamp(),
-      paidAt: isPaid ? serverTimestamp() : null
-    });
+    const invoiceRef = doc(invoicesCollection, id);
+    await updateDoc(invoiceRef, { isPaid });
   }
 };
 
 // Client services
 export const clientServices = {
-  // Get all clients
-  getClients: async () => {
-    const snapshot = await getDocs(clientsCollection);
-    return snapshot.docs.map(doc => doc.data().name as string);
+  // Get client by name
+  getClientByName: async (name: string) => {
+    const clientRef = doc(clientsCollection, name.toLowerCase());
+    const clientDoc = await getDoc(clientRef);
+    if (clientDoc.exists()) {
+      return { id: clientDoc.id, ...clientDoc.data() };
+    }
+    return null;
   },
 
-  // Add a new client
-  addClient: async (clientName: string) => {
-    // Check if client already exists
-    const q = query(clientsCollection, where('name', '==', clientName));
+  // Add or update client
+  upsertClient: async (name: string, data: {
+    belongsTo: FirmType;
+    lastInvoiceDate: Date;
+  }) => {
+    const clientRef = doc(clientsCollection, name.toLowerCase());
+    await setDoc(clientRef, {
+      name,
+      ...data,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  },
+
+  // Get all clients for a firm
+  getClientsByFirm: async (firm: FirmType) => {
+    const q = query(
+      clientsCollection,
+      where('belongsTo', '==', firm),
+      orderBy('name')
+    );
     const snapshot = await getDocs(q);
-    
-    if (snapshot.empty) {
-      await addDoc(clientsCollection, {
-        name: clientName,
-        createdAt: serverTimestamp()
-      });
-    }
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
   },
 
   // Search clients
-  searchClients: async (query: string) => {
-    // In a real implementation, you would use a more sophisticated search
-    // For now, we'll just get all clients and filter on the client side
+  searchClients: async (searchTerm: string) => {
     const snapshot = await getDocs(clientsCollection);
-    const clients = snapshot.docs.map(doc => doc.data().name as string);
-    
-    if (!query) return [];
-    const normalizedQuery = query.toLowerCase();
-    return clients.filter(client => 
-      client.toLowerCase().includes(normalizedQuery)
-    );
+    return snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() } as Client))
+      .filter(client => 
+        client.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
   }
 };
 
