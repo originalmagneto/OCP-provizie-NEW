@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useYear, isInQuarter } from "../context/YearContext";
 import { useAuth } from "../context/AuthContext";
-import { Euro, CheckCircle2, XCircle } from "lucide-react";
+import { Euro, CheckCircle2, XCircle, CalendarDays, ChevronDown } from "lucide-react";
 import type { Invoice } from "../types";
 
 function formatCurrency(amount: number): string {
@@ -125,19 +125,25 @@ export default function QuarterlySnapshot() {
       {/* Quarters Progress */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <select
-            value={currentYear}
-            onChange={(e) => selectYearAndQuarter(parseInt(e.target.value), currentQuarter)}
-            className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-          >
-            {availableYears.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
-          <div className="text-sm text-gray-500">
-            Click on a quarter to view its details
+          <div className="relative">
+            <select
+              value={currentYear}
+              onChange={(e) => selectYearAndQuarter(parseInt(e.target.value), currentQuarter)}
+              className="appearance-none pl-10 pr-8 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-base text-gray-700 hover:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+            >
+              {availableYears.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+            <CalendarDays className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+              <ChevronDown className="h-4 w-4 text-gray-400" />
+            </div>
+          </div>
+          <div className="text-sm text-gray-500 italic">
+            Click quarter to view details
           </div>
         </div>
         

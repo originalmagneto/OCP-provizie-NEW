@@ -17,6 +17,7 @@ export interface Invoice {
   commissionPercentage: number;
   date: string;
   isPaid: boolean;
+  comment?: string;
 }
 
 export interface SettlementStatus {
