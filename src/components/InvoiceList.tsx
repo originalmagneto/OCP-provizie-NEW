@@ -186,6 +186,11 @@ function InvoiceCard({
                   ${firmTheme.bg} ${firmTheme.text}`}>
                   <Building className="w-3 h-3 mr-1" />
                   {invoice.invoicedByFirm}
+                  {invoice.invoicedByUserInitials && (
+                    <span className="ml-2 bg-gray-100 text-gray-500 rounded-full px-2 py-0.5 text-[10px] font-semibold border border-gray-200" title="User initials">
+                      {invoice.invoicedByUserInitials}
+                    </span>
+                  )}
                 </div>
               </div>
               <div>

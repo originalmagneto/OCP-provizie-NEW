@@ -9,6 +9,7 @@ export interface Invoice {
   invoicedByFirm: FirmType;  // The firm that sent the invoice to the client
   referredByFirm: FirmType;  // The firm that referred the client
   isPaid: boolean;  // Whether the client has paid the invoice
+  invoicedByUserInitials?: string; // Optional: Initials of the user who created the invoice
 }
 
 export interface SettlementStatus {

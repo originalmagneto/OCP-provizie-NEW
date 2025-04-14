@@ -57,7 +57,15 @@ export default function InvoiceForm() {
       }
 
       // Create invoice without ID - Firebase will generate one
-      const invoiceData: Omit<Invoice, 'id'> = {
+      // Extract initials from user's name (e.g., Marián Čuprík → MČ)
+      let userInitials = undefined;
+      if (user?.name) {
+        userInitials = user.name
+          .split(' ')
+          .map(part => part[0]?.toUpperCase() || '')
+          .join('');
+      }
+      const invoiceData: Omit<Invoice, 'id'> & { invoicedByUserInitials?: string } = {
         clientName: formData.clientName,
         amount,
         commissionPercentage,
@@ -65,7 +73,9 @@ export default function InvoiceForm() {
         invoicedByFirm: user?.firm || "SKALLARS",
         referredByFirm: formData.referredByFirm,
         isPaid: false,
+        ...(userInitials ? { invoicedByUserInitials: userInitials } : {}),
       };
+
 
       if (formData.comment?.trim()) {
         (invoiceData as any).comment = formData.comment.trim();
@@ -79,7 +89,12 @@ export default function InvoiceForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <>
+      {/* Show current user and firm at the top of the form */}
+      <div className="mb-4 text-sm text-gray-600">
+        Creating as <span className="font-semibold">{user?.name}</span> (<span className="font-semibold">{user?.firm}</span>)
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <label className="block text-sm font-medium text-gray-700">
           Client Name
@@ -105,22 +120,7 @@ export default function InvoiceForm() {
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Referred By
-          </label>
-          <CustomDropdown
-            value={formData.referredByFirm}
-            onChange={(value) =>
-              setFormData((prev) => ({
-                ...prev,
-                referredByFirm: value as FirmType,
-              }))
-            }
-            options={availableReferrers.map(firm => ({ value: firm, label: firm }))}
-            icon={null}
-          />
-        </div>
+
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -197,5 +197,6 @@ export default function InvoiceForm() {
         Create Invoice
       </button>
     </form>
+    </>
   );
 }
