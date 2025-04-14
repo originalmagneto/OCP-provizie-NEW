@@ -159,23 +159,22 @@ export default function InvoiceForm() {
             max="100"
           />
         </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Referred By
-        </label>
-        <CustomDropdown
-          value={formData.referredByFirm}
-          onChange={(value) =>
-            setFormData((prev) => ({
-              ...prev,
-              referredByFirm: value as FirmType,
-            }))
-          }
-          options={availableReferrers.map(firm => ({ value: firm, label: firm }))}
-          icon={null}
-        />
+        <div className="col-span-2 md:col-span-1">
+          <label className="block text-sm font-medium text-gray-700">
+            Referred By
+          </label>
+          <CustomDropdown
+            value={formData.referredByFirm}
+            onChange={(value) =>
+              setFormData((prev) => ({
+                ...prev,
+                referredByFirm: value as FirmType,
+              }))
+            }
+            options={availableReferrers.map(firm => ({ value: firm, label: firm }))}
+            icon={null}
+          />
+        </div>
       </div>
 
       <div>

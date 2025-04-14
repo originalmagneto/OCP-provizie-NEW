@@ -127,6 +127,7 @@ export default function StatisticsOverview() {
         {/* Current Quarter Summary */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-4">
+            {/* Only one header for Current Quarter Summary should appear here */}
             <h2 className="text-xl font-semibold text-gray-900">Current Quarter Summary</h2>
             <Calendar className="w-8 h-8 text-indigo-600" />
           </div>
