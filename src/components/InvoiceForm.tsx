@@ -12,6 +12,7 @@ interface FormData {
   amount: string;
   commissionPercentage: string;
   referredByFirm: FirmType;
+  invoiceDate: string;
   comment?: string;
 }
 
@@ -24,6 +25,7 @@ const INITIAL_FORM_DATA = (userFirm: FirmType): FormData => {
     amount: "",
     commissionPercentage: "10",
     referredByFirm: availableReferrers[0],
+    invoiceDate: new Date().toISOString().split('T')[0],
     comment: "",
   };
 };
@@ -59,7 +61,7 @@ export default function InvoiceForm() {
         clientName: formData.clientName,
         amount,
         commissionPercentage,
-        date: new Date().toISOString(),
+        date: new Date(formData.invoiceDate).toISOString(),
         invoicedByFirm: user?.firm || "SKALLARS",
         referredByFirm: formData.referredByFirm,
         isPaid: false,
@@ -91,40 +93,72 @@ export default function InvoiceForm() {
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Amount (€)
-        </label>
-        <div className="relative mt-1">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Euro className="h-5 w-5 text-gray-400" />
-          </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Invoice Date
+          </label>
           <input
-            type="number"
-            value={formData.amount}
-            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-            placeholder="0.00"
-            step="0.01"
-            min="0"
+            type="date"
+            value={formData.invoiceDate}
+            onChange={(e) => setFormData({ ...formData, invoiceDate: e.target.value })}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Referred By
+          </label>
+          <CustomDropdown
+            value={formData.referredByFirm}
+            onChange={(value) =>
+              setFormData((prev) => ({
+                ...prev,
+                referredByFirm: value as FirmType,
+              }))
+            }
+            options={availableReferrers.map(firm => ({ value: firm, label: firm }))}
+            icon={null}
           />
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Commission % (Default: 10%)
-        </label>
-        <input
-          type="number"
-          value={formData.commissionPercentage}
-          onChange={(e) => setFormData({ ...formData, commissionPercentage: e.target.value })}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-          placeholder="10"
-          step="0.1"
-          min="0"
-          max="100"
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Amount (€)
+          </label>
+          <div className="relative mt-1">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Euro className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="number"
+              value={formData.amount}
+              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="0.00"
+              step="0.01"
+              min="0"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Commission % (Default: 10%)
+          </label>
+          <input
+            type="number"
+            value={formData.commissionPercentage}
+            onChange={(e) => setFormData({ ...formData, commissionPercentage: e.target.value })}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="10"
+            step="0.1"
+            min="0"
+            max="100"
+          />
+        </div>
       </div>
 
       <div>
