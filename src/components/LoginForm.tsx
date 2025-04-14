@@ -4,17 +4,33 @@ import type { FirmType } from "../types";
 import { Building2, Mail, Lock, User } from "lucide-react";
 
 export default function LoginForm() {
-  const { login, register, isLoading } = useAuth();
+  const { login, register, resetPassword, isLoading } = useAuth();
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [selectedFirm, setSelectedFirm] = useState<FirmType>("SKALLARS");
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccessMessage(null);      if (isResettingPassword) {
+      if (!email) {
+        setError("Please enter your email address to reset your password");
+        return;
+      }
+      try {
+        await resetPassword(email);
+        setSuccessMessage("Password reset instructions have been sent to your email. Please check your inbox and spam folder.");
+        setIsResettingPassword(false);
+      } catch (err: any) {
+        setError(err.message || "Failed to send reset email. Please try again.");
+      }
+      return;
+    }
 
     if (!email || !password) {
       setError("Email and password are required");
@@ -40,7 +56,16 @@ export default function LoginForm() {
 
   const toggleMode = () => {
     setIsRegistering(!isRegistering);
+    setIsResettingPassword(false);
     setError(null);
+    setSuccessMessage(null);
+  };
+
+  const toggleResetPassword = () => {
+    setIsResettingPassword(!isResettingPassword);
+    setIsRegistering(false);
+    setError(null);
+    setSuccessMessage(null);
   };
 
   return (
@@ -51,7 +76,11 @@ export default function LoginForm() {
             Commission Tracker
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            {isRegistering ? "Create an account" : "Sign in to manage your commissions"}
+            {isResettingPassword
+              ? "Reset your password"
+              : isRegistering
+              ? "Create an account"
+              : "Sign in to manage your commissions"}
           </p>
         </div>
 
@@ -61,6 +90,16 @@ export default function LoginForm() {
               <div className="flex">
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-red-800">{error}</h3>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="rounded-md bg-green-50 p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-green-800">{successMessage}</h3>
                 </div>
               </div>
             </div>
@@ -90,34 +129,36 @@ export default function LoginForm() {
               </div>
             </div>
 
-            {/* Password Field */}
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <div className="flex items-center">
-                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
-                  <Lock className="h-5 w-5" />
-                </span>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete={isRegistering ? "new-password" : "current-password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-r-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Password"
-                />
+            {/* Password Field - Only show if not resetting password */}
+            {!isResettingPassword && (
+              <div>
+                <label htmlFor="password" className="sr-only">
+                  Password
+                </label>
+                <div className="flex items-center">
+                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
+                    <Lock className="h-5 w-5" />
+                  </span>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete={isRegistering ? "new-password" : "current-password"}
+                    required={!isResettingPassword}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-r-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    placeholder="Password"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Name Field (Registration only) */}
+            {/* Name Field - Only show during registration */}
             {isRegistering && (
               <div>
                 <label htmlFor="name" className="sr-only">
-                  Full Name
+                  Name
                 </label>
                 <div className="flex items-center">
                   <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
@@ -128,70 +169,45 @@ export default function LoginForm() {
                     name="name"
                     type="text"
                     autoComplete="name"
-                    required
+                    required={isRegistering}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-r-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                    placeholder="Full Name"
+                    placeholder="Full name"
                   />
                 </div>
               </div>
             )}
-
-            {/* Firm Selection */}
-            {isRegistering && (
-              <div>
-                <label htmlFor="firm" className="sr-only">
-                  Firm
-                </label>
-                <div className="flex items-center">
-                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
-                    <Building2 className="h-5 w-5" />
-                  </span>
-                  <select
-                    id="firm"
-                    name="firm"
-                    value={selectedFirm}
-                    onChange={(e) => setSelectedFirm(e.target.value as FirmType)}
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-r-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  >
-                    <option value="SKALLARS">SKALLARS</option>
-                    <option value="MKMs">MKMs</option>
-                    <option value="Contax">Contax</option>
-                  </select>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <button
-                type="button"
-                onClick={toggleMode}
-                className="font-medium text-indigo-600 hover:text-indigo-500"
-              >
-                {isRegistering
-                  ? "Already have an account? Sign in"
-                  : "Don't have an account? Register"}
-              </button>
-            </div>
           </div>
 
           <div>
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              {isLoading
-                ? isRegistering
-                  ? "Creating account..."
-                  : "Signing in..."
-                : isRegistering
-                ? "Create account"
-                : "Sign in"}
+              {isLoading ? "Processing..." : isResettingPassword ? "Send Reset Link" : isRegistering ? "Create Account" : "Sign In"}
             </button>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={toggleMode}
+              className="text-sm text-indigo-600 hover:text-indigo-500"
+            >
+              {isRegistering ? "Already have an account? Sign in" : "Need an account? Register"}
+            </button>
+            
+            {!isRegistering && (
+              <button
+                type="button"
+                onClick={toggleResetPassword}
+                className="text-sm text-indigo-600 hover:text-indigo-500"
+              >
+                {isResettingPassword ? "Back to sign in" : "Forgot password?"}
+              </button>
+            )}
           </div>
         </form>
       </div>
