@@ -3,8 +3,6 @@ import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { useYear, isInQuarter } from "../context/YearContext";
 import CustomDropdown from "./common/CustomDropdown";
-import StatusBadge from "./common/StatusBadge";
-import Tooltip from "./common/Tooltip";
 import EditInvoiceModal from "./EditInvoiceModal";
 import {
   Search,
@@ -49,10 +47,9 @@ interface InvoiceCardProps {
   invoice: Invoice;
   isExpanded: boolean;
   onToggleExpand: () => void;
-  onTogglePaid: () => void;
-  onDelete: () => void;
-  onEdit: () => void;
-  userFirm: FirmType;
+  onTogglePaidStatus: () => void;
+  onEdit: (invoice: Invoice) => void;
+  onDelete: (invoice: Invoice) => void;
 }
 
 function FilterBar({
@@ -133,119 +130,101 @@ function FilterBar({
   );
 }
 
-function InvoiceCard({
-  invoice,
-  isExpanded,
+function InvoiceCard({ 
+  invoice, 
+  isExpanded, 
   onToggleExpand,
-  onTogglePaid,
-  onDelete,
+  onTogglePaidStatus,
   onEdit,
-  userFirm,
+  onDelete 
 }: InvoiceCardProps) {
-  const theme = firmThemes[invoice.invoicedByFirm];
-  const isOverdue =
-    !invoice.isPaid &&
-    new Date(invoice.date).getTime() < Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const date = new Date(invoice.date);
+  const firmTheme = firmThemes[invoice.invoicedByFirm];
 
   return (
-    <div
-      className={`bg-white rounded-lg shadow transition-all duration-200 ${
-        isExpanded ? "ring-2 ring-blue-500" : ""
-      }`}
-    >
-      <div className="p-4">
+    <div className={`border rounded-lg overflow-hidden transition-all ${isExpanded ? 'shadow-md' : ''}`}>
+      <div className="p-4 bg-white">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div
-              className={`px-3 py-1 rounded-full ${theme.bg} ${theme.border} ${theme.text}`}
+          <div className="flex items-center space-x-3">
+            <button 
+              onClick={onToggleExpand}
+              className="text-gray-400 hover:text-gray-600"
             >
-              {invoice.invoicedByFirm}
-            </div>
+              {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            </button>
             <div>
-              <h3 className="text-lg font-semibold">{invoice.clientName}</h3>
+              <h3 className="text-sm font-medium text-gray-900">{invoice.clientName}</h3>
               <p className="text-sm text-gray-500">
-                {new Date(invoice.date).toLocaleDateString()}
+                {date.toLocaleDateString()}
               </p>
             </div>
           </div>
-
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <p className="text-lg font-semibold flex items-center">
-                <Euro className="w-4 h-4 mr-1" />
-                {formatCurrency(invoice.amount)}
-              </p>
-              <StatusBadge status={invoice.isPaid ? 'paid' : isOverdue ? 'overdue' : 'pending'} />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              {userFirm === invoice.invoicedByFirm && (
-                <>
-                  <Tooltip content="Edit Invoice">
-                    <button
-                      onClick={onEdit}
-                      className="p-2 text-gray-500 hover:text-blue-500 hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                  </Tooltip>
-
-                  <Tooltip content="Delete Invoice">
-                    <button
-                      onClick={onDelete}
-                      className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </Tooltip>
-                </>
-              )}
-
-              <button
-                onClick={onToggleExpand}
-                className="p-2 text-gray-500 hover:text-blue-500 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                {isExpanded ? (
-                  <ChevronUp className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )}
-              </button>
-            </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={onTogglePaidStatus}
+              className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors
+                ${invoice.isPaid 
+                  ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                  : 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                }`}
+            >
+              {invoice.isPaid ? 'Paid' : 'Pending'}
+            </button>
+            <span className="text-sm font-medium text-gray-900 flex items-center">
+              <Euro className="w-4 h-4 mr-1 text-gray-400" />
+              {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(invoice.amount)}
+            </span>
           </div>
         </div>
 
         {isExpanded && (
-          <div className="mt-4 pt-4 border-t">
+          <div className="mt-4 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-500">Commission</p>
-                <p className="font-medium">
-                  {invoice.commissionPercentage}% (€
-                  {formatCurrency(
-                    (invoice.amount * invoice.commissionPercentage) / 100
-                  )}
-                  )
+                <p className="text-xs text-gray-500">Invoiced By</p>
+                <div className={`mt-1 inline-flex items-center px-2 py-1 rounded-md text-xs font-medium
+                  ${firmTheme.bg} ${firmTheme.text}`}>
+                  <Building className="w-3 h-3 mr-1" />
+                  {invoice.invoicedByFirm}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Referred By</p>
+                <div className={`mt-1 inline-flex items-center px-2 py-1 rounded-md text-xs font-medium
+                  ${firmThemes[invoice.referredByFirm].bg} ${firmThemes[invoice.referredByFirm].text}`}>
+                  <Building className="w-3 h-3 mr-1" />
+                  {invoice.referredByFirm}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Commission</p>
+                <p className="mt-1 text-sm font-medium text-gray-900">
+                  {invoice.commissionPercentage}%
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Referred By</p>
-                <p className="font-medium">{invoice.referredByFirm}</p>
+                <p className="text-xs text-gray-500">Commission Amount</p>
+                <p className="mt-1 text-sm font-medium text-gray-900 flex items-center">
+                  <Euro className="w-3 h-3 mr-1 text-gray-400" />
+                  {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(invoice.amount * invoice.commissionPercentage / 100)}
+                </p>
               </div>
             </div>
-
-            {userFirm === invoice.invoicedByFirm && (
+            
+            <div className="flex items-center justify-end space-x-2 pt-4 border-t">
               <button
-                onClick={onTogglePaid}
-                className={`mt-4 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  invoice.isPaid
-                    ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    : "bg-green-50 text-green-700 hover:bg-green-100"
-                }`}
+                onClick={() => onEdit(invoice)}
+                className="p-1 text-gray-400 hover:text-gray-600"
               >
-                {invoice.isPaid ? "Mark as Unpaid" : "Mark as Paid"}
+                <Edit2 size={16} />
               </button>
-            )}
+              <button
+                onClick={() => onDelete(invoice)}
+                className="p-1 text-gray-400 hover:text-red-600"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -266,6 +245,29 @@ export default function InvoiceList() {
     status: "all",
     firm: "all",
   });
+
+  const handleToggleExpand = useCallback((invoiceId: string) => {
+    setExpandedInvoices(prev =>
+      prev.includes(invoiceId)
+        ? prev.filter(id => id !== invoiceId)
+        : [...prev, invoiceId]
+    );
+  }, []);
+
+  const handleTogglePaid = useCallback(async (invoiceId: string) => {
+    await togglePaid(invoiceId);
+  }, [togglePaid]);
+
+  const handleDelete = useCallback(async (invoiceId: string) => {
+    if (window.confirm('Are you sure you want to delete this invoice?')) {
+      await removeInvoice(invoiceId);
+    }
+  }, [removeInvoice]);
+
+  const handleUpdateInvoice = useCallback(async (invoiceId: string, updates: Partial<Invoice>) => {
+    await updateInvoice(invoiceId, updates);
+    setEditingInvoice(null);
+  }, [updateInvoice]);
 
   const filterInvoice = useCallback(
     (invoice: Invoice): boolean => {
@@ -395,16 +397,15 @@ export default function InvoiceList() {
               invoice={invoice}
               isExpanded={expandedInvoices.includes(invoice.id)}
               onToggleExpand={() => handleToggleExpand(invoice.id)}
-              onTogglePaid={() => handleTogglePaid(invoice.id)}
+              onTogglePaidStatus={() => handleTogglePaid(invoice.id)}
               onDelete={() => handleDelete(invoice.id)}
               onEdit={() => setEditingInvoice(invoice)}
-              userFirm={userFirm}
             />
           ))}
         </div>
       )}
       
-      {editingInvoice && (
+      {editingInvoice && userFirm && (
         <EditInvoiceModal
           invoice={editingInvoice}
           onClose={() => setEditingInvoice(null)}
@@ -416,9 +417,4 @@ export default function InvoiceList() {
   );
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
+
