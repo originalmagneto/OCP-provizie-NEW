@@ -92,7 +92,7 @@ export function Dashboard({ initialLayout, onLayoutChange }: DashboardProps) {
   }, [widgets, onLayoutChange]);
 
   // Add a new widget
-  const addWidget = useCallback((widgetType: WidgetType) => {
+  const addWidget = useCallback((widgetType: Omit<WidgetType, 'component'>) => {
     const newWidget: Widget = {
       id: uuidv4(),
       i: uuidv4(),
@@ -142,7 +142,15 @@ export function Dashboard({ initialLayout, onLayoutChange }: DashboardProps) {
   // Render widget content based on type
   const renderWidgetContent = useCallback((widget: Widget) => {
     const widgetType = WIDGET_TYPES.find(w => w.id === widget.type);
-    if (!widgetType) return null;
+    if (!widgetType) {
+      return (
+        <div className="flex h-full items-center justify-center p-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            Widget type "{widget.type}" not found
+          </p>
+        </div>
+      );
+    }
     
     const WidgetComponent = widgetType.component;
     return <WidgetComponent className="h-full w-full" {...(widget.data || {})} />;
@@ -153,26 +161,28 @@ export function Dashboard({ initialLayout, onLayoutChange }: DashboardProps) {
       <DashboardToolbar
         isEditing={isEditing}
         onToggleEdit={toggleEdit}
-        onAddWidget={() => setShowWidgetSelector(true)}
         onSave={handleSave}
         onCancel={handleCancel}
+        onAddWidget={() => setShowWidgetSelector(true)}
       />
       
       <div className="flex-1 overflow-auto p-4">
         <DashboardGrid
           isEditing={isEditing}
-          items={widgets}
+          items={widgets.map(widget => ({
+            ...widget,
+            content: renderWidgetContent(widget)
+          }))}
           onRemoveItem={removeWidget}
           onLayoutChange={saveLayout}
-          renderItem={renderWidgetContent}
         />
       </div>
 
       <WidgetSelector
         open={showWidgetSelector}
-        onClose={() => setShowWidgetSelector(false)}
-        onSelect={(widget) => addWidget(widget as WidgetType)}
-        widgetTypes={WIDGET_TYPES.map(({ component, ...rest }) => rest)}
+        onOpenChange={setShowWidgetSelector}
+        onSelect={addWidget}
+        availableWidgets={WIDGET_TYPES}
       />
     </div>
   );
@@ -201,130 +211,5 @@ export function DashboardWithLocalStorage() {
       initialLayout={initialLayout} 
       onLayoutChange={handleLayoutChange} 
     />
-  );
-}
-  const addWidget = useCallback((widgetType: WidgetType) => {
-    const newWidget: Widget = {
-      id: uuidv4(),
-      i: uuidv4(), // For react-grid-layout compatibility
-      title: widgetType.title,
-      x: 0,
-      y: 0, // Add to the bottom
-      w: widgetType.defaultSize.w,
-      h: widgetType.defaultSize.h,
-      minW: 2,
-      minH: 2,
-      type: widgetType.id,
-    };
-    
-    setWidgets(prev => [...prev, newWidget]);
-  }, []);
-  
-  // Remove a widget
-  const removeWidget = useCallback((id: string) => {
-    setWidgets(prev => prev.filter(w => w.id !== id));
-  }, []);
-  
-  // Toggle edit mode
-  const toggleEdit = useCallback(() => {
-    setIsEditing(prev => !prev);
-  }, []);
-  
-  // Save the current layout
-  const saveLayoutAndExit = useCallback(() => {
-    // The layout is already being saved in saveLayout
-    setIsEditing(false);
-  }, []);
-  
-  // Cancel editing
-  const cancelEditing = useCallback(() => {
-    // Reload the saved layout
-    try {
-      const saved = localStorage.getItem('dashboard-layout');
-      if (saved) {
-        setWidgets(JSON.parse(saved));
-      }
-    } catch (e) {
-      console.error('Failed to reload saved layout', e);
-    }
-    setIsEditing(false);
-  }, []);
-  
-  // Render widget content based on type
-  const renderWidgetContent = useCallback((widget: Widget) => {
-    const widgetType = WIDGET_TYPES.find(wt => wt.id === widget.type);
-    if (!widgetType) {
-      return (
-        <div className="flex h-full items-center justify-center p-4 text-center">
-          <p className="text-sm text-muted-foreground">
-            Widget type "{widget.type}" not found
-          </p>
-        </div>
-      );
-    }
-    
-    const WidgetComponent = widgetType.component;
-    return <WidgetComponent />;
-  }, []);
-  
-  // Prepare items for the grid
-  const gridItems = useMemo(() => {
-    return widgets.map(widget => ({
-      ...widget,
-      content: (
-        <Card className="h-full w-full">
-          {renderWidgetContent(widget)}
-        </Card>
-      ),
-    }));
-  }, [widgets, renderWidgetContent]);
-  
-  return (
-    <div className="flex h-full w-full flex-col">
-      <DashboardToolbar
-        isEditing={isEditing}
-        onToggleEdit={toggleEdit}
-        onSave={saveLayoutAndExit}
-        onCancel={cancelEditing}
-        onAddWidget={() => setShowWidgetSelector(true)}
-      />
-      
-      <div className="flex-1 overflow-auto p-4">
-        {widgets.length === 0 && !isEditing ? (
-          <div className="flex h-full flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed p-12 text-center">
-            <div className="rounded-full bg-primary/10 p-4">
-              <Plus className="h-8 w-8 text-primary" />
-            </div>
-            <h3 className="text-lg font-medium">No widgets added</h3>
-            <p className="max-w-md text-sm text-muted-foreground">
-              Get started by adding your first widget to the dashboard
-            </p>
-            <Button
-              onClick={() => setShowWidgetSelector(true)}
-              className="mt-2"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Widget
-            </Button>
-          </div>
-        ) : (
-          <DashboardGrid
-            items={gridItems}
-            onLayoutChange={saveLayout}
-            isEditing={isEditing}
-            onAddItem={() => setShowWidgetSelector(true)}
-            onRemoveItem={removeWidget}
-            className="h-full min-h-[600px]"
-          />
-        )}
-      </div>
-      
-      <WidgetSelector
-        open={showWidgetSelector}
-        onOpenChange={setShowWidgetSelector}
-        onSelect={addWidget}
-        availableWidgets={WIDGET_TYPES}
-      />
-    </div>
   );
 }
