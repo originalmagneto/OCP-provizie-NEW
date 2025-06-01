@@ -8,6 +8,7 @@ import { WelcomeWidget } from './widgets/WelcomeWidget';
 import { StatsWidget } from './widgets/StatsWidget';
 import { ChartWidget } from './widgets/ChartWidget';
 import { TableWidget } from './widgets/TableWidget';
+import type { Layout, Layouts } from 'react-grid-layout';
 
 type WidgetType = {
   id: string;
@@ -82,7 +83,7 @@ const WIDGET_TYPES: WidgetType[] = [
 ];
 
 export function Dashboard({ initialLayout, onLayoutChange }: DashboardProps) {
-  const [widgets, setWidgets] = useState<Widget[]>(initialLayout);
+  const [widgets, setWidgets] = useState<Widget[]>(Array.isArray(initialLayout) ? initialLayout : []);
   const [isEditing, setIsEditing] = useState(false);
   const [showWidgetSelector, setShowWidgetSelector] = useState(false);
 
@@ -90,6 +91,25 @@ export function Dashboard({ initialLayout, onLayoutChange }: DashboardProps) {
   useEffect(() => {
     onLayoutChange(widgets, { lg: widgets });
   }, [widgets, onLayoutChange]);
+
+  // Initialize with default widgets if none exist
+  useEffect(() => {
+    if (widgets.length === 0) {
+      const defaultWidgets: Widget[] = [
+        {
+          id: 'welcome',
+          i: 'welcome',
+          title: 'Welcome',
+          x: 0,
+          y: 0,
+          w: 4,
+          h: 3,
+          type: 'welcome'
+        }
+      ];
+      setWidgets(defaultWidgets);
+    }
+  }, [widgets]);
 
   // Add a new widget
   const addWidget = useCallback((widgetType: Omit<WidgetType, 'component'>) => {
@@ -120,18 +140,43 @@ export function Dashboard({ initialLayout, onLayoutChange }: DashboardProps) {
   }, []);
 
   // Save layout
-  const saveLayout = useCallback((layout: any) => {
-    const updatedWidgets = layout.map((item: any) => ({
-      ...widgets.find(w => w.i === item.i),
-      ...item,
-    }));
+  const saveLayout = useCallback((layout: Layout[], allLayouts: Layouts) => {
+    if (!Array.isArray(layout)) return;
+    
+    const updatedWidgets = layout.map(item => {
+      const existingWidget = widgets.find(w => w.i === item.i);
+      if (!existingWidget) return null;
+      
+      return {
+        ...existingWidget,
+        ...item,
+        x: item.x,
+        y: item.y,
+        w: item.w,
+        h: item.h
+      } as Widget;
+    }).filter((widget): widget is Widget => widget !== null);
+    
     setWidgets(updatedWidgets);
   }, [widgets]);
 
   // Handle save
   const handleSave = useCallback(() => {
     setIsEditing(false);
-    onLayoutChange(widgets, { lg: widgets });
+    // Convert widgets to layout format expected by react-grid-layout
+    const layout = widgets.map(widget => ({
+      i: widget.i,
+      x: widget.x,
+      y: widget.y,
+      w: widget.w,
+      h: widget.h,
+      minW: widget.minW,
+      minH: widget.minH,
+      maxW: widget.maxW,
+      maxH: widget.maxH,
+      static: widget.static
+    }));
+    onLayoutChange(layout, { lg: layout });
   }, [widgets, onLayoutChange]);
 
   // Handle cancel

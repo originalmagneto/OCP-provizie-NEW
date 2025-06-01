@@ -92,11 +92,25 @@ export function DashboardGrid({
     setIsDragging(false);
   }, []);
 
+  // Convert items to layout format expected by react-grid-layout
+  const layout = items.map(item => ({
+    i: item.i,
+    x: item.x,
+    y: item.y,
+    w: item.w,
+    h: item.h,
+    minW: item.minW,
+    minH: item.minH,
+    maxW: item.maxW,
+    maxH: item.maxH,
+    static: item.static
+  }));
+
   return (
     <div className={cn('relative h-full w-full', className)}>
       <ResponsiveGridLayout
         className={cn('min-h-[500px]', { 'cursor-grabbing': isDragging })}
-        layouts={{ lg: items }}
+        layouts={{ lg: layout }}
         breakpoints={breakpoints}
         cols={cols}
         rowHeight={rowHeight}
