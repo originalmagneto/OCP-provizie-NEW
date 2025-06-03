@@ -1,7 +1,7 @@
 // Firebase configuration file
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getAuth, browserLocalPersistence, setPersistence } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 
 // Your web app's Firebase configuration
@@ -26,12 +26,9 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
-// Enable persistence - using proper enum from firebase/auth
-import { browserLocalPersistence } from 'firebase/auth';
-
-// Set persistence properly using the enum
-auth.setPersistence(browserLocalPersistence).catch(error => {
-  console.error("Error setting auth persistence:", error);
+// Enable local persistence for authentication
+setPersistence(auth, browserLocalPersistence).catch(error => {
+  console.error('Error setting auth persistence:', error);
 });
 
 export { app, db, auth, storage };
