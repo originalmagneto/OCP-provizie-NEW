@@ -32,8 +32,11 @@ export default function LoginForm() {
       } else {
         await login(email, password);
       }
-    } catch (err: any) {
-      const errorMessage = err.message || "Authentication failed. Please try again.";
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Authentication failed. Please try again.";
       setError(errorMessage);
     }
   };
@@ -198,3 +201,4 @@ export default function LoginForm() {
     </div>
   );
 }
+

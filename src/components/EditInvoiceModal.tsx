@@ -3,12 +3,12 @@ import { X } from "lucide-react";
 import CustomDropdown from "./common/CustomDropdown";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import type { FirmType } from "../types";
+import type { FirmType, Invoice } from "../types";
 
 interface EditInvoiceModalProps {
-  invoice: any;
+  invoice: Invoice;
   onClose: () => void;
-  onSave: (updatedInvoice: any) => void;
+  onSave: (updatedInvoice: Invoice) => void;
   userFirm: FirmType;
 }
 

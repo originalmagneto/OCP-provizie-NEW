@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { formatCurrency } from "../lib/utils";
 import type { FirmType, Invoice } from "../types";
 
 const firmThemes = {
@@ -157,7 +158,7 @@ function InvoiceCard({
             <div className="text-right">
               <p className="text-lg font-semibold flex items-center">
                 <Euro className="w-4 h-4 mr-1" />
-                {formatCurrency(invoice.amount)}
+                {formatCurrency(invoice.amount, { locale: 'en-US', showCurrency: false, minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <StatusBadge status={invoice.isPaid ? 'paid' : isOverdue ? 'overdue' : 'pending'} />
             </div>
@@ -206,9 +207,12 @@ function InvoiceCard({
                 <p className="text-sm text-gray-500">Commission</p>
                 <p className="font-medium">
                   {invoice.commissionPercentage}% (€
-                  {formatCurrency(
-                    (invoice.amount * invoice.commissionPercentage) / 100
-                  )}
+                  {formatCurrency((invoice.amount * invoice.commissionPercentage) / 100, {
+                    locale: 'en-US',
+                    showCurrency: false,
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                   )
                 </p>
               </div>
@@ -420,11 +424,4 @@ export default function InvoiceList() {
       )}
     </div>
   );
-}
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
 }

@@ -15,14 +15,13 @@ interface QuarterNavigationProps {
   }>;
   selectedQuarter: string | null;
   onQuarterSelect: (quarterKey: string) => void;
-  userFirm: FirmType;
 }
 
-export function QuarterNavigation({ 
-  quarters, 
+export function QuarterNavigation({
+  quarters,
   selectedQuarter,
   onQuarterSelect,
-  userFirm
+
 }: QuarterNavigationProps) {
   return (
     <div className="flex flex-col space-y-4">
@@ -85,3 +84,4 @@ export function QuarterNavigation({
     </div>
   );
 }
+

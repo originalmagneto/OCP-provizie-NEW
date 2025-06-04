@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   ChevronRight,
 } from "lucide-react";
+import { formatCurrency } from "../lib/utils";
 import QuarterYearSelector from "./QuarterYearSelector";
 import type { FirmType } from "../types";
 
@@ -86,7 +87,7 @@ function CommissionCard({
           </>
         )}
       </div>
-      <div className="font-medium text-gray-900">{formatCurrency(amount)}</div>
+      <div className="font-medium text-gray-900">{formatCurrency(amount, { locale: 'de-DE', currency: 'EUR' })}</div>
     </div>
   );
 }
@@ -121,10 +122,10 @@ function UnpaidQuartersWarning({
                   </span>
                   <div className="ml-4 space-y-1">
                     {q.receivable > 0 && (
-                      <div>To receive: {formatCurrency(q.receivable)}</div>
+                      <div>To receive: {formatCurrency(q.receivable, { locale: 'de-DE', currency: 'EUR' })}</div>
                     )}
                     {q.payable > 0 && (
-                      <div>To pay: {formatCurrency(q.payable)}</div>
+                      <div>To pay: {formatCurrency(q.payable, { locale: 'de-DE', currency: 'EUR' })}</div>
                     )}
                   </div>
                 </div>
@@ -244,7 +245,7 @@ export default function QuarterlySnapshot() {
         <div className="p-4 bg-green-50 rounded-lg border border-green-200">
           <div className="text-sm font-medium text-green-700">To Receive</div>
           <div className="mt-2 text-2xl font-semibold text-gray-900">
-            {formatCurrency(quarterlyData.toReceive.total)}
+            {formatCurrency(quarterlyData.toReceive.total, { locale: 'de-DE', currency: 'EUR' })}
           </div>
           <div className="mt-1 text-sm text-green-600">
             From paid invoices only
@@ -254,7 +255,7 @@ export default function QuarterlySnapshot() {
         <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
           <div className="text-sm font-medium text-blue-700">To Pay</div>
           <div className="mt-2 text-2xl font-semibold text-gray-900">
-            {formatCurrency(quarterlyData.toPay.total)}
+            {formatCurrency(quarterlyData.toPay.total, { locale: 'de-DE', currency: 'EUR' })}
           </div>
           <div className="mt-1 text-sm text-blue-600">
             From paid invoices only
@@ -302,11 +303,4 @@ export default function QuarterlySnapshot() {
       </div>
     </div>
   );
-}
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("de-DE", {
-    style: "currency",
-    currency: "EUR",
-  }).format(amount);
 }

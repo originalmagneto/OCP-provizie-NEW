@@ -16,6 +16,7 @@ import {
   Bar,
 } from "recharts";
 import { TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { formatCurrency } from "../../lib/utils";
 
 interface TrendCardProps {
   title: string;
@@ -165,11 +166,7 @@ export default function HistoricalAnalytics() {
     };
   }, [invoices, currentYear]);
 
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("de-DE", {
-      style: "currency",
-      currency: "EUR",
-    }).format(amount);
+
 
   const formatPercentage = (value: number) => `${value.toFixed(1)}%`;
   const formatNumber = (value: number) => value.toString();
@@ -187,14 +184,14 @@ export default function HistoricalAnalytics() {
           currentValue={yearlyComparison.revenue.current}
           previousValue={yearlyComparison.revenue.previous}
           percentageChange={yearlyComparison.revenue.change}
-          formatter={formatCurrency}
+          formatter={(value: number) => formatCurrency(value, { locale: 'de-DE', currency: 'EUR' })}
         />
         <TrendCard
           title="Annual Commissions"
           currentValue={yearlyComparison.commissions.current}
           previousValue={yearlyComparison.commissions.previous}
           percentageChange={yearlyComparison.commissions.change}
-          formatter={formatCurrency}
+          formatter={(value: number) => formatCurrency(value, { locale: 'de-DE', currency: 'EUR' })}
         />
         <TrendCard
           title="Average Commission Rate"
@@ -227,7 +224,9 @@ export default function HistoricalAnalytics() {
                 <YAxis yAxisId="right" orientation="right" />
                 <Tooltip
                   formatter={(value: number) =>
-                    typeof value === "number" ? formatCurrency(value) : value
+                    typeof value === 'number'
+                      ? formatCurrency(value, { locale: 'de-DE', currency: 'EUR' })
+                      : value
                   }
                 />
                 <Legend />

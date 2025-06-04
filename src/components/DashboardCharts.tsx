@@ -26,7 +26,6 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from "lucide-react";
-import type { FirmType } from "../types";
 
 const firmThemes = {
   SKALLARS: {
@@ -55,6 +54,13 @@ interface ChartMetric {
   change: number;
   trend: "up" | "down";
   icon: React.ElementType;
+}
+
+interface MonthlyData {
+  month: string;
+  revenue: number;
+  commissions: number;
+  count: number;
 }
 
 function MetricCard({ metric }: { metric: ChartMetric }) {
@@ -180,7 +186,7 @@ export default function DashboardCharts() {
     ];
   }, [filteredInvoices]);
 
-  const monthlyData = useMemo(() => {
+  const monthlyData: MonthlyData[] = useMemo(() => {
     const data = filteredInvoices.reduce(
       (acc, invoice) => {
         const date = new Date(invoice.date);
@@ -206,7 +212,7 @@ export default function DashboardCharts() {
 
         return acc;
       },
-      {} as Record<string, any>,
+      {} as Record<string, MonthlyData>,
     );
 
     return Object.values(data).sort(
@@ -243,7 +249,11 @@ export default function DashboardCharts() {
         {["1M", "3M", "6M", "1Y", "ALL"].map((range) => (
           <button
             key={range}
-            onClick={() => setSelectedTimeRange(range as any)}
+            onClick={() =>
+              setSelectedTimeRange(
+                range as "1M" | "3M" | "6M" | "1Y" | "ALL"
+              )
+            }
             className={`px-3 py-1 rounded-md text-sm font-medium transition-colors
               ${
                 selectedTimeRange === range

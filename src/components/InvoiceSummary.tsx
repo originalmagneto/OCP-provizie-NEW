@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertCircle, Clock, CheckCircle } from 'lucide-react';
+import { formatCurrency } from '../lib/utils';
 
 interface InvoiceSummaryProps {
   totalInvoices: number;
@@ -20,13 +21,6 @@ export default function InvoiceSummary({
   pendingAmount,
   overdueAmount,
 }: InvoiceSummaryProps) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -42,7 +36,7 @@ export default function InvoiceSummary({
           </div>
         </div>
         <p className="mt-2 text-sm text-gray-500">
-          Total Value: {formatCurrency(totalAmount)}
+          Total Value: {formatCurrency(totalAmount, { locale: 'en-US', currency: 'EUR' })}
         </p>
       </div>
 
@@ -74,7 +68,7 @@ export default function InvoiceSummary({
           </div>
         </div>
         <p className="mt-2 text-sm text-gray-500">
-          Value: {formatCurrency(pendingAmount)}
+          Value: {formatCurrency(pendingAmount, { locale: 'en-US', currency: 'EUR' })}
         </p>
       </div>
 
@@ -90,7 +84,7 @@ export default function InvoiceSummary({
           </div>
         </div>
         <p className="mt-2 text-sm text-gray-500">
-          Value: {formatCurrency(overdueAmount)}
+          Value: {formatCurrency(overdueAmount, { locale: 'en-US', currency: 'EUR' })}
         </p>
       </div>
     </div>
