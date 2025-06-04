@@ -14,6 +14,7 @@ import {
   Filter,
 } from "lucide-react";
 import type { FirmType } from "../types";
+import { formatCurrency } from "../lib/utils";
 
 const firmThemes = {
   SKALLARS: {
@@ -163,10 +164,10 @@ function UnpaidInvoiceCard({
 
         <div className="text-right">
           <div className="font-medium text-gray-900">
-            {formatCurrency(invoice.amount)}
+            {formatCurrency(invoice.amount, { locale: 'de-DE', currency: 'EUR' })}
           </div>
           <div className="text-sm text-gray-500">
-            Commission: {formatCurrency(commission)}
+            Commission: {formatCurrency(commission, { locale: 'de-DE', currency: 'EUR' })}
           </div>
         </div>
       </div>
@@ -282,11 +283,4 @@ export default function UnpaidInvoicesList() {
       )}
     </div>
   );
-}
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("de-DE", {
-    style: "currency",
-    currency: "EUR",
-  }).format(amount);
 }

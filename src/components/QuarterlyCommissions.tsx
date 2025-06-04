@@ -54,7 +54,7 @@ function QuarterlyCommissions() {
       const commission = invoice.amount * 0.1;
       
       // Find or create commission entry for the invoicing firm
-      let commissionEntry = data[quarterKey].eligibleCommissions.find(
+      const commissionEntry = data[quarterKey].eligibleCommissions.find(
         c => c.fromFirm === invoice.invoicedByFirm
       );
 

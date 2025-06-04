@@ -5,15 +5,12 @@ import {
   addDoc, 
   updateDoc, 
   deleteDoc, 
-  getDocs, 
-  getDoc, 
-  query, 
-  where, 
-  orderBy, 
+  getDocs,
+  query,
+  where,
+  orderBy,
   serverTimestamp,
-  setDoc,
-  DocumentReference,
-  DocumentData
+  
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import type { Invoice, SettlementStatus, FirmType } from '../types';

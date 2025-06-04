@@ -35,7 +35,7 @@ const INITIAL_FORM_DATA = (userFirm: FirmType): FormData => {
 export default function InvoiceForm() {
   const { user } = useAuth();
   const { addInvoice } = useInvoices();
-  const { addClient, searchClients } = useClient();
+  const { addClient } = useClient();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
 
@@ -82,7 +82,7 @@ export default function InvoiceForm() {
 
       // Reset success message after 3 seconds
       setTimeout(() => setSuccess(false), 3000);
-    } catch (err) {
+    } catch {
       setError("Failed to create invoice. Please try again.");
     }
   };
@@ -220,3 +220,4 @@ export default function InvoiceForm() {
     </form>
   );
 }
+

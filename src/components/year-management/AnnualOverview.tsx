@@ -24,6 +24,7 @@ import {
   Download,
   Maximize2,
 } from "lucide-react";
+import { formatCurrency } from "../../lib/utils";
 import HistoricalAnalytics from "./HistoricalAnalytics";
 
 interface StatCardProps {
@@ -118,13 +119,7 @@ export default function AnnualOverview() {
   const { currentYear, yearlyStats } = useYear();
   const { invoices } = useInvoices();
 
-  // Format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("de-DE", {
-      style: "currency",
-      currency: "EUR",
-    }).format(amount);
-  };
+
 
   // Calculate monthly data
   const monthlyData = React.useMemo(() => {
@@ -202,16 +197,14 @@ export default function AnnualOverview() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Annual Revenue"
-          value={formatCurrency(yearlyStats[currentYear]?.totalRevenue || 0)}
+          value={formatCurrency(yearlyStats[currentYear]?.totalRevenue || 0, { locale: 'de-DE', currency: 'EUR' })}
           icon={Euro}
           change={yearlyStats[currentYear]?.yearOverYearGrowth}
           subText="Total revenue for the year"
         />
         <StatCard
           title="Annual Commissions"
-          value={formatCurrency(
-            yearlyStats[currentYear]?.totalCommissions || 0,
-          )}
+          value={formatCurrency(yearlyStats[currentYear]?.totalCommissions || 0, { locale: 'de-DE', currency: 'EUR' })}
           icon={TrendingUp}
           change={yearlyStats[currentYear]?.yearOverYearGrowth}
           subText="Total commissions earned"
@@ -224,9 +217,7 @@ export default function AnnualOverview() {
         />
         <StatCard
           title="Average Monthly Revenue"
-          value={formatCurrency(
-            (yearlyStats[currentYear]?.totalRevenue || 0) / 12,
-          )}
+          value={formatCurrency((yearlyStats[currentYear]?.totalRevenue || 0) / 12, { locale: 'de-DE', currency: 'EUR' })}
           icon={Calendar}
           subText="Monthly revenue average"
         />
@@ -245,7 +236,7 @@ export default function AnnualOverview() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value: number) => formatCurrency(value)} />
+              <Tooltip formatter={(value: number) => formatCurrency(value as number, { locale: 'de-DE', currency: 'EUR' })} />
               <Legend />
               <Area
                 type="monotone"
@@ -278,7 +269,7 @@ export default function AnnualOverview() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="quarter" />
               <YAxis />
-              <Tooltip formatter={(value: number) => formatCurrency(value)} />
+              <Tooltip formatter={(value: number) => formatCurrency(value as number, { locale: 'de-DE', currency: 'EUR' })} />
               <Legend />
               <Bar
                 dataKey="revenue"
@@ -308,7 +299,7 @@ export default function AnnualOverview() {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />
-            <Tooltip formatter={(value: number) => formatCurrency(value)} />
+            <Tooltip formatter={(value: number) => formatCurrency(value as number, { locale: 'de-DE', currency: 'EUR' })} />
             <Legend />
             <Line
               type="monotone"

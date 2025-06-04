@@ -34,13 +34,13 @@ export default function StatisticsOverview() {
     const currentY = now.getFullYear();
     const currentQKey = `${currentY}-Q${currentQ}`;
 
-    let quarterSummary: QuarterSummary = {
+    const quarterSummary: QuarterSummary = {
       revenue: 0,
       commissionsReceivable: 0,
       commissionPayable: 0,
     };
 
-    let pending = [];
+    const pending = [];
     
     invoices.forEach((invoice) => {
       const date = new Date(invoice.date);

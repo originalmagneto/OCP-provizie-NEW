@@ -5,11 +5,35 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount)
+export interface FormatCurrencyOptions {
+  locale?: string
+  currency?: string
+  minimumFractionDigits?: number
+  maximumFractionDigits?: number
+  showCurrency?: boolean
+}
+
+export function formatCurrency(
+  amount: number,
+  {
+    locale = 'en-US',
+    currency = 'USD',
+    minimumFractionDigits,
+    maximumFractionDigits,
+    showCurrency = true,
+  }: FormatCurrencyOptions = {}
+): string {
+  const options: Intl.NumberFormatOptions = {
+    minimumFractionDigits,
+    maximumFractionDigits,
+  }
+
+  if (showCurrency) {
+    options.style = 'currency'
+    options.currency = currency
+  }
+
+  return new Intl.NumberFormat(locale, options).format(amount)
 }
 
 export function formatDate(date: Date | string): string {
@@ -52,7 +76,7 @@ export function isObjectEmpty(obj: Record<string, unknown>): boolean {
   return Object.keys(obj).length === 0
 }
 
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -69,7 +93,7 @@ export function debounce<T extends (...args: any[]) => any>(
   }
 }
 
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {

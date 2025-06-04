@@ -1,5 +1,6 @@
 import React from "react";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { formatCurrency } from "../lib/utils";
 
 interface YearStats {
   totalRevenue: number;
@@ -21,12 +22,6 @@ export default function YearSelector({
   yearlyStats,
   onYearChange,
 }: YearSelectorProps) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("de-DE", {
-      style: "currency",
-      currency: "EUR",
-    }).format(amount);
-  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-4">
@@ -70,7 +65,7 @@ export default function YearSelector({
               Total Revenue
             </div>
             <div className="text-lg font-semibold text-gray-900">
-              {formatCurrency(yearlyStats[currentYear].totalRevenue)}
+              {formatCurrency(yearlyStats[currentYear].totalRevenue, { locale: 'de-DE', currency: 'EUR' })}
             </div>
           </div>
 
@@ -79,7 +74,7 @@ export default function YearSelector({
               Total Commissions
             </div>
             <div className="text-lg font-semibold text-gray-900">
-              {formatCurrency(yearlyStats[currentYear].totalCommissions)}
+              {formatCurrency(yearlyStats[currentYear].totalCommissions, { locale: 'de-DE', currency: 'EUR' })}
             </div>
           </div>
 
