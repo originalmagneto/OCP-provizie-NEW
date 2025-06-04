@@ -9,33 +9,7 @@ import QuarterlySnapshot from "./QuarterlySnapshot";
 import UnpaidInvoicesList from "./UnpaidInvoicesList";
 import DashboardCharts from "./DashboardCharts";
 import type { FirmType } from "../types";
-
-const firmThemes = {
-  SKALLARS: {
-    primary: "bg-purple-100",
-    secondary: "bg-purple-50",
-    text: "text-purple-600",
-    border: "border-purple-200",
-    light: "text-purple-500",
-    accent: "#9333ea",
-  },
-  MKMs: {
-    primary: "bg-blue-100",
-    secondary: "bg-blue-50",
-    text: "text-blue-600",
-    border: "border-blue-200",
-    light: "text-blue-500",
-    accent: "#2563eb",
-  },
-  Contax: {
-    primary: "bg-yellow-100",
-    secondary: "bg-yellow-50",
-    text: "text-yellow-600",
-    border: "border-yellow-200",
-    light: "text-yellow-500",
-    accent: "#d97706",
-  },
-} as const;
+import { firmStyles } from "../theme/firmStyles";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -44,7 +18,7 @@ export default function Dashboard() {
 
   if (!user) return null;
 
-  const firmTheme = firmThemes[user.firm as FirmType];
+  const firmTheme = firmStyles[user.firm as FirmType];
 
   const quarterLabel = `Q${currentQuarter} ${currentYear}`;
   const quarterRange = {
@@ -58,7 +32,7 @@ export default function Dashboard() {
   })}`;
 
   return (
-    <div className={`min-h-screen ${firmTheme.secondary}`}>
+    <div className={`min-h-screen ${firmTheme.bg}`}>
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

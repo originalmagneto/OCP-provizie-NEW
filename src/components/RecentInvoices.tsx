@@ -9,24 +9,7 @@ import {
   Clock,
 } from "lucide-react";
 import type { FirmType } from "../types";
-
-const firmThemes = {
-  SKALLARS: {
-    text: "text-purple-600",
-    bg: "bg-purple-50",
-    border: "border-purple-200",
-  },
-  MKMs: {
-    text: "text-blue-600",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-  },
-  Contax: {
-    text: "text-yellow-600",
-    bg: "bg-yellow-50",
-    border: "border-yellow-200",
-  },
-} as const;
+import { firmStyles } from "../theme/firmStyles";
 
 interface RecentInvoiceProps {
   clientName: string;
@@ -45,7 +28,7 @@ function RecentInvoiceRow({
   commissionPercentage,
   referredByFirm,
 }: RecentInvoiceProps) {
-  const theme = firmThemes[referredByFirm];
+  const theme = firmStyles[referredByFirm];
   const formattedAmount = new Intl.NumberFormat("de-DE", {
     style: "currency",
     currency: "EUR",

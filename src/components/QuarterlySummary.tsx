@@ -3,33 +3,7 @@ import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { ArrowRight, Euro, Clock, Check } from "lucide-react";
 import type { FirmType } from "../types";
-
-const firmThemes = {
-  SKALLARS: {
-    primary: "bg-purple-100",
-    secondary: "bg-purple-50",
-    text: "text-purple-600",
-    accent: "bg-purple-600",
-    border: "border-purple-200",
-    gradient: "from-purple-50 to-purple-100",
-  },
-  MKMs: {
-    primary: "bg-gray-100",
-    secondary: "bg-gray-50",
-    text: "text-gray-600",
-    accent: "bg-gray-600",
-    border: "border-gray-200",
-    gradient: "from-gray-50 to-gray-100",
-  },
-  Contax: {
-    primary: "bg-yellow-100",
-    secondary: "bg-yellow-50",
-    text: "text-yellow-600",
-    accent: "bg-yellow-600",
-    border: "border-yellow-200",
-    gradient: "from-yellow-50 to-yellow-100",
-  },
-};
+import { firmStyles } from "../theme/firmStyles";
 
 interface QuarterlyData {
   quarter: string;
@@ -69,12 +43,12 @@ function FirmSummaryCard({
   return (
     <div
       className={`
-      rounded-lg border ${firmThemes[firm].border}
-      bg-gradient-to-br ${firmThemes[firm].gradient}
+      rounded-lg border ${firmStyles[firm].border}
+      bg-gradient-to-br ${firmStyles[firm].gradient}
     `}
     >
       <div className="p-6">
-        <h3 className={`text-lg font-semibold ${firmThemes[firm].text}`}>
+        <h3 className={`text-lg font-semibold ${firmStyles[firm].text}`}>
           {firm}
         </h3>
 
@@ -95,7 +69,7 @@ function FirmSummaryCard({
                   >
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center">
-                        <span className={firmThemes[fromFirm as FirmType].text}>
+                        <span className={firmStyles[fromFirm as FirmType].text}>
                           {fromFirm}
                         </span>
                         <ArrowRight className="h-3 w-3 mx-1 text-gray-400" />
@@ -133,7 +107,7 @@ function FirmSummaryCard({
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center">
                         <Euro className="h-3 w-3 mr-1 text-gray-400" />
-                        <span className={firmThemes[toFirm as FirmType].text}>
+                        <span className={firmStyles[toFirm as FirmType].text}>
                           {toFirm}
                         </span>
                         <span className="mx-1">·</span>
@@ -252,7 +226,7 @@ export default function QuarterlySummary() {
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {Object.keys(firmThemes).map((firm) => (
+        {Object.keys(firmStyles).map((firm) => (
           <FirmSummaryCard
             key={firm}
             firm={firm as FirmType}

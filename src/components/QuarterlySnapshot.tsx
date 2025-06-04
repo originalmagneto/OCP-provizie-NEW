@@ -13,24 +13,7 @@ import {
 } from "lucide-react";
 import QuarterYearSelector from "./QuarterYearSelector";
 import type { FirmType } from "../types";
-
-const firmThemes = {
-  SKALLARS: {
-    light: "bg-purple-50",
-    border: "border-purple-200",
-    text: "text-purple-600",
-  },
-  MKMs: {
-    light: "bg-blue-50",
-    border: "border-blue-200",
-    text: "text-blue-600",
-  },
-  Contax: {
-    light: "bg-yellow-50",
-    border: "border-yellow-200",
-    text: "text-yellow-600",
-  },
-} as const;
+import { firmStyles } from "../theme/firmStyles";
 
 interface UnpaidQuarterInfo {
   quarter: string;
@@ -62,7 +45,7 @@ function CommissionCard({
   direction: "receivable" | "payable";
   userFirm: FirmType;
 }) {
-  const theme = firmThemes[firm];
+  const theme = firmStyles[firm];
 
   return (
     <div
