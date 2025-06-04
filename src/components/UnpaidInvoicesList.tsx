@@ -14,27 +14,7 @@ import {
   Filter,
 } from "lucide-react";
 import type { FirmType } from "../types";
-
-const firmThemes = {
-  SKALLARS: {
-    bg: "bg-purple-50",
-    border: "border-purple-200",
-    text: "text-purple-600",
-    hover: "hover:bg-purple-100",
-  },
-  MKMs: {
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-    text: "text-blue-600",
-    hover: "hover:bg-blue-100",
-  },
-  Contax: {
-    bg: "bg-yellow-50",
-    border: "border-yellow-200",
-    text: "text-yellow-600",
-    hover: "hover:bg-yellow-100",
-  },
-} as const;
+import { firmStyles } from "../theme/firmStyles";
 
 interface Invoice {
   id: string;
@@ -113,7 +93,7 @@ function UnpaidInvoiceCard({
   userFirm,
   daysOverdue,
 }: UnpaidInvoiceCardProps) {
-  const theme = firmThemes[invoice.invoicedByFirm];
+  const theme = firmStyles[invoice.invoicedByFirm];
   const isUsersFirm = userFirm === invoice.invoicedByFirm;
   const commission = (invoice.amount * invoice.commissionPercentage) / 100;
 
@@ -179,11 +159,11 @@ function UnpaidInvoiceCard({
         </div>
         <div className="flex items-center text-gray-500">
           <Building className="h-4 w-4 mr-2" />
-          <span className={firmThemes[invoice.invoicedByFirm].text}>
+          <span className={firmStyles[invoice.invoicedByFirm].text}>
             {invoice.invoicedByFirm}
           </span>
           <ChevronRight className="h-4 w-4 mx-1" />
-          <span className={firmThemes[invoice.referredByFirm].text}>
+          <span className={firmStyles[invoice.referredByFirm].text}>
             {invoice.referredByFirm}
           </span>
         </div>

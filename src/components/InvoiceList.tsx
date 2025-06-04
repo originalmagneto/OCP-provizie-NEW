@@ -18,27 +18,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import type { FirmType, Invoice } from "../types";
-
-const firmThemes = {
-  SKALLARS: {
-    bg: "bg-purple-50",
-    border: "border-purple-200",
-    text: "text-purple-600",
-    hover: "hover:bg-purple-100",
-  },
-  MKMs: {
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-    text: "text-blue-600",
-    hover: "hover:bg-blue-100",
-  },
-  Contax: {
-    bg: "bg-yellow-50",
-    border: "border-yellow-200",
-    text: "text-yellow-600",
-    hover: "hover:bg-yellow-100",
-  },
-} as const;
+import { firmStyles } from "../theme/firmStyles";
 
 interface FilterState {
   search: string;
@@ -126,7 +106,7 @@ function InvoiceCard({
   onEdit,
   userFirm,
 }: InvoiceCardProps) {
-  const theme = firmThemes[invoice.invoicedByFirm];
+  const theme = firmStyles[invoice.invoicedByFirm];
   const isOverdue =
     !invoice.isPaid &&
     new Date(invoice.date).getTime() < Date.now() - 30 * 24 * 60 * 60 * 1000;
