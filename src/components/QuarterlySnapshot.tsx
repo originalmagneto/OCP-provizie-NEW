@@ -31,13 +31,14 @@ function QuarterCircle({ quarter, currentQuarter, onSelect, isSettled }: {
     <button
       onClick={onSelect}
       className={`relative w-12 h-12 rounded-full flex items-center justify-center font-medium text-lg transition-all
-        ${isCurrent ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-500' : 
-          isPast ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}
+        ${isCurrent ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-500 dark:bg-blue-700/30 dark:text-blue-300 dark:ring-blue-500' :
+          isPast ? 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600' :
+                   'bg-gray-50 text-gray-400 hover:bg-gray-100 dark:bg-gray-700/70 dark:text-gray-400 dark:hover:bg-gray-600/70'}`}
     >
       {quarter}
       <div className="absolute -bottom-1 -right-1">
-        {isPast && <CheckCircle2 className="w-4 h-4 text-green-500" />}
-        {isSettled && <div className="w-3 h-3 bg-indigo-500 rounded-full ring-2 ring-white" />}
+        {isPast && <CheckCircle2 className="w-4 h-4 text-green-500 dark:text-green-400" />}
+        {isSettled && <div className="w-3 h-3 bg-indigo-500 rounded-full ring-2 ring-white dark:bg-indigo-400 dark:ring-gray-800" />}
       </div>
     </button>
   );
@@ -148,10 +149,10 @@ export default function QuarterlySnapshot() {
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-4">
-        <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
         <div className="space-y-3">
-          <div className="h-8 bg-gray-200 rounded"></div>
-          <div className="h-8 bg-gray-200 rounded w-5/6"></div>
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
         </div>
       </div>
     );
@@ -170,12 +171,12 @@ export default function QuarterlySnapshot() {
     <div className="space-y-6">
       {/* Header with Year Selector */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Current Quarter Summary</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Current Quarter Summary</h2>
         <div className="relative">
           <select
             value={currentYear}
             onChange={(e) => selectYearAndQuarter(parseInt(e.target.value), currentQuarter)}
-            className="appearance-none pl-10 pr-8 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-base text-gray-700 hover:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+            className="appearance-none pl-10 pr-8 py-2 bg-white border-gray-300 text-gray-700 hover:border-indigo-500 rounded-lg shadow-sm text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:border-indigo-400 dark:focus:ring-indigo-400 dark:focus:border-indigo-400"
           >
             {availableYears.map((year) => (
               <option key={year} value={year}>
@@ -183,9 +184,9 @@ export default function QuarterlySnapshot() {
               </option>
             ))}
           </select>
-          <CalendarDays className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <CalendarDays className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
           <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-            <ChevronDown className="h-4 w-4 text-gray-400" />
+            <ChevronDown className="h-4 w-4 text-gray-400 dark:text-gray-500" />
           </div>
         </div>
       </div>
@@ -193,15 +194,15 @@ export default function QuarterlySnapshot() {
       {/* Quarters Progress */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-500 italic">
+          <div className="text-sm text-gray-500 italic dark:text-gray-400">
             Click quarter to view details
           </div>
           <button
             onClick={handleSettleToggle}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               isSettled 
-                ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-500/20 dark:text-green-300 dark:hover:bg-green-500/30'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500'
             }`}
           >
             {isSettled ? 'Mark as Unsettled' : 'Mark as Settled'}
@@ -218,7 +219,7 @@ export default function QuarterlySnapshot() {
                 isSettled={isQuarterSettled(`${currentYear}-Q${quarter}`, user?.firm || 'SKALLARS')}
               />
               {quarter < 4 && (
-                <div className={`w-8 h-0.5 ${quarter < currentQuarter ? 'bg-green-500' : 'bg-gray-200'}`} />
+                <div className={`w-8 h-0.5 ${quarter < currentQuarter ? 'bg-green-500 dark:bg-green-400' : 'bg-gray-200 dark:bg-gray-600'}`} />
               )}
             </div>
           ))}
@@ -228,12 +229,12 @@ export default function QuarterlySnapshot() {
       {/* Commission Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-gray-500">Commissions to Pay</h3>
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Commissions to Pay</h3>
           {Object.entries(quarterStats.commissionsByFirm.owed).map(([firm, amount]) => (
-            <div key={firm} className="flex items-center justify-between bg-white p-3 rounded-lg border">
-              <span className="text-sm font-medium text-gray-600">{firm}</span>
-              <span className="text-sm font-semibold text-gray-900 flex items-center">
-                <Euro className="w-4 h-4 mr-1 text-gray-400" />
+            <div key={firm} className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-300 dark:bg-gray-750 dark:border-gray-600">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{firm}</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                <Euro className="w-4 h-4 mr-1 text-gray-400 dark:text-gray-500" />
                 {formatCurrency(amount)}
               </span>
             </div>
@@ -241,12 +242,12 @@ export default function QuarterlySnapshot() {
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-gray-500">Commissions to Receive</h3>
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Commissions to Receive</h3>
           {Object.entries(quarterStats.commissionsByFirm.toReceive).map(([firm, amount]) => (
-            <div key={firm} className="flex items-center justify-between bg-white p-3 rounded-lg border">
-              <span className="text-sm font-medium text-gray-600">{firm}</span>
-              <span className="text-sm font-semibold text-gray-900 flex items-center">
-                <Euro className="w-4 h-4 mr-1 text-gray-400" />
+            <div key={firm} className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-300 dark:bg-gray-750 dark:border-gray-600">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{firm}</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                <Euro className="w-4 h-4 mr-1 text-gray-400 dark:text-gray-500" />
                 {formatCurrency(amount)}
               </span>
             </div>
@@ -258,59 +259,59 @@ export default function QuarterlySnapshot() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-gray-500">Paid Commissions</h3>
-            <CheckCircle2 className="w-5 h-5 text-green-500" />
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Paid Commissions</h3>
+            <CheckCircle2 className="w-5 h-5 text-green-500 dark:text-green-400" />
           </div>
-          <p className="text-2xl font-semibold text-gray-900 flex items-center">
-            <Euro className="w-5 h-5 mr-1 text-gray-400" />
+          <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+            <Euro className="w-5 h-5 mr-1 text-gray-400 dark:text-gray-500" />
             {formatCurrency(quarterStats.paidCommissions)}
           </p>
         </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-gray-500">Pending Commissions</h3>
-            <XCircle className="w-5 h-5 text-amber-500" />
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Commissions</h3>
+            <XCircle className="w-5 h-5 text-amber-500 dark:text-amber-400" />
           </div>
-          <p className="text-2xl font-semibold text-gray-900 flex items-center">
-            <Euro className="w-5 h-5 mr-1 text-gray-400" />
+          <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+            <Euro className="w-5 h-5 mr-1 text-gray-400 dark:text-gray-500" />
             {formatCurrency(quarterStats.unpaidCommissions)}
           </p>
         </div>
       </div>
 
       {/* Invoice Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <div>
-          <p className="text-sm text-gray-500">Total Revenue</p>
-          <p className="text-lg font-semibold text-gray-900 flex items-center">
-            <Euro className="w-4 h-4 mr-1 text-gray-400" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">Total Revenue</p>
+          <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+            <Euro className="w-4 h-4 mr-1 text-gray-400 dark:text-gray-500" />
             {formatCurrency(quarterStats.totalRevenue)}
           </p>
         </div>
         
         <div>
-          <p className="text-sm text-gray-500">Total Commissions</p>
-          <p className="text-lg font-semibold text-gray-900 flex items-center">
-            <Euro className="w-4 h-4 mr-1 text-gray-400" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">Total Commissions</p>
+          <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+            <Euro className="w-4 h-4 mr-1 text-gray-400 dark:text-gray-500" />
             {formatCurrency(quarterStats.totalCommissions)}
           </p>
         </div>
         
         <div>
-          <p className="text-sm text-gray-500">Invoice Status</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Invoice Status</p>
           <div className="flex items-center space-x-4">
             <div>
-              <p className="text-lg font-semibold text-gray-900">
+              <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {quarterStats.paidCount}
               </p>
-              <p className="text-xs text-gray-500">Paid</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Paid</p>
             </div>
             <div>
-              <p className="text-lg font-semibold text-gray-900">
+              <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {quarterStats.unpaidCount}
               </p>
-              <p className="text-xs text-gray-500">Pending</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Pending</p>
             </div>
           </div>
         </div>

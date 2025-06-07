@@ -27,25 +27,20 @@ import {
   ArrowDownRight,
 } from "lucide-react";
 import type { FirmType } from "../types";
+import { useTheme } from "../context/ThemeContext"; // Added
 
 const firmThemes = {
   SKALLARS: {
-    primary: "#9333ea",
-    secondary: "#a855f7",
-    tertiary: "#c084fc",
-    light: "#f3e8ff",
+    light: { primary: "#9333ea", secondary: "#a855f7", tertiary: "#c084fc" },
+    dark:  { primary: "#a855f7", secondary: "#c084fc", tertiary: "#d8b4fe" }
   },
   MKMs: {
-    primary: "#2563eb",
-    secondary: "#3b82f6",
-    tertiary: "#60a5fa",
-    light: "#e0f2fe",
+    light: { primary: "#2563eb", secondary: "#3b82f6", tertiary: "#60a5fa" },
+    dark:  { primary: "#3b82f6", secondary: "#60a5fa", tertiary: "#93c5fd" }
   },
   Contax: {
-    primary: "#d97706",
-    secondary: "#f59e0b",
-    tertiary: "#fbbf24",
-    light: "#fef3c7",
+    light: { primary: "#d97706", secondary: "#f59e0b", tertiary: "#fbbf24" },
+    dark:  { primary: "#f59e0b", secondary: "#fbbf24", tertiary: "#fcd34d" }
   },
 } as const;
 
@@ -59,14 +54,14 @@ interface ChartMetric {
 
 function MetricCard({ metric }: { metric: ChartMetric }) {
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
       <div className="flex items-center justify-between">
-        <div className="p-2 rounded-lg bg-indigo-50">
-          <metric.icon className="h-6 w-6 text-indigo-600" />
+        <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-700/30">
+          <metric.icon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
         </div>
         <div
           className={`flex items-center ${
-            metric.trend === "up" ? "text-green-600" : "text-red-600"
+            metric.trend === "up" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
           }`}
         >
           {metric.trend === "up" ? (
@@ -78,8 +73,8 @@ function MetricCard({ metric }: { metric: ChartMetric }) {
         </div>
       </div>
       <div className="mt-4">
-        <h3 className="text-sm font-medium text-gray-500">{metric.label}</h3>
-        <p className="mt-2 text-3xl font-semibold text-gray-900">
+        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{metric.label}</h3>
+        <p className="mt-2 text-3xl font-semibold text-gray-900 dark:text-gray-100">
           {metric.value}
         </p>
       </div>
@@ -95,8 +90,8 @@ function ChartContainer({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h3 className="text-lg font-medium text-gray-900 mb-4">{title}</h3>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 dark:bg-gray-800 dark:border-gray-700">
+      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{title}</h3>
       <div className="h-80">{children}</div>
     </div>
   );
@@ -105,9 +100,13 @@ function ChartContainer({
 export default function DashboardCharts() {
   const { invoices, isLoading } = useInvoices();
   const { user } = useAuth();
+  const { theme: currentAppTheme } = useTheme(); // Added
   const [selectedTimeRange, setSelectedTimeRange] = useState<
     "1M" | "3M" | "6M" | "1Y" | "ALL"
   >("3M");
+
+  const tickColor = currentAppTheme === 'dark' ? '#A0AEC0' : '#4A5568'; // gray-400 dark, gray-700 light
+  const gridLineColor = currentAppTheme === 'dark' ? '#4A5568' : '#CBD5E0'; // gray-600 dark, gray-300 light
 
   const timeRangeFilter = useMemo(() => {
     const now = new Date();
@@ -287,7 +286,7 @@ export default function DashboardCharts() {
 
   if (!user) return null;
 
-  const theme = firmThemes[user.firm];
+  const currentChartPalette = firmThemes[user.firm][currentAppTheme];
 
   return (
     <div className="space-y-6">
@@ -300,8 +299,8 @@ export default function DashboardCharts() {
             className={`px-3 py-1 rounded-md text-sm font-medium transition-colors
               ${
                 selectedTimeRange === range
-                  ? "bg-indigo-600 text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
+                  ? "bg-indigo-600 text-white dark:bg-indigo-500 dark:text-gray-100"
+                  : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 dark:border-gray-500"
               }
             `}
           >
@@ -326,32 +325,35 @@ export default function DashboardCharts() {
                 <linearGradient id="revenue" x1="0" y1="0" x2="0" y2="1">
                   <stop
                     offset="5%"
-                    stopColor={theme.primary}
+                    stopColor={currentChartPalette.primary}
                     stopOpacity={0.1}
                   />
                   <stop
                     offset="95%"
-                    stopColor={theme.primary}
+                    stopColor={currentChartPalette.primary}
                     stopOpacity={0}
                   />
                 </linearGradient>
                 <linearGradient id="commission" x1="0" y1="0" x2="0" y2="1">
                   <stop
                     offset="5%"
-                    stopColor={theme.secondary}
+                    stopColor={currentChartPalette.secondary}
                     stopOpacity={0.1}
                   />
                   <stop
                     offset="95%"
-                    stopColor={theme.secondary}
+                    stopColor={currentChartPalette.secondary}
                     stopOpacity={0}
                   />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridLineColor} />
+              <XAxis dataKey="month" tick={{ fill: tickColor }} stroke={gridLineColor} />
+              <YAxis tick={{ fill: tickColor }} stroke={gridLineColor} />
               <Tooltip
+                contentStyle={{ backgroundColor: currentAppTheme === 'dark' ? '#1F2937' : '#FFFFFF', border: `1px solid ${gridLineColor}` }}
+                itemStyle={{ color: tickColor }}
+                labelStyle={{ color: tickColor }}
                 formatter={(value: number) =>
                   new Intl.NumberFormat("de-DE", {
                     style: "currency",
@@ -359,11 +361,11 @@ export default function DashboardCharts() {
                   }).format(value)
                 }
               />
-              <Legend />
+              <Legend wrapperStyle={{ color: tickColor }} />
               <Area
                 type="monotone"
                 dataKey="revenue"
-                stroke={theme.primary}
+                stroke={currentChartPalette.primary}
                 fillOpacity={1}
                 fill="url(#revenue)"
                 name="Revenue"
@@ -371,7 +373,7 @@ export default function DashboardCharts() {
               <Area
                 type="monotone"
                 dataKey="commissions"
-                stroke={theme.secondary}
+                stroke={currentChartPalette.secondary}
                 fillOpacity={1}
                 fill="url(#commission)"
                 name="Commissions"
@@ -395,14 +397,13 @@ export default function DashboardCharts() {
                   }).format(value)}`
                 }
                 outerRadius={100}
-                fill="#8884d8"
                 dataKey="value"
               >
                 {commissionsByFirm.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={
-                      [theme.primary, theme.secondary, theme.tertiary][
+                      [currentChartPalette.primary, currentChartPalette.secondary, currentChartPalette.tertiary][
                         index % 3
                       ]
                     }
@@ -410,6 +411,9 @@ export default function DashboardCharts() {
                 ))}
               </Pie>
               <Tooltip
+                contentStyle={{ backgroundColor: currentAppTheme === 'dark' ? '#1F2937' : '#FFFFFF', border: `1px solid ${gridLineColor}` }}
+                itemStyle={{ color: tickColor }}
+                labelStyle={{ color: tickColor }}
                 formatter={(value: number) =>
                   new Intl.NumberFormat("de-DE", {
                     style: "currency",
@@ -417,7 +421,7 @@ export default function DashboardCharts() {
                   }).format(value)
                 }
               />
-              <Legend />
+              <Legend wrapperStyle={{ color: tickColor }}/>
             </PieChart>
           </ResponsiveContainer>
         </ChartContainer>
@@ -425,15 +429,19 @@ export default function DashboardCharts() {
         <ChartContainer title="Invoice Count Trend">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={monthlyData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridLineColor} />
+              <XAxis dataKey="month" tick={{ fill: tickColor }} stroke={gridLineColor} />
+              <YAxis tick={{ fill: tickColor }} stroke={gridLineColor}/>
+              <Tooltip
+                contentStyle={{ backgroundColor: currentAppTheme === 'dark' ? '#1F2937' : '#FFFFFF', border: `1px solid ${gridLineColor}` }}
+                itemStyle={{ color: tickColor }}
+                labelStyle={{ color: tickColor }}
+              />
+              <Legend wrapperStyle={{ color: tickColor }}/>
               <Line
                 type="monotone"
                 dataKey="count"
-                stroke={theme.primary}
+                stroke={currentChartPalette.primary}
                 name="Number of Invoices"
               />
             </LineChart>
@@ -443,10 +451,13 @@ export default function DashboardCharts() {
         <ChartContainer title="Monthly Performance">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={monthlyData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridLineColor} />
+              <XAxis dataKey="month" tick={{ fill: tickColor }} stroke={gridLineColor} />
+              <YAxis tick={{ fill: tickColor }} stroke={gridLineColor} />
               <Tooltip
+                contentStyle={{ backgroundColor: currentAppTheme === 'dark' ? '#1F2937' : '#FFFFFF', border: `1px solid ${gridLineColor}` }}
+                itemStyle={{ color: tickColor }}
+                labelStyle={{ color: tickColor }}
                 formatter={(value: number) =>
                   new Intl.NumberFormat("de-DE", {
                     style: "currency",
@@ -454,16 +465,16 @@ export default function DashboardCharts() {
                   }).format(value)
                 }
               />
-              <Legend />
+              <Legend wrapperStyle={{ color: tickColor }}/>
               <Bar
                 dataKey="revenue"
-                fill={theme.primary}
+                fill={currentChartPalette.primary}
                 name="Revenue"
                 opacity={0.8}
               />
               <Bar
                 dataKey="commissions"
-                fill={theme.secondary}
+                fill={currentChartPalette.secondary}
                 name="Commissions"
                 opacity={0.8}
               />

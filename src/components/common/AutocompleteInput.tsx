@@ -59,15 +59,15 @@ export default function AutocompleteInput({
         value={value}
         onChange={handleInputChange}
         placeholder={placeholder}
-        className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 ${className}`}
+        className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 placeholder-gray-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400 ${className}`}
       />
       {showSuggestions && suggestions.length > 0 && (
-        <ul className="absolute z-10 w-full mt-1 bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+        <ul className="absolute z-10 w-full mt-1 bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm text-gray-900 dark:bg-gray-750 dark:text-gray-200 dark:ring-gray-600 dark:shadow-md">
           {suggestions.map((suggestion, index) => (
             <li
               key={index}
               onClick={() => handleSuggestionClick(suggestion)}
-              className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-indigo-50"
+              className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-indigo-50 dark:hover:bg-indigo-700/30"
             >
               {suggestion}
             </li>
