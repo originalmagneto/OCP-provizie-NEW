@@ -37,22 +37,34 @@ export default function InvoiceForm() {
   const [formData, setFormData] = useState<FormData>(() =>
     INITIAL_FORM_DATA(user?.firm || "SKALLARS"),
   );
+  const [formError, setFormError] = useState<string | null>(null);
 
   const firms: FirmType[] = ["SKALLARS", "MKMs", "Contax"];
   const availableReferrers = firms.filter((firm) => firm !== user?.firm);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null); // Clear previous errors
 
     try {
-      const amount = parseFloat(formData.amount);
-      const commissionPercentage = parseFloat(formData.commissionPercentage);
-
-      if (isNaN(amount) || amount <= 0) {
+      // Client Name Validation
+      if (!formData.clientName.trim()) {
+        setFormError("Client name cannot be empty.");
         return;
       }
 
-      if (isNaN(commissionPercentage) || commissionPercentage <= 0) {
+      const amount = parseFloat(formData.amount);
+      const commissionPercentage = parseFloat(formData.commissionPercentage);
+
+      // Amount Validation
+      if (isNaN(amount) || amount <= 0) {
+        setFormError("Please enter a valid positive amount for the invoice.");
+        return;
+      }
+
+      // Commission Validation (allowing 0%)
+      if (isNaN(commissionPercentage) || commissionPercentage < 0) {
+        setFormError("Please enter a valid, non-negative commission percentage.");
         return;
       }
 
@@ -83,8 +95,10 @@ export default function InvoiceForm() {
 
       await addInvoice(invoiceData);
       setFormData(INITIAL_FORM_DATA(user?.firm || "SKALLARS"));
+      // setFormError(null); // Already cleared at the start, and form reset implies success
     } catch (err) {
       console.error("Error creating invoice:", err);
+      setFormError("An unexpected error occurred while creating the invoice. Please check your connection and try again.");
     }
   };
 
@@ -94,6 +108,7 @@ export default function InvoiceForm() {
       <div className="mb-4 text-sm text-gray-600">
         Creating as <span className="font-semibold">{user?.name}</span> (<span className="font-semibold">{user?.firm}</span>)
       </div>
+      {formError && <div className="mb-4 text-sm text-red-600 bg-red-100 border border-red-400 p-3 rounded-md">{formError}</div>}
       <form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <label className="block text-sm font-medium text-gray-700">

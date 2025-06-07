@@ -84,7 +84,7 @@ export default function Dashboard() {
               </a>
               <button
                 onClick={() => setShowResetConfirmation(true)}
-                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                className="inline-flex items-center px-3 py-2 border text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 text-red-600 hover:bg-red-50 border-red-500 focus:ring-red-400"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Reset Data
@@ -103,21 +103,45 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        {/* Primary Action Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* New Invoice Form */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <h2 className="text-lg font-medium mb-4">Create New Invoice</h2>
-            <InvoiceForm />
-          </div>
+        {/* Invoice Form Section (Collapsible) */}
+        <div className="mb-8">
+          <Disclosure>
+            {({ open }) => (
+              <>
+                <Disclosure.Button className="flex w-full justify-between rounded-lg bg-gray-100 px-4 py-3 text-left text-sm font-medium hover:bg-gray-200 focus:outline-none focus-visible:ring focus-visible:ring-indigo-500 focus-visible:ring-opacity-75">
+                  <span>{open ? "Hide Invoice Form" : "Create New Invoice"}</span>
+                  <ChevronDown
+                    className={`${
+                      open ? "transform rotate-180" : ""
+                    } h-5 w-5 text-gray-500 transition-transform duration-200`}
+                  />
+                </Disclosure.Button>
+                <Transition
+                  enter="transition duration-100 ease-out"
+                  enterFrom="transform scale-95 opacity-0"
+                  enterTo="transform scale-100 opacity-100"
+                  leave="transition duration-75 ease-out"
+                  leaveFrom="transform scale-100 opacity-100"
+                  leaveTo="transform scale-95 opacity-0"
+                >
+                  <Disclosure.Panel className="mt-4">
+                    <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                      <h2 className="text-lg font-medium mb-4">Create New Invoice</h2>
+                      <InvoiceForm />
+                    </div>
+                  </Disclosure.Panel>
+                </Transition>
+              </>
+            )}
+          </Disclosure>
+        </div>
 
-          {/* Quarterly Commission Summary */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <h2 className="text-lg font-medium mb-4">
-              Current Quarter Summary
-            </h2>
-            <QuarterlySnapshot />
-          </div>
+        {/* Quarterly Commission Summary Section */}
+        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 mb-8">
+          <h2 className="text-lg font-medium mb-4">
+            Current Quarter Summary
+          </h2>
+          <QuarterlySnapshot />
         </div>
 
         {/* Invoice Management Section */}
