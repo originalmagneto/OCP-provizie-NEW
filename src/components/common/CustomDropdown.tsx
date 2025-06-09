@@ -45,19 +45,19 @@ export default function CustomDropdown({
       <button
         onClick={() => setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`w-full px-4 py-2 text-left bg-white border rounded-lg flex items-center justify-between ${
-          disabled ? "opacity-50 cursor-not-allowed" : "hover:border-blue-500"
-        }`}
+        className={`w-full px-4 py-2 text-left bg-white border border-gray-300 text-gray-900 rounded-lg flex items-center justify-between ${
+          disabled ? "opacity-50 cursor-not-allowed" : "hover:border-blue-500 dark:hover:border-blue-400"
+        } dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200`}
       >
         <div className="flex items-center gap-2">
-          {icon}
+          {icon} {/* Icon color should inherit from text color */}
           <span>{selectedOption.label}</span>
         </div>
-        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`} /> {/* Chevron color should inherit */}
       </button>
 
       {isOpen && !disabled && (
-        <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg">
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg dark:bg-gray-800 dark:border-gray-600 dark:shadow-none">
           {options.map((option) => (
             <button
               key={option.value}
@@ -65,8 +65,8 @@ export default function CustomDropdown({
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 ${
-                option.value === value ? "bg-blue-50 text-blue-600" : ""
+              className={`w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 ${
+                option.value === value ? "bg-blue-50 text-blue-600 dark:bg-blue-700/30 dark:text-blue-300" : "text-gray-900 dark:text-gray-200"
               }`}
             >
               {option.label}

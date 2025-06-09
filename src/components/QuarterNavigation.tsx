@@ -26,7 +26,7 @@ export function QuarterNavigation({
 }: QuarterNavigationProps) {
   return (
     <div className="flex flex-col space-y-4">
-      <h2 className="text-lg font-medium text-gray-900">Quarters</h2>
+      <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Quarters</h2>
       <nav className="flex flex-col space-y-1">
         {quarters.map(({ quarter, year, key, settlements }) => {
           const isSelected = key === selectedQuarter;
@@ -45,20 +45,20 @@ export function QuarterNavigation({
                 flex items-center justify-between px-4 py-3 rounded-lg
                 transition-colors duration-200
                 ${isSelected 
-                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' 
-                  : 'hover:bg-gray-50 text-gray-700'}
+                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-700/50'
+                  : 'hover:bg-gray-50 text-gray-700 dark:text-gray-300 dark:hover:bg-gray-750'}
               `}
             >
               <div className="flex items-center space-x-3">
-                <span className={`font-medium ${isSelected ? 'text-indigo-700' : 'text-gray-900'}`}>
+                <span className={`font-medium ${isSelected ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-900 dark:text-gray-100'}`}>
                   Q{quarter} {year}
                 </span>
                 <div className="flex items-center space-x-1">
                   {hasSettledCommissions && (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
                   )}
                   {hasUnsettledCommissions && (
-                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                    <AlertCircle className="h-4 w-4 text-amber-500 dark:text-amber-400" />
                   )}
                 </div>
               </div>
@@ -69,11 +69,11 @@ export function QuarterNavigation({
                     <div 
                       key={settlement.firm}
                       className={`flex items-center space-x-1 ${
-                        settlement.isSettled ? 'text-green-600' : 'text-gray-500'
+                        settlement.isSettled ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
                       }`}
                     >
                       <span>{settlement.firm}</span>
-                      {settlement.isSettled && <CheckCircle className="h-3 w-3" />}
+                      {settlement.isSettled && <CheckCircle className="h-3 w-3" />} {/* Icon inherits color */}
                     </div>
                   )
                 ))}

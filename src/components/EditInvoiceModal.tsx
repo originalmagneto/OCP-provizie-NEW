@@ -67,12 +67,12 @@ export default function EditInvoiceModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6">
+      <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6 dark:bg-gray-800 dark:border dark:border-gray-700">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-medium">Edit Invoice</h2>
+          <h2 className="text-lg font-medium dark:text-gray-100">Edit Invoice</h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-full"
+            className="p-1 hover:bg-gray-100 rounded-full dark:text-gray-400 dark:hover:bg-gray-700"
           >
             <X className="h-5 w-5" />
           </button>
@@ -80,7 +80,7 @@ export default function EditInvoiceModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Client Name
             </label>
             <input
@@ -89,12 +89,12 @@ export default function EditInvoiceModal({
               onChange={(e) =>
                 setFormData({ ...formData, clientName: e.target.value })
               }
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900 placeholder-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400 dark:focus:ring-indigo-400 dark:focus:border-indigo-400"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Client Belongs To
             </label>
             <CustomDropdown
@@ -108,7 +108,7 @@ export default function EditInvoiceModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Amount (€)
             </label>
             <input
@@ -117,13 +117,13 @@ export default function EditInvoiceModal({
               onChange={(e) =>
                 setFormData({ ...formData, amount: parseFloat(e.target.value) })
               }
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900 placeholder-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400 dark:focus:ring-indigo-400 dark:focus:border-indigo-400"
               step="0.01"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Commission Percentage
             </label>
             <input
@@ -135,25 +135,25 @@ export default function EditInvoiceModal({
                   commissionPercentage: parseFloat(e.target.value),
                 })
               }
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900 placeholder-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400 dark:focus:ring-indigo-400 dark:focus:border-indigo-400"
               step="0.1"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Date
             </label>
             <DatePicker
               selected={formData.date}
               onChange={(date: Date | null) => date && setFormData({ ...formData, date })}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900 placeholder-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400 dark:color-scheme-dark dark:focus:ring-indigo-400 dark:focus:border-indigo-400"
               dateFormat="dd/MM/yyyy"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Referred By
             </label>
             <CustomDropdown
@@ -170,13 +170,13 @@ export default function EditInvoiceModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-500 dark:hover:bg-gray-700"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 dark:focus:ring-offset-gray-800"
             >
               Save Changes
             </button>

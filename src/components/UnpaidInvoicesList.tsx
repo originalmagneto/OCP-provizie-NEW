@@ -31,13 +31,14 @@ export default function UnpaidInvoicesList() {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow">
+      // Assuming parent provides the main card dark:bg-gray-800
+      <div>
         <div className="p-4">
           <div className="animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
             <div className="space-y-3">
-              <div className="h-10 bg-gray-200 rounded"></div>
-              <div className="h-10 bg-gray-200 rounded"></div>
+              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
             </div>
           </div>
         </div>
@@ -47,12 +48,13 @@ export default function UnpaidInvoicesList() {
 
   if (unpaidInvoices.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow">
+      // Assuming parent provides the main card dark:bg-gray-800
+      <div>
         <div className="p-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
             Unpaid Invoices
           </h3>
-          <p className="text-gray-500 text-center py-4">
+          <p className="text-gray-500 dark:text-gray-400 text-center py-4">
             No unpaid invoices at the moment
           </p>
         </div>
@@ -61,26 +63,27 @@ export default function UnpaidInvoicesList() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow">
+    // Assuming parent provides the main card dark:bg-gray-800
+    <div>
       <div className="p-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
           Unpaid Invoices
         </h3>
         <div className="space-y-4">
           {unpaidInvoices.map((invoice) => (
             <div
               key={invoice.id}
-              className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+              className="flex items-center justify-between p-4 bg-gray-50 rounded-lg dark:bg-gray-750"
             >
               <div>
-                <p className="font-medium text-gray-900">{invoice.clientName}</p>
-                <p className="text-sm text-gray-500">
+                <p className="font-medium text-gray-900 dark:text-gray-100">{invoice.clientName}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Due: {new Date(invoice.date).toLocaleDateString()}
                 </p>
               </div>
               <div className="flex items-center space-x-4">
-                <p className="font-medium text-gray-900 flex items-center">
-                  <Euro className="w-4 h-4 mr-1" />
+                <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center">
+                  <Euro className="w-4 h-4 mr-1" /> {/* Will inherit text color */}
                   {new Intl.NumberFormat("de-DE", {
                     style: "currency",
                     currency: "EUR",
@@ -88,7 +91,7 @@ export default function UnpaidInvoicesList() {
                 </p>
                 <button
                   onClick={() => togglePaid(invoice.id)}
-                  className="px-3 py-1 bg-green-50 text-green-700 rounded-md text-sm font-medium hover:bg-green-100 transition-colors"
+                  className="px-3 py-1 bg-green-50 text-green-700 rounded-md text-sm font-medium hover:bg-green-100 transition-colors dark:bg-green-500/20 dark:text-green-300 dark:hover:bg-green-500/30"
                 >
                   Mark Paid
                 </button>
