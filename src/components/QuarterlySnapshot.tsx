@@ -16,17 +16,17 @@ import type { FirmType } from "../types";
 
 const firmThemes = {
   SKALLARS: {
-    light: "bg-purple-50",
+    bg: "bg-purple-50",
     border: "border-purple-200",
     text: "text-purple-600",
   },
   MKMs: {
-    light: "bg-blue-50",
+    bg: "bg-blue-50",
     border: "border-blue-200",
     text: "text-blue-600",
   },
   Contax: {
-    light: "bg-yellow-50",
+    bg: "bg-yellow-50",
     border: "border-yellow-200",
     text: "text-yellow-600",
   },
@@ -67,7 +67,7 @@ function CommissionCard({
   return (
     <div
       className={`
-        p-4 rounded-lg ${theme.light} ${theme.border}
+        p-4 rounded-lg ${theme.bg} ${theme.border}
         flex justify-between items-center
       `}
     >
