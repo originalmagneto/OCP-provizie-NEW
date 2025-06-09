@@ -26,7 +26,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from "lucide-react";
-import type { FirmType } from "../types";
+import type { FirmType } from "../types.ts";
 
 const firmThemes = {
   SKALLARS: {

@@ -5,7 +5,7 @@ import { useClient } from "../context/ClientContext";
 import { Euro, AlertCircle } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import type { FirmType } from "../types";
+import type { FirmType } from "../types.ts";
 import CustomDropdown from "./common/CustomDropdown";
 import AutocompleteInput from "./common/AutocompleteInput";
 

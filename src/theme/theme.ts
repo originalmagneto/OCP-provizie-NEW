@@ -1,4 +1,4 @@
-import { FirmType } from "../types";
+import { FirmType } from "../types.ts";
 
 export type Theme = {
   colors: {

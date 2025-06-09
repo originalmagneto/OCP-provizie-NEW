@@ -3,7 +3,7 @@ import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { useCommissions } from "../context/CommissionContext";
 import { Euro, FileText, TrendingUp, Calendar } from "lucide-react";
-import type { FirmType } from "../types";
+import type { FirmType } from "../types.ts";
 import { QuarterlyCommissionCard } from "./QuarterlyCommissionCard";
 
 interface QuarterlyData {

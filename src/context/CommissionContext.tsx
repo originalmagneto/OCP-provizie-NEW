@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { FirmType, SettlementStatus } from '../types';
+import type { FirmType, SettlementStatus } from '../types.ts';
 import { db } from '../config/firebase';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { useAuth } from './AuthContext';

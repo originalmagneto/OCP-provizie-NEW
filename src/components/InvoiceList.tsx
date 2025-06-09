@@ -17,7 +17,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import type { FirmType, Invoice } from "../types";
+import type { FirmType, Invoice } from "../types.ts";
 
 const firmThemes = {
   SKALLARS: {
