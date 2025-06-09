@@ -8,7 +8,7 @@ import InvoiceList from "./InvoiceList";
 import QuarterlySnapshot from "./QuarterlySnapshot";
 import UnpaidInvoicesList from "./UnpaidInvoicesList";
 import DashboardCharts from "./DashboardCharts";
-import type { FirmType } from "../types";
+import type { FirmType } from "../types.ts";
 
 const firmThemes = {
   SKALLARS: {

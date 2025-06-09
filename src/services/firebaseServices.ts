@@ -16,7 +16,7 @@ import {
   DocumentData
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import type { Invoice, SettlementStatus, FirmType } from '../types';
+import type { Invoice, SettlementStatus, FirmType } from '../types.ts';
 
 // Collection references
 const invoicesCollection = collection(db, 'invoices');

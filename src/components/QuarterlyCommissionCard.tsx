@@ -1,6 +1,6 @@
 import React from "react";
 import { CheckCircle, TrendingUp, TrendingDown, Euro } from "lucide-react";
-import type { FirmType } from "../types";
+import type { FirmType } from "../types.ts";
 import { useCommissions } from "../context/CommissionContext";
 
 const COLORS = {

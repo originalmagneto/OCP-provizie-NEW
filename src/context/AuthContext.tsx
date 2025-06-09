@@ -9,7 +9,7 @@ import {
   updateProfile
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import type { FirmType } from "../types";
+import type { FirmType } from "../types.ts";
 
 interface User {
   id: string;

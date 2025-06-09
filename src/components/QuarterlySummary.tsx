@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { ArrowRight, Euro, Clock, Check } from "lucide-react";
-import type { FirmType } from "../types";
+import type { FirmType } from "../types.ts";
 
 const firmThemes = {
   SKALLARS: {

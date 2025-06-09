@@ -12,7 +12,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import QuarterYearSelector from "./QuarterYearSelector";
-import type { FirmType } from "../types";
+import type { FirmType } from "../types.ts";
 
 const firmThemes = {
   SKALLARS: {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { CheckCircle, AlertCircle } from 'lucide-react';
-import type { FirmType } from '../types';
+import type { FirmType } from '../types.ts';
 
 interface QuarterNavigationProps {
   quarters: Array<{
