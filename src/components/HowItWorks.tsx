@@ -1,44 +1,36 @@
 import React from "react";
-import { X } from "lucide-react";
+import React from "react";
+// Removed X from lucide-react as close button is removed
 
 interface HowItWorksProps {
-  isOpen: boolean;
-  onClose: () => void;
   onStartTour: () => void;
 }
 
 export default function HowItWorks({
-  isOpen,
-  onClose,
   onStartTour,
 }: HowItWorksProps) {
-  if (!isOpen) return null;
+  // Removed isOpen and onClose props and the initial conditional return
 
-  const handleStartTour = () => {
-    onClose();
-    onStartTour();
-  };
+  // const handleStartTour = () => {
+    // onClose(); // onClose is removed
+    // onStartTour();
+  // };
+  // Simpler: just call onStartTour directly if no other logic from onClose was needed here.
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-5 mx-auto p-8 border w-full max-w-4xl shadow-lg rounded-lg bg-white">
-        <div className="flex justify-between items-start">
-          <h2 className="text-2xl font-bold text-gray-900">How It Works</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-500"
-          >
-            <X className="h-6 w-6" />
-          </button>
+    <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800 shadow-xl rounded-lg">
+        <div className="flex justify-between items-start"> {/* Retained for title, X button removed */}
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">How It Works</h2>
+          {/* X button removed */}
         </div>
 
         <div className="mt-6 space-y-6">
           {/* Overview Section */}
           <section>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
               Overview
             </h3>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-300">
               The Commission Dashboard helps you track and manage referral
               commissions between partner firms. Track invoices, monitor
               payments, and view detailed analytics of your commission
@@ -48,7 +40,7 @@ export default function HowItWorks({
 
           {/* Key Features */}
           <section>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
               Key Features
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -68,12 +60,20 @@ export default function HowItWorks({
                 title="Multi-firm Support"
                 description="Manage commission arrangements between different partner firms with firm-specific views and permissions."
               />
+              <FeatureCard
+                title="Customizable View"
+                description="Personalize your experience with light and dark themes to suit your preference and working environment."
+              />
+              <FeatureCard
+                title="Efficient Data Handling"
+                description="Quickly find and organize your invoices with advanced filtering and sorting options."
+              />
             </div>
           </section>
 
           {/* Step by Step Guide */}
           <section>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
               Getting Started
             </h3>
             <div className="space-y-4">
@@ -103,14 +103,13 @@ export default function HowItWorks({
           {/* Start Tour Button */}
           <div className="mt-8 flex justify-center">
             <button
-              onClick={handleStartTour}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              onClick={onStartTour} // Directly use onStartTour
+              className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors dark:bg-indigo-500 dark:hover:bg-indigo-400"
             >
               Take an Interactive Tour
             </button>
           </div>
         </div>
-      </div>
     </div>
   );
 }
@@ -123,9 +122,9 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="p-4 border border-gray-200 rounded-lg">
-      <h4 className="font-medium text-gray-900 mb-2">{title}</h4>
-      <p className="text-sm text-gray-600">{description}</p>
+    <div className="p-4 border border-gray-200 rounded-lg dark:border-gray-700">
+      <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{title}</h4>
+      <p className="text-sm text-gray-600 dark:text-gray-300">{description}</p>
     </div>
   );
 }
@@ -141,12 +140,12 @@ function Step({
 }) {
   return (
     <div className="flex items-start">
-      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-semibold">
+      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-800 dark:text-indigo-300 flex items-center justify-center font-semibold">
         {number}
       </div>
       <div className="ml-4">
-        <h4 className="font-medium text-gray-900">{title}</h4>
-        <p className="text-sm text-gray-600">{description}</p>
+        <h4 className="font-medium text-gray-900 dark:text-gray-100">{title}</h4>
+        <p className="text-sm text-gray-600 dark:text-gray-300">{description}</p>
       </div>
     </div>
   );

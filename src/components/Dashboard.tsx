@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // Added useEffect
 import { Disclosure, Transition } from "@headlessui/react";
 import { useAuth } from "../context/AuthContext";
 import { useYear } from "../context/YearContext";
@@ -9,6 +9,7 @@ import QuarterlySnapshot from "./QuarterlySnapshot";
 import UnpaidInvoicesList from "./UnpaidInvoicesList";
 import DashboardCharts from "./DashboardCharts";
 import ThemeToggle from "./ThemeToggle"; // Added
+import SplashScreenModal from './SplashScreenModal'; // Added
 import type { FirmType } from "../types";
 
 const firmThemes = {
@@ -42,6 +43,19 @@ export default function Dashboard() {
   const { user, logout } = useAuth();
   const { currentYear, currentQuarter } = useYear();
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
+  const [showSplashScreen, setShowSplashScreen] = useState(false); // Added
+
+  useEffect(() => {
+    const hasSeen = localStorage.getItem('hasSeenSplashScreenV1');
+    if (!hasSeen) {
+      setShowSplashScreen(true);
+    }
+  }, []);
+
+  const handleDismissSplashScreen = () => {
+    localStorage.setItem('hasSeenSplashScreenV1', 'true');
+    setShowSplashScreen(false);
+  };
 
   if (!user) return null;
 
@@ -236,6 +250,7 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+      {showSplashScreen && <SplashScreenModal onDismiss={handleDismissSplashScreen} />}
     </div>
   );
 }

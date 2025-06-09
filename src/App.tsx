@@ -6,6 +6,7 @@ import { CommissionProvider } from "./context/CommissionContext";
 import { ClientProvider } from "./context/ClientContext";
 import LoginForm from "./components/LoginForm";
 import Dashboard from "./components/Dashboard";
+import HowItWorks from './components/HowItWorks'; // Added
 import { useAuth } from "./context/AuthContext";
 
 function AuthenticatedApp({ children }: { children: React.ReactNode }) {
@@ -52,10 +53,17 @@ function AuthenticatedApp({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  let pageContent;
+  if (window.location.pathname === '/how-it-works') {
+    pageContent = <HowItWorks onStartTour={() => alert("Interactive tour would start here! This page currently provides information only.")} />;
+  } else {
+    pageContent = <Dashboard />;
+  }
+
   return (
     <AuthProvider>
       <AuthenticatedApp>
-        <Dashboard />
+        {pageContent}
       </AuthenticatedApp>
     </AuthProvider>
   );
