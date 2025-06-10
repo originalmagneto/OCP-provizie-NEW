@@ -9,6 +9,7 @@ import QuarterlySnapshot from "./QuarterlySnapshot";
 import UnpaidInvoicesList from "./UnpaidInvoicesList";
 import DashboardCharts from "./DashboardCharts";
 import type { FirmType } from "../types";
+import FirmLogoUploader from "./FirmLogoUploader";
 
 const firmThemes = {
   SKALLARS: {
@@ -64,6 +65,13 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
+              {user.firmLogoUrl && (
+                <img
+                  src={user.firmLogoUrl}
+                  alt={`${user.firm} logo`}
+                  className="h-8 w-8 mr-2 object-contain"
+                />
+              )}
               <h1 className={`text-2xl font-semibold ${firmTheme.text}`}>
                 {user.firm} Commission Dashboard
               </h1>
@@ -75,6 +83,7 @@ export default function Dashboard() {
               <span className="text-sm text-gray-500">
                 Welcome, {user.name}
               </span>
+              <FirmLogoUploader />
               <a
                 href="/commissions"
                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
