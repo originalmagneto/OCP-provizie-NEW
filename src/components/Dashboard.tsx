@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Disclosure, Transition } from "@headlessui/react";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "./ui/Collapsible";
+import { Button } from "./ui/Button";
 import { useAuth } from "../context/AuthContext";
 import { useYear } from "../context/YearContext";
 import { LogOut, Trash2, AlertTriangle, ChevronDown, Euro } from "lucide-react";
@@ -9,42 +10,16 @@ import QuarterlySnapshot from "./QuarterlySnapshot";
 import UnpaidInvoicesList from "./UnpaidInvoicesList";
 import DashboardCharts from "./DashboardCharts";
 import type { FirmType } from "../types";
+import FirmLogoUploader from "./FirmLogoUploader";
+import { withAlpha } from "../lib/utils";
 
-const firmThemes = {
-  SKALLARS: {
-    primary: "bg-purple-100",
-    secondary: "bg-purple-50",
-    text: "text-purple-600",
-    border: "border-purple-200",
-    light: "text-purple-500",
-    accent: "#9333ea",
-  },
-  MKMs: {
-    primary: "bg-blue-100",
-    secondary: "bg-blue-50",
-    text: "text-blue-600",
-    border: "border-blue-200",
-    light: "text-blue-500",
-    accent: "#2563eb",
-  },
-  Contax: {
-    primary: "bg-yellow-100",
-    secondary: "bg-yellow-50",
-    text: "text-yellow-600",
-    border: "border-yellow-200",
-    light: "text-yellow-500",
-    accent: "#d97706",
-  },
-} as const;
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, accentColor } = useAuth();
   const { currentYear, currentQuarter } = useYear();
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
 
   if (!user) return null;
-
-  const firmTheme = firmThemes[user.firm as FirmType];
 
   const quarterLabel = `Q${currentQuarter} ${currentYear}`;
   const quarterRange = {
@@ -57,14 +32,24 @@ export default function Dashboard() {
     month: "long",
   })}`;
 
+  const bg = accentColor ? withAlpha(accentColor, 0.1) : '#f9fafb';
+  const textColor = accentColor || '#4b5563';
+
   return (
-    <div className={`min-h-screen ${firmTheme.secondary}`}>
+    <div className="min-h-screen" style={{ backgroundColor: bg }}>
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
-              <h1 className={`text-2xl font-semibold ${firmTheme.text}`}>
+              {user.firmLogoUrl && (
+                <img
+                  src={user.firmLogoUrl}
+                  alt={`${user.firm} logo`}
+                  className="h-8 w-8 mr-2 object-contain"
+                />
+              )}
+              <h1 className="text-2xl font-semibold" style={{ color: textColor }}>
                 {user.firm} Commission Dashboard
               </h1>
               <span className="ml-4 px-3 py-1 rounded-md bg-gray-100 text-gray-600 text-sm">
@@ -75,27 +60,27 @@ export default function Dashboard() {
               <span className="text-sm text-gray-500">
                 Welcome, {user.name}
               </span>
-              <a
-                href="/commissions"
-                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-              >
-                <Euro className="h-4 w-4 mr-2" />
-                View Commissions
-              </a>
-              <button
+              <FirmLogoUploader />
+              <Button asChild className="bg-green-600 hover:bg-green-700">
+                <a href="/commissions" className="inline-flex items-center">
+                  <Euro className="h-4 w-4 mr-2" />
+                  View Commissions
+                </a>
+              </Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700"
                 onClick={() => setShowResetConfirmation(true)}
-                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Reset Data
-              </button>
-              <button
+              </Button>
+              <Button
+                className="bg-indigo-600 hover:bg-indigo-700"
                 onClick={logout}
-                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -123,7 +108,10 @@ export default function Dashboard() {
         {/* Invoice Management Section */}
         <div className="space-y-6">
           {/* Unpaid Invoices Section */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-amber-500 unpaid-invoices-section">
+          <div
+            className="bg-white rounded-lg shadow-sm p-6 border-l-4 unpaid-invoices-section"
+            style={{ borderColor: accentColor }}
+          >
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-medium">Pending Payments</h2>
               <div className="text-sm text-gray-500">{monthRange}</div>
@@ -143,32 +131,15 @@ export default function Dashboard() {
 
         {/* Expandable Analytics Section */}
         <div className="mt-8">
-          <Disclosure>
-            {({ open }) => (
-              <>
-                <Disclosure.Button className="flex w-full justify-between rounded-lg bg-gray-100 px-4 py-2 text-left text-sm font-medium hover:bg-gray-200 focus:outline-none focus-visible:ring focus-visible:ring-indigo-500 focus-visible:ring-opacity-75">
-                  <span>View Detailed Analytics</span>
-                  <ChevronDown
-                    className={`${
-                      open ? "transform rotate-180" : ""
-                    } h-5 w-5 text-gray-500 transition-transform duration-200`}
-                  />
-                </Disclosure.Button>
-                <Transition
-                  enter="transition duration-100 ease-out"
-                  enterFrom="transform scale-95 opacity-0"
-                  enterTo="transform scale-100 opacity-100"
-                  leave="transition duration-75 ease-out"
-                  leaveFrom="transform scale-100 opacity-100"
-                  leaveTo="transform scale-95 opacity-0"
-                >
-                  <Disclosure.Panel className="mt-4">
-                    <DashboardCharts />
-                  </Disclosure.Panel>
-                </Transition>
-              </>
-            )}
-          </Disclosure>
+          <Collapsible>
+            <CollapsibleTrigger className="flex w-full justify-between rounded-lg px-4 py-2 text-left text-sm font-medium hover:bg-gray-200 bg-gray-100">
+              <span>View Detailed Analytics</span>
+              <ChevronDown className="h-5 w-5 text-gray-500 transition-transform duration-200 data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-4">
+              <DashboardCharts />
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       </main>
 

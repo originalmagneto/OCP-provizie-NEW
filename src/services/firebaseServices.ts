@@ -13,13 +13,15 @@ import {
   serverTimestamp,
   setDoc,
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db, storage } from '../config/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { Invoice, SettlementStatus, FirmType, Client } from '../types/index';
 
 // Collection references
 const invoicesCollection = collection(db, 'invoices');
 const clientsCollection = collection(db, 'clients');
 const settlementsCollection = collection(db, 'settlements');
+const firmsCollection = collection(db, 'firms');
 
 // Invoice services
 export const invoiceServices = {
@@ -180,5 +182,22 @@ export const settlementServices = {
       const docRef = doc(db, 'settlements', snapshot.docs[0].id);
       await deleteDoc(docRef);
     }
+  }
+};
+
+// Firm services for handling logos
+export const firmServices = {
+  getFirm: async (firm: FirmType) => {
+    const docRef = doc(firmsCollection, firm);
+    const snap = await getDoc(docRef);
+    return snap.exists() ? snap.data() : null;
+  },
+  upsertFirmLogo: async (firm: FirmType, file: File, accentColor: string) => {
+    const storageRef = ref(storage, `firmLogos/${firm}`);
+    await uploadBytes(storageRef, file);
+    const logoUrl = await getDownloadURL(storageRef);
+    const docRef = doc(firmsCollection, firm);
+    await setDoc(docRef, { logoUrl, accentColor }, { merge: true });
+    return logoUrl;
   }
 };
