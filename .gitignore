@@ -28,3 +28,6 @@ dist-ssr
 
 # Enviromental Variables
 .env
+
+# Firebase build directory
+.firebase
