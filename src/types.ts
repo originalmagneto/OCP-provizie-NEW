@@ -18,3 +18,13 @@ export interface SettlementStatus {
   settledAt?: string;  // When the commission was marked as settled
   settledBy: FirmType;  // The firm that marked the commission as settled
 }
+
+export interface FirmTheme {
+  logoUrl?: string;
+  primary: string;
+  secondary: string;
+  text: string;
+  border?: string;
+  light?: string;
+  accent: string;
+}

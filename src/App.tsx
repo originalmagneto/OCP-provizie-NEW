@@ -4,6 +4,7 @@ import { InvoiceProvider } from "./context/InvoiceContext";
 import { YearProvider } from "./context/YearContext";
 import { CommissionProvider } from "./context/CommissionContext";
 import { ClientProvider } from "./context/ClientContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import LoginForm from "./components/LoginForm";
 import Dashboard from "./components/Dashboard";
 import { useAuth } from "./context/AuthContext";
@@ -39,15 +40,15 @@ function AuthenticatedApp({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <InvoiceProvider>
-      <YearProvider>
-        <ClientProvider>
-          <CommissionProvider>
-            {children}
-          </CommissionProvider>
-        </ClientProvider>
-      </YearProvider>
-    </InvoiceProvider>
+    <ThemeProvider>
+      <InvoiceProvider>
+        <YearProvider>
+          <ClientProvider>
+            <CommissionProvider>{children}</CommissionProvider>
+          </ClientProvider>
+        </YearProvider>
+      </InvoiceProvider>
+    </ThemeProvider>
   );
 }
 

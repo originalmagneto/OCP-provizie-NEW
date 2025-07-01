@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Disclosure, Transition } from "@headlessui/react";
 import { useAuth } from "../context/AuthContext";
 import { useYear } from "../context/YearContext";
+import { useTheme } from "../context/ThemeContext";
 import { LogOut, Trash2, AlertTriangle, ChevronDown, Euro } from "lucide-react";
 import InvoiceForm from "./InvoiceForm";
 import InvoiceList from "./InvoiceList";
@@ -10,41 +11,15 @@ import UnpaidInvoicesList from "./UnpaidInvoicesList";
 import DashboardCharts from "./DashboardCharts";
 import type { FirmType } from "../types";
 
-const firmThemes = {
-  SKALLARS: {
-    primary: "bg-purple-100",
-    secondary: "bg-purple-50",
-    text: "text-purple-600",
-    border: "border-purple-200",
-    light: "text-purple-500",
-    accent: "#9333ea",
-  },
-  MKMs: {
-    primary: "bg-blue-100",
-    secondary: "bg-blue-50",
-    text: "text-blue-600",
-    border: "border-blue-200",
-    light: "text-blue-500",
-    accent: "#2563eb",
-  },
-  Contax: {
-    primary: "bg-yellow-100",
-    secondary: "bg-yellow-50",
-    text: "text-yellow-600",
-    border: "border-yellow-200",
-    light: "text-yellow-500",
-    accent: "#d97706",
-  },
-} as const;
-
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const { currentYear, currentQuarter } = useYear();
+  const { theme } = useTheme();
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
 
   if (!user) return null;
 
-  const firmTheme = firmThemes[user.firm as FirmType];
+  const firmTheme = theme;
 
   const quarterLabel = `Q${currentQuarter} ${currentYear}`;
   const quarterRange = {
@@ -58,13 +33,16 @@ export default function Dashboard() {
   })}`;
 
   return (
-    <div className={`min-h-screen ${firmTheme.secondary}`}>
+    <div className="min-h-screen" style={{ backgroundColor: firmTheme?.secondary }}>
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header className="shadow-sm" style={{ backgroundColor: firmTheme?.primary }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
-              <h1 className={`text-2xl font-semibold ${firmTheme.text}`}>
+              {firmTheme?.logoUrl && (
+                <img src={firmTheme.logoUrl} alt="logo" className="h-8 w-8 mr-2" />
+              )}
+              <h1 className="text-2xl font-semibold" style={{ color: firmTheme?.text }}>
                 {user.firm} Commission Dashboard
               </h1>
               <span className="ml-4 px-3 py-1 rounded-md bg-gray-100 text-gray-600 text-sm">
