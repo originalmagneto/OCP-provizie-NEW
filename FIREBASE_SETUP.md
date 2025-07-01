@@ -83,8 +83,6 @@ service cloud.firestore {
 
 **IMPORTANT**: After entering these rules, click the "Publish" button to deploy them. If you don't publish the rules, they won't take effect and you'll encounter permission errors.
 
-**IMPORTANT**: After entering these rules, click the "Publish" button to deploy them. If you don't publish the rules, they won't take effect and you'll encounter permission errors.
-```
 
 ## Data Migration
 
