@@ -28,3 +28,13 @@ export interface SettlementStatus {
   updatedAt: Date;
   createdAt?: Date;
 }
+
+export interface FirmTheme {
+  logoUrl?: string;
+  primary: string;
+  secondary: string;
+  text: string;
+  border?: string;
+  light?: string;
+  accent: string;
+}
