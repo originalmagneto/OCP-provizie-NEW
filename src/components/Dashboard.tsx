@@ -9,33 +9,7 @@ import QuarterlySnapshot from "./QuarterlySnapshot";
 import UnpaidInvoicesList from "./UnpaidInvoicesList";
 import DashboardCharts from "./DashboardCharts";
 import type { FirmType } from "../types";
-
-const firmThemes = {
-  SKALLARS: {
-    primary: "bg-purple-100",
-    secondary: "bg-purple-50",
-    text: "text-purple-600",
-    border: "border-purple-200",
-    light: "text-purple-500",
-    accent: "#9333ea",
-  },
-  MKMs: {
-    primary: "bg-blue-100",
-    secondary: "bg-blue-50",
-    text: "text-blue-600",
-    border: "border-blue-200",
-    light: "text-blue-500",
-    accent: "#2563eb",
-  },
-  Contax: {
-    primary: "bg-yellow-100",
-    secondary: "bg-yellow-50",
-    text: "text-yellow-600",
-    border: "border-yellow-200",
-    light: "text-yellow-500",
-    accent: "#d97706",
-  },
-} as const;
+import { firmThemes } from "../config/themes";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
