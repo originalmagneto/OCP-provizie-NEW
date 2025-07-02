@@ -3,33 +3,7 @@ import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { ArrowRight, Euro, Clock, Check } from "lucide-react";
 import type { FirmType } from "../types";
-
-const firmThemes = {
-  SKALLARS: {
-    primary: "bg-purple-100",
-    secondary: "bg-purple-50",
-    text: "text-purple-600",
-    accent: "bg-purple-600",
-    border: "border-purple-200",
-    gradient: "from-purple-50 to-purple-100",
-  },
-  MKMs: {
-    primary: "bg-gray-100",
-    secondary: "bg-gray-50",
-    text: "text-gray-600",
-    accent: "bg-gray-600",
-    border: "border-gray-200",
-    gradient: "from-gray-50 to-gray-100",
-  },
-  Contax: {
-    primary: "bg-yellow-100",
-    secondary: "bg-yellow-50",
-    text: "text-yellow-600",
-    accent: "bg-yellow-600",
-    border: "border-yellow-200",
-    gradient: "from-yellow-50 to-yellow-100",
-  },
-};
+import { firmThemes } from "../config/themes";
 
 interface QuarterlyData {
   quarter: string;

@@ -27,27 +27,7 @@ import {
   ArrowDownRight,
 } from "lucide-react";
 import type { FirmType } from "../types";
-
-const firmThemes = {
-  SKALLARS: {
-    primary: "#9333ea",
-    secondary: "#a855f7",
-    tertiary: "#c084fc",
-    light: "#f3e8ff",
-  },
-  MKMs: {
-    primary: "#2563eb",
-    secondary: "#3b82f6",
-    tertiary: "#60a5fa",
-    light: "#e0f2fe",
-  },
-  Contax: {
-    primary: "#d97706",
-    secondary: "#f59e0b",
-    tertiary: "#fbbf24",
-    light: "#fef3c7",
-  },
-} as const;
+import { firmThemes } from "../config/themes";
 
 interface ChartMetric {
   label: string;

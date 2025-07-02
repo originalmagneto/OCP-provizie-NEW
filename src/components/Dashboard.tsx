@@ -11,6 +11,7 @@ import UnpaidInvoicesList from "./UnpaidInvoicesList";
 import DashboardCharts from "./DashboardCharts";
 import AdminFirmSettings from "./AdminFirmSettings";
 import type { FirmType } from "../types";
+import { firmThemes } from "../config/themes";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
