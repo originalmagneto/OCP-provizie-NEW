@@ -73,9 +73,16 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
     
-    // Allow authenticated users to read and write settlements
+    // Allow authenticated users to read settlements
+    // Only the firm eligible to receive a commission can mark it as settled
     match /settlements/{settlementId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null;
+      allow create: if request.auth != null &&
+        request.resource.data.settledBy ==
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.firm;
+      allow update, delete: if request.auth != null &&
+        resource.data.settledBy ==
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.firm;
     }
   }
 }
@@ -83,8 +90,6 @@ service cloud.firestore {
 
 **IMPORTANT**: After entering these rules, click the "Publish" button to deploy them. If you don't publish the rules, they won't take effect and you'll encounter permission errors.
 
-**IMPORTANT**: After entering these rules, click the "Publish" button to deploy them. If you don't publish the rules, they won't take effect and you'll encounter permission errors.
-```
 
 ## Data Migration
 

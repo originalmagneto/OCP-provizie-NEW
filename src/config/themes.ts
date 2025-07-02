@@ -49,3 +49,4 @@ export const firmThemes = {
 export type FirmThemes = typeof firmThemes;
 export type FirmTheme = FirmThemes[keyof FirmThemes];
 
+import type { FirmType, FirmTheme } from '../types';

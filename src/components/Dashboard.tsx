@@ -2,23 +2,27 @@ import React, { useState } from "react";
 import { Disclosure, Transition } from "@headlessui/react";
 import { useAuth } from "../context/AuthContext";
 import { useYear } from "../context/YearContext";
-import { LogOut, Trash2, AlertTriangle, ChevronDown, Euro } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
+import { LogOut, Trash2, AlertTriangle, ChevronDown, Euro, Settings as SettingsIcon, X } from "lucide-react";
 import InvoiceForm from "./InvoiceForm";
 import InvoiceList from "./InvoiceList";
 import QuarterlySnapshot from "./QuarterlySnapshot";
 import UnpaidInvoicesList from "./UnpaidInvoicesList";
 import DashboardCharts from "./DashboardCharts";
+import AdminFirmSettings from "./AdminFirmSettings";
 import type { FirmType } from "../types";
 import { firmThemes } from "../config/themes";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const { currentYear, currentQuarter } = useYear();
+  const { theme } = useTheme();
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   if (!user) return null;
 
-  const firmTheme = firmThemes[user.firm as FirmType];
+  const firmTheme = theme;
 
   const quarterLabel = `Q${currentQuarter} ${currentYear}`;
   const quarterRange = {
@@ -32,13 +36,16 @@ export default function Dashboard() {
   })}`;
 
   return (
-    <div className={`min-h-screen ${firmTheme.secondary}`}>
+    <div className="min-h-screen" style={{ backgroundColor: firmTheme?.secondary }}>
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header className="shadow-sm" style={{ backgroundColor: firmTheme?.primary }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
-              <h1 className={`text-2xl font-semibold ${firmTheme.text}`}>
+              {firmTheme?.logoUrl && (
+                <img src={firmTheme.logoUrl} alt="logo" className="h-8 w-8 mr-2" />
+              )}
+              <h1 className="text-2xl font-semibold" style={{ color: firmTheme?.text }}>
                 {user.firm} Commission Dashboard
               </h1>
               <span className="ml-4 px-3 py-1 rounded-md bg-gray-100 text-gray-600 text-sm">
@@ -62,6 +69,13 @@ export default function Dashboard() {
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Reset Data
+              </button>
+              <button
+                onClick={() => setShowSettings(true)}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                <SettingsIcon className="h-4 w-4 mr-2" />
+                Settings
               </button>
               <button
                 onClick={logout}
@@ -181,6 +195,23 @@ export default function Dashboard() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-start mb-4">
+              <h2 className="text-lg font-medium">Firm Settings</h2>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <AdminFirmSettings />
           </div>
         </div>
       )}
