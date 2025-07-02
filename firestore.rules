@@ -15,6 +15,12 @@ service cloud.firestore {
     match /clients/{clientId} {
       allow read, write: if request.auth != null;
     }
+
+    // Allow authenticated users to read and write a firm only if they belong to it
+    match /firms/{firmId} {
+      allow read, write: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.firm == firmId;
+    }
     
     // Allow authenticated users to read settlements
     // Restrict settlement writes so only the firm receiving the commission can
