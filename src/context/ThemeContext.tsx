@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { firmServices } from '../services/firmServices';
-import { defaultFirmThemes } from '../config/themes';
+import { firmThemes } from '../config/themes';
 import type { FirmTheme } from '../types';
 
 interface ThemeContextType {
@@ -21,7 +21,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const loadTheme = async () => {
     if (user) {
       const cfg = await firmServices.getFirmConfig(user.firm);
-      const merged = { ...defaultFirmThemes[user.firm], ...(cfg || {}) };
+      const merged = { ...firmThemes[user.firm], ...(cfg || {}) };
       setTheme(merged);
     }
   };
