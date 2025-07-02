@@ -72,6 +72,14 @@ service cloud.firestore {
     match /clients/{clientId} {
       allow read, write: if request.auth != null;
     }
+
+    // Allow authenticated users to read firm settings
+    // Only the user's own firm document can be updated
+    match /firms/{firmId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        firmId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.firm;
+    }
     
     // Allow authenticated users to read settlements
     // Only the firm eligible to receive a commission can mark it as settled
