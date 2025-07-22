@@ -5,14 +5,7 @@ import { YearProvider } from './context/YearContext';
 import { CommissionProvider } from './context/CommissionContext';
 import { ClientProvider } from './context/ClientContext';
 import { ThemeProvider } from './theme/ThemeProvider';
-import LoginForm from './components/LoginForm';
-import { DashboardLayout } from './components/dashboard/DashboardLayout';
-import { useAuth } from './context/AuthContext';
-
-function AppContent() {
-  const { user } = useAuth();
-  return user ? <DashboardLayout /> : <LoginForm />;
-}
+import { AppRouter } from './components/AppRouter';
 
 function App() {
   return (
@@ -23,7 +16,7 @@ function App() {
             <InvoiceProvider>
               <CommissionProvider>
                 <div className="min-h-screen bg-background text-text">
-                  <AppContent />
+                  <AppRouter />
                 </div>
               </CommissionProvider>
             </InvoiceProvider>

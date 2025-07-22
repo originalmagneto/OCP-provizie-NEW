@@ -22,8 +22,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase services
-const db = getFirestore(app);
+// Initialize Auth first to avoid the auth/invalid-credential error
 const auth = getAuth(app);
+const db = getFirestore(app);
 const storage = getStorage(app);
 
 export { app, db, auth, storage };

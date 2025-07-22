@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useYear } from '../../context/YearContext';
+import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   FileText,
@@ -153,6 +154,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const { user, logout } = useAuth();
   const { currentYear, currentQuarter } = useYear();
+  const location = useLocation();
 
   if (!user) return null;
 
@@ -162,28 +164,32 @@ export function Sidebar({ className = '' }: SidebarProps) {
     {
       icon: <LayoutDashboard size={20} />,
       label: 'Dashboard',
-      href: '#',
-      active: true,
+      href: '/dashboard',
+      active: location.pathname === '/dashboard',
     },
     {
       icon: <FileText size={20} />,
       label: 'Invoices',
-      href: '#',
+      href: '/invoices',
+      active: location.pathname === '/invoices',
     },
     {
       icon: <BarChart2 size={20} />,
       label: 'Analytics',
-      href: '#',
+      href: '/analytics',
+      active: location.pathname === '/analytics',
     },
     {
       icon: <Users size={20} />,
       label: 'Clients',
-      href: '#',
+      href: '/clients',
+      active: location.pathname === '/clients',
     },
     {
       icon: <Settings size={20} />,
       label: 'Settings',
-      href: '#',
+      href: '/settings',
+      active: location.pathname === '/settings',
     },
   ];
 
@@ -236,16 +242,16 @@ export function Sidebar({ className = '' }: SidebarProps) {
         <ul className="space-y-1 px-2">
           {navItems.map((item, index) => (
             <li key={index}>
-              <a
-                href={item.href}
-                className={`flex items-center rounded-md px-3 py-2 transition-colors ${item.active
+              <Link
+                to={item.href}
+                className={`flex items-center rounded-md px-3 py-2 transition-colors cursor-pointer ${item.active
                   ? `${firmTheme.primary} ${firmTheme.text}`
                   : 'text-muted-foreground hover:bg-muted'
                   }`}
               >
                 <span className="mr-3">{item.icon}</span>
                 {!collapsed && <span>{item.label}</span>}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>

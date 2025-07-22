@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
-import { DashboardWithLocalStorage } from './Dashboard';
 import { Sidebar } from '../ui/Sidebar';
 import { useAuth } from '../../context/AuthContext';
+import { useLocation } from 'react-router-dom';
+import { DashboardPage } from '../pages/Dashboard';
+import { InvoicesPage } from '../pages/Invoices';
+import { AnalyticsPage } from '../pages/Analytics';
+import { ClientsPage } from '../pages/Clients';
+import { SettingsPage } from '../pages/Settings';
 
 type Widget = {
   id: string;
@@ -110,6 +115,26 @@ export function DashboardLayout() {
 
   if (!user) return null;
 
+  const location = useLocation();
+  
+  // Determine which component to render based on the current path
+  const renderContent = () => {
+    const path = location.pathname;
+    
+    if (path === '/invoices') {
+      return <InvoicesPage />;
+    } else if (path === '/analytics') {
+      return <AnalyticsPage />;
+    } else if (path === '/clients') {
+      return <ClientsPage />;
+    } else if (path === '/settings') {
+      return <SettingsPage />;
+    } else {
+      // Default to dashboard for '/' and '/dashboard'
+      return <DashboardPage />;
+    }
+  };
+
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar */}
@@ -117,7 +142,7 @@ export function DashboardLayout() {
       
       {/* Main content */}
       <div className="flex-1 overflow-auto">
-        <DashboardWithLocalStorage />
+        {renderContent()}
       </div>
     </div>
   );

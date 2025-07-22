@@ -4,6 +4,13 @@
 
 [build.environment]
   SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
+  VITE_FIREBASE_API_KEY = "AIzaSyBbS-5vNyJpwqSKewlyr5OLpIAYA81FTwI"
+  VITE_FIREBASE_AUTH_DOMAIN = "ocp-provizie.firebaseapp.com"
+  VITE_FIREBASE_PROJECT_ID = "ocp-provizie"
+  VITE_FIREBASE_STORAGE_BUCKET = "ocp-provizie.firebasestorage.app"
+  VITE_FIREBASE_MESSAGING_SENDER_ID = "878739646832"
+  VITE_FIREBASE_APP_ID = "1:878739646832:web:3428443c84c18a95b607b5"
+  VITE_FIREBASE_MEASUREMENT_ID = "G-TVKQZ1D7RJ"
 
 [[redirects]]
   from = "/*"

@@ -1,0 +1,34 @@
+{"users": [
+{
+  "localId": "GE3HDO1Hx4esvqjucgaxLTff66J3",
+  "email": "marian.cuprik@icloud.com",
+  "emailVerified": true,
+  "passwordHash": "MEkzF7Qvurg3IGfR9riQ4XWoVgOpVBOoowBXtmSunmQLa2mPVSuK5RrzScZ6R20GIBDPVvHRa7SHpzmjoF/RlA==",
+  "salt": "H8xWPobG7HgvUA==",
+  "displayName": "Marián Čuprík",
+  "lastSignedInAt": "1751456024731",
+  "createdAt": "1744103245008",
+  "providerUserInfo": []
+},
+{
+  "localId": "O1viEpj0R5UzPbPEQukACnVpJdf1",
+  "email": "marian.cuprik@gmail.com",
+  "emailVerified": false,
+  "passwordHash": "ZUyoeuCZm+S1i9zSKGdyxSlQv3pHLKBOlsQT9GwAV3ogrWznWiU9tRLYTqZlVP3kZT+rAYGA9Z3H0nRmNdAR4w==",
+  "salt": "Yyeya3gG9gXKvQ==",
+  "displayName": "Majo Čuprík",
+  "lastSignedInAt": "1753195064179",
+  "createdAt": "1748778626480",
+  "providerUserInfo": []
+},
+{
+  "localId": "maZuWayrLrNa1W0PQrlUjgu8Nr62",
+  "email": "cuprik@achz.sk",
+  "emailVerified": false,
+  "passwordHash": "l7XYOZzAiKbW1KpDSj3/2+fSoHht7y0IpdHYcqDPTRlB2nCVGLCj1+uasB7lCbPBonWdx1dVheBin1/xh6vl3Q==",
+  "salt": "Pe9+EoMJt77YKQ==",
+  "displayName": "Test 2",
+  "lastSignedInAt": "1751448745515",
+  "createdAt": "1749298230657",
+  "providerUserInfo": []
+}]}
