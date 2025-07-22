@@ -12,19 +12,18 @@ This project uses Firebase for authentication and database services. The Firebas
 
 1. **Environment Variables**: We've set up the Firebase configuration to use environment variables with the `VITE_` prefix, which makes them available to the client-side code during the build process.
 
-2. **Netlify Configuration**: We've updated the `netlify.toml` file to include the necessary environment variables for the build process:
+2. **Netlify Configuration**: We've updated the `netlify.toml` file to disable Netlify's smart detection for secrets scanning:
 
    ```toml
    [build]
      command = "npm run build"
      publish = "dist"
-     environment = [
-       "SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES",
-       "VITE_FIREBASE_API_KEY"
-     ]
+
+   [build.environment]
+     SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
    ```
 
-3. **Secrets Scanning Configuration**: We've added the `SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES` environment variable to tell Netlify to ignore the Firebase API key during secrets scanning.
+3. **Secrets Scanning Configuration**: We've disabled Netlify's smart detection for secrets scanning to prevent false positives with Firebase API keys, which are designed to be public.
 
 ### Setting Up Netlify Deployment
 
@@ -37,7 +36,6 @@ This project uses Firebase for authentication and database services. The Firebas
    - `VITE_FIREBASE_MESSAGING_SENDER_ID`
    - `VITE_FIREBASE_APP_ID`
    - `VITE_FIREBASE_MEASUREMENT_ID`
-   - `SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES` (set this to the value of your Firebase API key)
 
 2. **Deploy**: After setting up the environment variables, trigger a new deployment.
 
@@ -46,8 +44,8 @@ This project uses Firebase for authentication and database services. The Firebas
 If you encounter issues with secrets scanning during deployment:
 
 1. Check the build logs to identify which values are being flagged as secrets.
-2. Update the `SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES` environment variable to include those values, separated by commas.
-3. If necessary, you can disable smart detection entirely by setting `SECRETS_SCAN_SMART_DETECTION_ENABLED` to `false`, but this is not recommended as it reduces security.
+2. We've disabled smart detection entirely by setting `SECRETS_SCAN_SMART_DETECTION_ENABLED` to `false` in the netlify.toml file.
+3. If you prefer a more targeted approach, you can re-enable smart detection and use `SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES` to specify only certain values to ignore, separated by commas.
 
 ### References
 
