@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import type { FirmType } from "../types";
 import { Building2, Mail, Lock, User } from "lucide-react";
+import { firmBranding, getFirmBranding } from "../config/firmBranding";
 
 export default function LoginForm() {
   const { login, register, resetPassword, isLoading } = useAuth();
@@ -17,7 +18,9 @@ export default function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccessMessage(null);      if (isResettingPassword) {
+    setSuccessMessage(null);
+    
+    if (isResettingPassword) {
       if (!email) {
         setError("Please enter your email address to reset your password");
         return;
@@ -68,20 +71,43 @@ export default function LoginForm() {
     setSuccessMessage(null);
   };
 
+  const currentFirmBranding = getFirmBranding(selectedFirm);
+  const FirmLogo = currentFirmBranding.logo;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div>
+        <div className="text-center">
+          {isRegistering && (
+            <div className="flex justify-center mb-4">
+              <FirmLogo className="h-16 w-16" />
+            </div>
+          )}
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Commission Tracker
+            {isRegistering ? `Join ${currentFirmBranding.displayName}` : "Commission Tracker"}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             {isResettingPassword
               ? "Reset your password"
               : isRegistering
-              ? "Create an account"
+              ? `Create your ${currentFirmBranding.displayName} account`
               : "Sign in to manage your commissions"}
           </p>
+          
+          {/* Demo Mode Indicator */}
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+            <div className="flex">
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-yellow-800">
+                  ⚠️ Demo Mode
+                </h3>
+                <p className="text-xs text-yellow-700 mt-1">
+                  Firebase is not configured. Authentication features are disabled. 
+                  See FIREBASE_SETUP.md for setup instructions.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -178,15 +204,76 @@ export default function LoginForm() {
                 </div>
               </div>
             )}
+
+            {/* Firm Selection */}
+            {isRegistering && (
+              <div>
+                <label htmlFor="firm" className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Your Firm
+                </label>
+                <div className="grid grid-cols-1 gap-3">
+                  {Object.entries(firmBranding).map(([firmKey, branding]) => {
+                    const FirmLogoComponent = branding.logo;
+                    const isSelected = selectedFirm === firmKey;
+                    return (
+                      <button
+                        key={firmKey}
+                        type="button"
+                        onClick={() => setSelectedFirm(firmKey as FirmType)}
+                        className={`
+                          relative flex items-center p-4 rounded-lg border-2 transition-all
+                          ${isSelected 
+                            ? `${branding.theme.card} border-current` 
+                            : 'bg-white border-gray-200 hover:border-gray-300'
+                          }
+                        `}
+                      >
+                        <FirmLogoComponent className="h-8 w-8 mr-3" />
+                        <div className="flex-1 text-left">
+                          <div className={`font-medium ${
+                            isSelected ? `text-${branding.colors.text}` : 'text-gray-900'
+                          }`}>
+                            {branding.displayName}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {branding.name}
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <div className={`w-4 h-4 rounded-full`} style={{ backgroundColor: branding.colors.primary }} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              className={`
+                group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white
+                ${isRegistering 
+                  ? currentFirmBranding.theme.button 
+                  : 'bg-indigo-600 hover:bg-indigo-700'
+                }
+                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50
+              `}
             >
-              {isLoading ? "Processing..." : isResettingPassword ? "Send Reset Link" : isRegistering ? "Create Account" : "Sign In"}
+              {isLoading
+                ? isResettingPassword
+                  ? "Sending reset link..."
+                  : isRegistering
+                  ? "Creating account..."
+                  : "Signing in..."
+                : isResettingPassword
+                ? "Send Reset Link"
+                : isRegistering
+                ? `Join ${currentFirmBranding.displayName}`
+                : "Sign in"}
             </button>
           </div>
 

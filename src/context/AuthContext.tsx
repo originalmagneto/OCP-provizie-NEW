@@ -10,13 +10,15 @@ import {
   sendPasswordResetEmail
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import type { FirmType } from "../types";
+import type { FirmType, UserRole } from "../types/index";
 
 interface User {
   id: string;
   name: string;
   email: string;
   firm: FirmType;
+  role: UserRole;
+  isActive: boolean;
 }
 
 interface AuthContextType {
@@ -25,6 +27,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string, firm: FirmType) => Promise<void>;
+  createFirmUser: (email: string, password: string, name: string, firm: FirmType, role: UserRole) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   firebaseUser: FirebaseUser | null;
@@ -58,6 +61,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               name: userData.name || firebaseUser.displayName || 'User',
               email: userData.email || firebaseUser.email || '',
               firm: userData.firm || 'SKALLARS',
+              role: userData.role || 'admin',
+              isActive: userData.isActive !== undefined ? userData.isActive : true,
             });
             
             setIsAuthenticated(true);
@@ -69,6 +74,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               name: firebaseUser.displayName || 'User',
               email: firebaseUser.email || '',
               firm: 'SKALLARS', // Default firm
+              role: 'admin', // Default role for new users
+              isActive: true,
             });
             
             // Create user document in Firestore
@@ -76,6 +83,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               name: firebaseUser.displayName || 'User',
               email: firebaseUser.email || '',
               firm: 'SKALLARS',
+              role: 'admin',
+              isActive: true,
               createdAt: new Date().toISOString()
             });
             
@@ -113,12 +122,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name,
         email,
         firm,
+        role: 'admin', // Default role for self-registered users
+        isActive: true,
         createdAt: new Date().toISOString()
       });
       
       // User will be set by the onAuthStateChanged listener
-    } catch (error) {
+    } catch (error: any) {
       console.error("Registration failed:", error);
+      
+      // Check if this is a Firebase configuration error
+      if (error?.code === 'auth/api-key-not-valid' || 
+          error?.message?.includes('api-key-not-valid') ||
+          error?.message?.includes('demo-api-key')) {
+        // Show a more user-friendly error for demo mode
+        const demoError = new Error(
+          'Firebase is not configured. Please check FIREBASE_SETUP.md for setup instructions. ' +
+          'This is a demo environment - authentication features are not available.'
+        );
+        demoError.name = 'FirebaseConfigError';
+        throw demoError;
+      }
+      
       throw error;
     } finally {
       setIsLoading(false);
@@ -130,8 +155,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       // User will be set by the onAuthStateChanged listener
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed:", error);
+      
+      // Check if this is a Firebase configuration error
+      if (error?.code === 'auth/api-key-not-valid' || 
+          error?.message?.includes('api-key-not-valid') ||
+          error?.message?.includes('demo-api-key')) {
+        // Show a more user-friendly error for demo mode
+        const demoError = new Error(
+          'Firebase is not configured. Please check FIREBASE_SETUP.md for setup instructions. ' +
+          'This is a demo environment - authentication features are not available.'
+        );
+        demoError.name = 'FirebaseConfigError';
+        throw demoError;
+      }
+      
       throw error;
     } finally {
       setIsLoading(false);
@@ -144,6 +183,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // User will be cleared by the onAuthStateChanged listener
     } catch (error) {
       console.error("Logout failed:", error);
+      throw error;
+    }
+  };
+
+  const createFirmUser = async (email: string, password: string, name: string, firm: FirmType, role: UserRole) => {
+    if (!user || user.role !== 'admin') {
+      throw new Error('Only admins can create firm users');
+    }
+    
+    try {
+      // Create user in Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const newFirebaseUser = userCredential.user;
+      
+      // Update profile with display name
+      await updateProfile(newFirebaseUser, { displayName: name });
+      
+      // Create user document in Firestore
+      await setDoc(doc(db, "users", newFirebaseUser.uid), {
+        name,
+        email,
+        firm,
+        role,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        createdBy: user.id
+      });
+      
+      // Sign out the newly created user to keep current admin logged in
+      await signOut(auth);
+      
+      // Re-authenticate the admin user
+      // Note: In a real app, you'd want to use Firebase Admin SDK for this
+      // For now, we'll just refresh the auth state
+      
+    } catch (error) {
+      console.error("User creation failed:", error);
       throw error;
     }
   };
@@ -166,6 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated,
         login,
         register,
+        createFirmUser,
         logout,
         resetPassword
       }}

@@ -1,5 +1,18 @@
 export type FirmType = "SKALLARS" | "MKMs" | "Contax";
 
+export type UserRole = "admin" | "user";
+
+export interface FirmUser {
+  id: string;
+  name: string;
+  email: string;
+  firm: FirmType;
+  role: UserRole;
+  isActive: boolean;
+  createdAt: string;
+  createdBy?: string;
+}
+
 export interface Client {
   id?: string;
   name: string;
@@ -18,6 +31,10 @@ export interface Invoice {
   date: string;
   isPaid: boolean;
   comment?: string;
+  createdBy?: string; // User ID who created the invoice
+  assignedTo?: string; // User ID who is assigned the commission
+  createdByName?: string; // User name for display
+  assignedToName?: string; // User name for display
 }
 
 export interface SettlementStatus {

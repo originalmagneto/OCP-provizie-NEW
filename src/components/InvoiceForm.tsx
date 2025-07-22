@@ -30,7 +30,11 @@ const INITIAL_FORM_DATA = (userFirm: FirmType): FormData => {
   };
 };
 
-export default function InvoiceForm() {
+interface InvoiceFormProps {
+  onSuccess?: () => void;
+}
+
+export default function InvoiceForm({ onSuccess }: InvoiceFormProps = {}) {
   const { user } = useAuth();
   const { addInvoice } = useInvoices();
   const { searchClients } = useClient();
@@ -57,15 +61,7 @@ export default function InvoiceForm() {
       }
 
       // Create invoice without ID - Firebase will generate one
-      // Extract initials from user's name (e.g., Marián Čuprík → MČ)
-      let userInitials = undefined;
-      if (user?.name) {
-        userInitials = user.name
-          .split(' ')
-          .map(part => part[0]?.toUpperCase() || '')
-          .join('');
-      }
-      const invoiceData: Omit<Invoice, 'id'> & { invoicedByUserInitials?: string } = {
+      const invoiceData: Omit<Invoice, 'id'> = {
         clientName: formData.clientName,
         amount,
         commissionPercentage,
@@ -73,7 +69,8 @@ export default function InvoiceForm() {
         invoicedByFirm: user?.firm || "SKALLARS",
         referredByFirm: formData.referredByFirm,
         isPaid: false,
-        ...(userInitials ? { invoicedByUserInitials: userInitials } : {}),
+        createdBy: user?.id,
+        createdByName: user?.name,
       };
 
 
@@ -83,6 +80,13 @@ export default function InvoiceForm() {
 
       await addInvoice(invoiceData);
       setFormData(INITIAL_FORM_DATA(user?.firm || "SKALLARS"));
+
+      // Call onSuccess callback if provided (for modal)
+      if (onSuccess) {
+        setTimeout(() => {
+          onSuccess();
+        }, 1000); // Brief delay to show success message
+      }
     } catch (err) {
       console.error("Error creating invoice:", err);
     }
