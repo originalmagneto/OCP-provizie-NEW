@@ -182,20 +182,13 @@ export function Dashboard({ initialLayout, onLayoutChange }: DashboardProps) {
   // Handle cancel
   const handleCancel = useCallback(() => {
     setIsEditing(false);
-  }, []);
+    setWidgets(Array.isArray(initialLayout) ? initialLayout : []);
+  }, [initialLayout]);
 
-  // Render widget content based on type
+  // Render widget content
   const renderWidgetContent = useCallback((widget: Widget) => {
-    const widgetType = WIDGET_TYPES.find(w => w.id === widget.type);
-    if (!widgetType) {
-      return (
-        <div className="flex h-full items-center justify-center p-4 text-center">
-          <p className="text-sm text-muted-foreground">
-            Widget type "{widget.type}" not found
-          </p>
-        </div>
-      );
-    }
+    const widgetType = WIDGET_TYPES.find(type => type.id === widget.type);
+    if (!widgetType) return null;
     
     const WidgetComponent = widgetType.component;
     return <WidgetComponent className="h-full w-full" {...(widget.data || {})} />;
