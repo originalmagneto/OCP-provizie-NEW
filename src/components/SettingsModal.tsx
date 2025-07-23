@@ -69,6 +69,7 @@ export default function SettingsModal({ isOpen, onClose, user, onSave }: Setting
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   if (!isOpen || !user) return null;
 
@@ -109,28 +110,29 @@ export default function SettingsModal({ isOpen, onClose, user, onSave }: Setting
 
   const handleSave = async () => {
     try {
+      setIsUploadingLogo(true);
+      setUploadError(null);
       let finalSettings = { ...settings };
       
       // Upload logo if a new file was selected
       if (logoFile) {
-        setIsUploadingLogo(true);
         try {
           const logoUrl = await firmServices.uploadLogo(user.firm, logoFile);
           finalSettings.logo = logoUrl;
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error uploading logo:', error);
-          alert('Failed to upload logo. Please try again.');
+          setUploadError(error.message || 'Failed to upload logo');
           return;
-        } finally {
-          setIsUploadingLogo(false);
         }
       }
       
       onSave(finalSettings);
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving settings:', error);
-      alert('Failed to save settings. Please try again.');
+      setUploadError(error.message || 'Failed to save settings');
+    } finally {
+      setIsUploadingLogo(false);
     }
   };
 
@@ -221,6 +223,11 @@ export default function SettingsModal({ isOpen, onClose, user, onSave }: Setting
                       <p className="text-sm text-gray-500 mt-2">Recommended: 200x200px, PNG or SVG</p>
                       {logoFile && (
                         <p className="text-sm text-green-600 mt-1">Selected: {logoFile.name}</p>
+                      )}
+                      {uploadError && (
+                        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-sm text-red-600">{uploadError}</p>
+                        </div>
                       )}
                     </div>
                   </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard,
   FileText,
@@ -17,7 +17,9 @@ import {
 } from 'lucide-react';
 import { getFirmBranding } from '../config/firmBranding';
 import SettingsModal, { type SettingsData } from './SettingsModal';
-import type { FirmType } from '../types';
+import FirmLogo from './FirmLogo';
+import { firmServices } from '../services/firmServices';
+import type { FirmType, FirmTheme } from '../types';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -112,15 +114,38 @@ export default function Sidebar({
   onSettingsChange
 }: SidebarProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [firmTheme, setFirmTheme] = useState<FirmTheme | null>(null);
   
   if (!user) return null;
 
   const firmBranding = getFirmBranding(user.firm as FirmType);
-  const FirmLogo = firmBranding.logo;
+  
+  // Load firm theme on component mount
+  useEffect(() => {
+    const loadFirmTheme = async () => {
+      try {
+        const theme = await firmServices.getFirmConfig(user.firm as FirmType);
+        setFirmTheme(theme);
+      } catch (error) {
+        console.error('Error loading firm theme:', error);
+      }
+    };
+    
+    loadFirmTheme();
+  }, [user.firm]);
 
-  const handleSettingsSave = (settings: SettingsData) => {
+  const handleSettingsSave = async (settings: SettingsData) => {
     if (onSettingsChange) {
       onSettingsChange(settings);
+    }
+    setIsSettingsOpen(false);
+    
+    // Refresh firm theme after settings save
+    try {
+      const updatedTheme = await firmServices.getFirmConfig(user.firm as FirmType);
+      setFirmTheme(updatedTheme);
+    } catch (error) {
+      console.error('Error refreshing firm theme:', error);
     }
   };
 
@@ -133,7 +158,11 @@ export default function Sidebar({
         {!isCollapsed && (
           <div className="flex items-center space-x-3">
             <div className="h-8 w-8 flex-shrink-0">
-              <FirmLogo className="h-full w-full" />
+              <FirmLogo 
+                 firm={user.firm as FirmType} 
+                 className="h-full w-full" 
+                 customTheme={firmTheme || undefined} 
+               />
             </div>
             <div className="min-w-0">
               <h1 className="text-lg font-semibold text-gray-900 truncate">
@@ -146,7 +175,11 @@ export default function Sidebar({
         
         {isCollapsed && (
           <div className="h-10 w-10 flex-shrink-0 flex items-center justify-center">
-            <FirmLogo className="h-8 w-8" />
+            <FirmLogo 
+               firm={user.firm as FirmType} 
+               className="h-8 w-8" 
+               customTheme={firmTheme || undefined} 
+             />
           </div>
         )}
         

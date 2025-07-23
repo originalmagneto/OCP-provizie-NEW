@@ -3,6 +3,11 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
 import type { FirmType } from '../types';
 
+// Check if Firebase is properly configured
+const isDevelopment = import.meta.env.DEV;
+const isFirebaseConfigured = import.meta.env.VITE_FIREBASE_PROJECT_ID && 
+  import.meta.env.VITE_FIREBASE_PROJECT_ID !== 'your-project-id';
+
 export interface ReferralFirm {
   id: string;
   name: string;
@@ -78,17 +83,64 @@ export const referralServices = {
 
   // Upload logo file and return URL
   async uploadLogo(file: File, firmName: string): Promise<string> {
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error('File size must be less than 5MB');
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      throw new Error('File must be an image (JPEG, PNG, GIF, or WebP)');
+    }
+
+    // If Firebase is not configured or in development, use localStorage fallback
+    if (!isFirebaseConfigured || isDevelopment) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const dataUrl = reader.result as string;
+            const storageKey = `referral-logo-${firmName.toLowerCase().replace(/\s+/g, '-')}`;
+            localStorage.setItem(storageKey, dataUrl);
+            resolve(`localStorage:${storageKey}`);
+          } catch (error) {
+            reject(new Error('Failed to save logo to local storage'));
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+      });
+    }
+
     try {
       const fileExtension = file.name.split('.').pop();
-      const fileName = `${firmName.toLowerCase().replace(/\s+/g, '-')}-logo.${fileExtension}`;
+      const timestamp = Date.now();
+      const fileName = `${firmName.toLowerCase().replace(/\s+/g, '-')}-${timestamp}.${fileExtension}`;
       const logoRef = ref(storage, `referral-logos/${fileName}`);
       
       await uploadBytes(logoRef, file);
       const downloadURL = await getDownloadURL(logoRef);
       return downloadURL;
-    } catch (error) {
-      console.error('Error uploading logo:', error);
-      throw error;
+    } catch (error: any) {
+      console.error('Firebase Storage upload failed:', error);
+      
+      // Fallback to localStorage if Firebase fails
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const dataUrl = reader.result as string;
+            const storageKey = `referral-logo-${firmName.toLowerCase().replace(/\s+/g, '-')}`;
+            localStorage.setItem(storageKey, dataUrl);
+            resolve(`localStorage:${storageKey}`);
+          } catch (localError) {
+            reject(new Error('Both Firebase and localStorage upload failed'));
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read file for fallback'));
+        reader.readAsDataURL(file);
+      });
     }
   },
 

@@ -20,6 +20,7 @@ import {
 import { getFirmBranding } from '../config/firmBranding';
 import { useInvoices } from '../context/InvoiceContext';
 import { referralServices, type ReferralFirm as ServiceReferralFirm } from '../services/referralServices';
+import { resolveLogo } from '../utils/logoUtils';
 import type { FirmType } from '../types';
 
 interface ReferralOverviewProps {
@@ -338,10 +339,18 @@ export default function ReferralOverview({ user }: ReferralOverviewProps) {
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
                         {firm.logo ? (
-                          <img src={firm.logo} alt={firm.name} className="w-8 h-8 rounded" />
-                        ) : (
-                          <Building className="h-5 w-5 text-gray-400" />
-                        )}
+                          <img 
+                            src={resolveLogo(firm.logo) || firm.logo} 
+                            alt={firm.name} 
+                            className="w-8 h-8 rounded object-contain" 
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              target.nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                        ) : null}
+                        <Building className={`h-5 w-5 text-gray-400 ${firm.logo ? 'hidden' : ''}`} />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-900">{firm.name}</p>
@@ -527,10 +536,18 @@ export default function ReferralOverview({ user }: ReferralOverviewProps) {
                   <div className="flex items-center space-x-4">
                     <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
                       {newFirm.logo ? (
-                        <img src={newFirm.logo} alt="Logo" className="w-12 h-12 rounded object-cover" />
-                      ) : (
-                        <Image className="h-6 w-6 text-gray-400" />
-                      )}
+                        <img 
+                          src={resolveLogo(newFirm.logo) || newFirm.logo} 
+                          alt="Logo" 
+                          className="w-12 h-12 rounded object-contain" 
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            target.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <Image className={`h-6 w-6 text-gray-400 ${newFirm.logo ? 'hidden' : ''}`} />
                     </div>
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center space-x-2">

@@ -1,0 +1,26 @@
+rules_version = '2';
+
+// Craft rules based on data in your Firestore database
+// allow write: if firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow authenticated users to upload and read logos
+    match /logos/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Allow authenticated users to upload and read referral logos
+    match /referral-logos/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Allow public read access to logos (for display purposes)
+    match /logos/{allPaths=**} {
+      allow read;
+    }
+    
+    match /referral-logos/{allPaths=**} {
+      allow read;
+    }
+  }
+}
