@@ -131,7 +131,7 @@ export default function LoginForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+      <div className="max-w-md w-full space-y-8" style={{ minHeight: 'auto', overflow: 'visible' }}>
         <div className="text-center">
           {isRegistering && (
             <div className="flex justify-center mb-4">
@@ -312,10 +312,10 @@ export default function LoginForm() {
               type="submit"
               disabled={isLoading || !isFirebaseConfigured()}
               className={`
-                group relative w-full flex justify-center py-3 px-6 border border-transparent text-sm font-medium rounded-md text-white
+                group relative w-full flex justify-center py-3 px-6 border border-transparent text-sm font-medium rounded-md
                 ${isRegistering 
-                  ? currentFirmBranding.theme.button 
-                  : 'bg-indigo-600 hover:bg-indigo-700'
+                  ? `${currentFirmBranding.theme.button.primary.bg} ${currentFirmBranding.theme.button.primary.text} ${currentFirmBranding.theme.button.primary.hover}` 
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white'
                 }
                 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50
               `}
