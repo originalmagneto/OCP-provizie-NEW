@@ -55,7 +55,7 @@ export default function CompactQuarterlyOverview() {
             toReceive: 0,
             toPay: 0,
             netBalance: 0,
-            isSettled: isQuarterSettled(quarterKey),
+            isSettled: isQuarterSettled(quarterKey, userFirm),
             status: 'neutral'
           };
         }
@@ -63,14 +63,14 @@ export default function CompactQuarterlyOverview() {
         const quarterData = data[quarterKey];
         const commissionAmount = (invoice.amount * (invoice.commissionPercentage || 0)) / 100;
 
-        // Commission to receive
+        // Commission to pay (when another firm refers to us and we invoice)
         if (invoice.referredByFirm && invoice.referredByFirm !== userFirm && invoice.invoicedByFirm === userFirm) {
-          quarterData.toReceive += commissionAmount;
+          quarterData.toPay += commissionAmount;
         }
 
-        // Commission to pay
+        // Commission to receive (when we refer to another firm and they invoice)
         if (invoice.referredByFirm === userFirm && invoice.invoicedByFirm !== userFirm) {
-          quarterData.toPay += commissionAmount;
+          quarterData.toReceive += commissionAmount;
         }
       });
 

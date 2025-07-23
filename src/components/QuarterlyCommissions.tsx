@@ -5,6 +5,7 @@ import { useCommissions } from "../context/CommissionContext";
 import { Euro, FileText, TrendingUp, Calendar } from "lucide-react";
 import type { FirmType } from "../types";
 import { QuarterlyCommissionCard } from "./QuarterlyCommissionCard";
+import QuarterlyCommissionSummary from "./QuarterlyCommissionSummary";
 
 interface QuarterlyData {
   quarter: string;
@@ -13,6 +14,7 @@ interface QuarterlyData {
     amount: number;
     isSettled: boolean;
     invoiceIds: string[];
+    type: 'receive' | 'pay';
   }[];
 }
 
@@ -30,10 +32,14 @@ function QuarterlyCommissions() {
 
     const data: { [key: string]: QuarterlyData } = {};
 
-    // Filter for paid invoices where the current user's firm is the referrer
+    // Filter for paid invoices where commissions are involved
     const eligibleInvoices = invoices.filter(invoice => 
-      invoice.isPaid && 
-      invoice.referredByFirm === user.firm
+      invoice.isPaid && (
+        // Commissions to receive: user's firm is the referrer
+        invoice.referredByFirm === user.firm ||
+        // Commissions to pay: user's firm is the invoicing firm and someone else referred
+        (invoice.invoicedByFirm === user.firm && invoice.referredByFirm && invoice.referredByFirm !== user.firm)
+      )
     );
 
     // Group by quarter and calculate commissions
@@ -50,12 +56,29 @@ function QuarterlyCommissions() {
         };
       }
 
-      // Calculate commission (10% of paid invoice)
-      const commission = invoice.amount * 0.1;
+      // Calculate commission based on commission percentage or default 10%
+      const commissionPercentage = invoice.commissionPercentage || 10;
+      const commission = (invoice.amount * commissionPercentage) / 100;
       
-      // Find or create commission entry for the invoicing firm
+      // Determine the firm and commission type
+       let targetFirm: FirmType;
+       let commissionType: 'receive' | 'pay';
+       
+       if (invoice.invoicedByFirm === user.firm && invoice.referredByFirm && invoice.referredByFirm !== user.firm) {
+         // When someone else referred the client to user's firm, user owes commission to the referring firm
+         targetFirm = invoice.referredByFirm;
+         commissionType = 'pay';
+       } else if (invoice.referredByFirm === user.firm && invoice.invoicedByFirm !== user.firm) {
+         // When user's firm referred the client, they receive commission from the invoicing firm
+         targetFirm = invoice.invoicedByFirm;
+         commissionType = 'receive';
+       } else {
+         return; // Skip if no commission scenario applies
+       }
+      
+      // Find or create commission entry
       let commissionEntry = data[quarterKey].eligibleCommissions.find(
-        c => c.fromFirm === invoice.invoicedByFirm
+        c => c.fromFirm === targetFirm
       );
 
       if (commissionEntry) {
@@ -63,10 +86,11 @@ function QuarterlyCommissions() {
         commissionEntry.invoiceIds.push(invoice.id);
       } else {
         data[quarterKey].eligibleCommissions.push({
-          fromFirm: invoice.invoicedByFirm,
+          fromFirm: targetFirm,
           amount: commission,
-          isSettled: isQuarterSettled(`${quarterKey}-${invoice.invoicedByFirm}`),
-          invoiceIds: [invoice.id]
+          isSettled: isQuarterSettled(`${quarterKey}-${targetFirm}`, targetFirm),
+          invoiceIds: [invoice.id],
+          type: commissionType
         });
       }
     });
@@ -76,7 +100,7 @@ function QuarterlyCommissions() {
 
   const handleSettleCommission = (fromFirm: FirmType) => {
     if (!user?.firm) return;
-    settleQuarter(`${selectedQuarter}-${fromFirm}`, user.firm);
+    settleQuarter(`${selectedQuarter}-${fromFirm}`, user.firm as FirmType);
   };
 
   const currentQuarterData = quarterlyData.find(
@@ -92,9 +116,12 @@ function QuarterlyCommissions() {
 
   return (
     <div className="space-y-8">
+      {/* Commission Summary Overview */}
+      <QuarterlyCommissionSummary />
+      
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">
-          Eligible Commissions
+          Detailed Commission Breakdown
         </h2>
         <select
           value={selectedQuarter}
@@ -116,19 +143,33 @@ function QuarterlyCommissions() {
       ) : (
         <div className="grid gap-6">
           {currentQuarterData.eligibleCommissions.map((commission) => (
-            <div key={commission.fromFirm} className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+            <div key={`${commission.fromFirm}-${commission.type}`} className={`bg-white rounded-xl shadow-sm p-6 border-2 ${
+              commission.type === 'receive' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+            }`}>
               <div className="space-y-4">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
-                      Commission from {commission.fromFirm}
+                      {commission.type === 'receive' 
+                        ? `Commission from ${commission.fromFirm}` 
+                        : `Commission to ${commission.fromFirm}`
+                      }
                     </h3>
                     <p className="text-sm text-gray-500">
                       Based on {commission.invoiceIds.length} paid invoice{commission.invoiceIds.length !== 1 ? 's' : ''}
                     </p>
+                    <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-2 ${
+                      commission.type === 'receive' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {commission.type === 'receive' ? 'To Receive' : 'To Pay'}
+                    </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-semibold text-emerald-600">
+                    <p className={`text-lg font-semibold ${
+                      commission.type === 'receive' ? 'text-green-600' : 'text-red-600'
+                    }`}>
                       {new Intl.NumberFormat('en-US', {
                         style: 'currency',
                         currency: 'EUR',
@@ -141,14 +182,22 @@ function QuarterlyCommissions() {
 
                 <div className="flex justify-end">
                   {commission.isSettled ? (
-                    <div className="flex items-center text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg">
+                    <div className={`flex items-center px-3 py-2 rounded-lg ${
+                      commission.type === 'receive' 
+                        ? 'text-green-600 bg-green-100' 
+                        : 'text-red-600 bg-red-100'
+                    }`}>
                       <TrendingUp className="w-4 h-4 mr-2" />
                       <span className="text-sm font-medium">Commission Settled</span>
                     </div>
                   ) : (
                     <button
                       onClick={() => handleSettleCommission(commission.fromFirm)}
-                      className="flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      className={`flex items-center px-4 py-2 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                        commission.type === 'receive'
+                          ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
+                          : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+                      }`}
                     >
                       Mark as Settled
                     </button>

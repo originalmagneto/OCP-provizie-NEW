@@ -100,7 +100,14 @@ export default function MainContent({
             )}
 
             {/* Notifications */}
-            <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+            <button 
+              className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              onClick={() => {
+                // Show notification dropdown or modal
+                alert('Notifications:\n\n• Commission settlement due for Q3 2024\n• 3 pending invoice payments\n• New referral from Partner Firm');
+              }}
+              title="View notifications"
+            >
               <Bell className="h-5 w-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
@@ -146,7 +153,7 @@ export function HeaderActionButton({
   variant?: 'primary' | 'secondary';
   firmBranding?: any;
 }) {
-  const baseClasses = "flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2";
+  const baseClasses = "flex items-center justify-center space-x-1.5 px-3 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 min-w-0";
   const variantClasses = variant === 'primary' && firmBranding
     ? `${firmBranding.theme.button.primary.bg} ${firmBranding.theme.button.primary.text} ${firmBranding.theme.button.primary.hover} focus:ring-2 focus:ring-offset-2 shadow-sm`
     : variant === 'primary'
@@ -157,9 +164,10 @@ export function HeaderActionButton({
     <button 
       onClick={onClick}
       className={`${baseClasses} ${variantClasses}`}
+      title={label}
     >
-      {icon}
-      <span className="text-sm">{label}</span>
+      <span className="flex-shrink-0">{icon}</span>
+      <span className="text-xs font-medium truncate">{label}</span>
     </button>
   );
 }

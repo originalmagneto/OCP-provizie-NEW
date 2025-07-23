@@ -145,7 +145,7 @@ export default function Dashboard() {
         showFilters={selectedTab === 1 || selectedTab === 5}
         customSettings={customSettings}
         actions={
-          <>
+          <div className="flex items-center space-x-2">
             <HeaderActionButton
               icon={<Plus className="h-4 w-4" />}
               label="Create Invoice"
@@ -155,8 +155,11 @@ export default function Dashboard() {
             />
             <HeaderActionButton
               icon={<Download className="h-4 w-4" />}
-              label="Export"
-              onClick={() => {}}
+              label="Export Data"
+              onClick={() => {
+                // Export functionality placeholder
+                alert('Export functionality will be implemented here');
+              }}
               variant="secondary"
             />
             <HeaderActionButton
@@ -165,7 +168,7 @@ export default function Dashboard() {
               onClick={() => setShowResetConfirmation(true)}
               variant="secondary"
             />
-          </>
+          </div>
         }
       >
         <div style={customSettings?.colors ? {

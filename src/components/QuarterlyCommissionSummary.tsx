@@ -65,33 +65,33 @@ export default function QuarterlyCommissionSummary() {
               firms: {} as Record<FirmType, { amount: number; count: number; isPaid: boolean }>
             },
             netBalance: 0,
-            isSettled: isQuarterSettled(quarterKey)
+            isSettled: isQuarterSettled(quarterKey, userFirm)
           };
         }
 
         const quarterData = data[quarterKey];
         const commissionAmount = (invoice.amount * (invoice.commissionPercentage || 0)) / 100;
 
-        // Commission to receive (when user's firm is referred by another firm)
+        // Commission to pay (when another firm refers to user's firm)
         if (invoice.referredByFirm && invoice.referredByFirm !== userFirm && invoice.invoicedByFirm === userFirm) {
-          const fromFirm = invoice.referredByFirm;
-          if (!quarterData.toReceive.firms[fromFirm]) {
-            quarterData.toReceive.firms[fromFirm] = { amount: 0, count: 0, isPaid: false };
-          }
-          quarterData.toReceive.firms[fromFirm].amount += commissionAmount;
-          quarterData.toReceive.firms[fromFirm].count += 1;
-          quarterData.toReceive.total += commissionAmount;
-        }
-
-        // Commission to pay (when user's firm refers to another firm)
-        if (invoice.referredByFirm === userFirm && invoice.invoicedByFirm !== userFirm) {
-          const toFirm = invoice.invoicedByFirm;
+          const toFirm = invoice.referredByFirm;
           if (!quarterData.toPay.firms[toFirm]) {
             quarterData.toPay.firms[toFirm] = { amount: 0, count: 0, isPaid: false };
           }
           quarterData.toPay.firms[toFirm].amount += commissionAmount;
           quarterData.toPay.firms[toFirm].count += 1;
           quarterData.toPay.total += commissionAmount;
+        }
+
+        // Commission to receive (when user's firm refers to another firm)
+        if (invoice.referredByFirm === userFirm && invoice.invoicedByFirm !== userFirm) {
+          const fromFirm = invoice.invoicedByFirm;
+          if (!quarterData.toReceive.firms[fromFirm]) {
+            quarterData.toReceive.firms[fromFirm] = { amount: 0, count: 0, isPaid: false };
+          }
+          quarterData.toReceive.firms[fromFirm].amount += commissionAmount;
+          quarterData.toReceive.firms[fromFirm].count += 1;
+          quarterData.toReceive.total += commissionAmount;
         }
       });
 
@@ -194,8 +194,9 @@ export default function QuarterlyCommissionSummary() {
 
       {/* Quarterly Breakdown */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">Recent Quarters</h3>
-        {quarterlyData.slice(0, 4).map((quarter) => (
+        <h3 className="text-lg font-semibold text-gray-900 mb-3">All Quarters</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {quarterlyData.map((quarter) => (
           <div key={quarter.quarterKey} className="bg-white rounded-lg p-4 border border-gray-200">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-3">
@@ -265,15 +266,8 @@ export default function QuarterlyCommissionSummary() {
             </div>
           </div>
         ))}
-      </div>
-
-      {quarterlyData.length > 4 && (
-        <div className="text-center mt-4">
-          <button className={`text-sm ${firmBranding.theme.button} px-4 py-2 rounded-md`}>
-            View All Quarters ({quarterlyData.length})
-          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }
