@@ -10,6 +10,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { getFirmBranding } from '../config/firmBranding';
+import { firmServices } from '../services/firmServices';
 import type { FirmType } from '../types';
 
 interface SettingsModalProps {
@@ -66,6 +67,8 @@ export default function SettingsModal({ isOpen, onClose, user, onSave }: Setting
     dashboardCards: defaultDashboardCards
   });
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
 
   if (!isOpen || !user) return null;
 
@@ -74,11 +77,11 @@ export default function SettingsModal({ isOpen, onClose, user, onSave }: Setting
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setLogoFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
         setLogoPreview(result);
-        setSettings(prev => ({ ...prev, logo: result }));
       };
       reader.readAsDataURL(file);
     }
@@ -104,9 +107,31 @@ export default function SettingsModal({ isOpen, onClose, user, onSave }: Setting
     }));
   };
 
-  const handleSave = () => {
-    onSave(settings);
-    onClose();
+  const handleSave = async () => {
+    try {
+      let finalSettings = { ...settings };
+      
+      // Upload logo if a new file was selected
+      if (logoFile) {
+        setIsUploadingLogo(true);
+        try {
+          const logoUrl = await firmServices.uploadLogo(user.firm, logoFile);
+          finalSettings.logo = logoUrl;
+        } catch (error) {
+          console.error('Error uploading logo:', error);
+          alert('Failed to upload logo. Please try again.');
+          return;
+        } finally {
+          setIsUploadingLogo(false);
+        }
+      }
+      
+      onSave(finalSettings);
+      onClose();
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert('Failed to save settings. Please try again.');
+    }
   };
 
   const handleReset = () => {
@@ -178,17 +203,25 @@ export default function SettingsModal({ isOpen, onClose, user, onSave }: Setting
                       )}
                     </div>
                     <div>
-                      <label className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors">
+                      <label className={`inline-flex items-center px-4 py-2 rounded-lg transition-colors ${
+                        isUploadingLogo 
+                          ? 'bg-gray-400 cursor-not-allowed' 
+                          : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
+                      } text-white`}>
                         <Upload className="h-4 w-4 mr-2" />
-                        Upload New Logo
+                        {isUploadingLogo ? 'Uploading...' : 'Upload New Logo'}
                         <input
                           type="file"
                           accept="image/*"
                           onChange={handleLogoUpload}
                           className="hidden"
+                          disabled={isUploadingLogo}
                         />
                       </label>
                       <p className="text-sm text-gray-500 mt-2">Recommended: 200x200px, PNG or SVG</p>
+                      {logoFile && (
+                        <p className="text-sm text-green-600 mt-1">Selected: {logoFile.name}</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -441,10 +474,15 @@ export default function SettingsModal({ isOpen, onClose, user, onSave }: Setting
             </button>
             <button
               onClick={handleSave}
-              className="flex items-center space-x-2 px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              disabled={isUploadingLogo}
+              className={`flex items-center space-x-2 px-8 py-3 rounded-lg transition-colors font-medium ${
+                isUploadingLogo
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700'
+              } text-white`}
             >
               <Save className="h-4 w-4" />
-              <span>Save Changes</span>
+              <span>{isUploadingLogo ? 'Saving...' : 'Save Changes'}</span>
             </button>
           </div>
         </div>
