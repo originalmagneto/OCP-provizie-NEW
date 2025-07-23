@@ -12,7 +12,8 @@ import {
   ChevronRight,
   Users,
   Calendar,
-  DollarSign
+  DollarSign,
+  UserPlus
 } from 'lucide-react';
 import { getFirmBranding } from '../config/firmBranding';
 import SettingsModal, { type SettingsData } from './SettingsModal';
@@ -73,6 +74,18 @@ const getNavigationItems = (userRole?: string): NavItem[] => {
       name: 'Analytics',
       icon: <BarChart3 className="h-5 w-5" />,
       color: 'text-indigo-600'
+    },
+    {
+      id: 7,
+      name: 'Calendar View',
+      icon: <Calendar className="h-5 w-5" />,
+      color: 'text-teal-600'
+    },
+    {
+      id: 8,
+      name: 'Referral Overview',
+      icon: <UserPlus className="h-5 w-5" />,
+      color: 'text-emerald-600'
     }
   ];
 
@@ -116,14 +129,14 @@ export default function Sidebar({
       isCollapsed ? 'w-16' : 'w-64'
     } flex flex-col h-screen`}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+      <div className={`flex items-center border-b border-gray-200 ${isCollapsed ? 'flex-col p-2 space-y-2' : 'justify-between p-4'}`}>
         {!isCollapsed && (
           <div className="flex items-center space-x-3">
-            <div className="h-8 w-8">
+            <div className="h-8 w-8 flex-shrink-0">
               <FirmLogo className="h-full w-full" />
             </div>
-            <div>
-              <h1 className="text-lg font-semibold text-gray-900">
+            <div className="min-w-0">
+              <h1 className="text-lg font-semibold text-gray-900 truncate">
                 {firmBranding.displayName}
               </h1>
               <p className="text-xs text-gray-500">Commission Portal</p>
@@ -132,46 +145,27 @@ export default function Sidebar({
         )}
         
         {isCollapsed && (
-          <div className="h-8 w-8 mx-auto">
-            <FirmLogo className="h-full w-full" />
+          <div className="h-10 w-10 flex-shrink-0 flex items-center justify-center">
+            <FirmLogo className="h-8 w-8" />
           </div>
         )}
         
         <button
           onClick={onToggle}
-          className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+          className={`p-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0 ${isCollapsed ? 'w-full' : ''}`}
         >
           {isCollapsed ? (
-            <ChevronRight className="h-4 w-4 text-gray-600" />
+            <ChevronRight className="h-4 w-4 text-gray-600 mx-auto" />
           ) : (
             <ChevronLeft className="h-4 w-4 text-gray-600" />
           )}
         </button>
       </div>
 
-      {/* User Info */}
-      {!isCollapsed && (
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${
-              firmBranding.theme.button.primary.bg
-            }`}>
-              {user.name.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {user.name}
-              </p>
-              <p className="text-xs text-gray-500 truncate">
-                {user.email}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-2 space-y-1">
         {getNavigationItems(user.role).map((item) => {
           const isActive = activeTab === item.id;
           
@@ -179,7 +173,11 @@ export default function Sidebar({
             <button
               key={item.id}
               onClick={() => onTabChange(item.id)}
-              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+              className={`w-full flex items-center transition-all duration-200 group rounded-lg ${
+                isCollapsed 
+                  ? 'justify-center p-3 h-12 w-12 mx-auto' 
+                  : 'space-x-3 px-4 py-3'
+              } ${
                 isActive
                   ? `${firmBranding.theme.button.primary.bg} ${firmBranding.theme.button.primary.text} shadow-sm`
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
@@ -194,11 +192,11 @@ export default function Sidebar({
               
               {!isCollapsed && (
                 <>
-                  <span className="flex-1 text-left text-sm font-medium">
+                  <span className="flex-1 text-left text-sm font-medium whitespace-nowrap overflow-hidden">
                     {item.name}
                   </span>
                   {item.badge && (
-                    <span className="bg-red-100 text-red-600 text-xs font-medium px-2 py-0.5 rounded-full">
+                    <span className="bg-red-100 text-red-600 text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0">
                       {item.badge}
                     </span>
                   )}
@@ -245,7 +243,7 @@ export default function Sidebar({
         {!isCollapsed && (
           <button 
             onClick={() => setIsSettingsOpen(true)}
-            className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
           >
             <Settings className="h-5 w-5" />
             <span className="text-sm font-medium">Settings</span>
@@ -254,7 +252,7 @@ export default function Sidebar({
         
         <button
           onClick={onLogout}
-          className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors ${
+          className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors ${
             isCollapsed ? 'justify-center' : ''
           }`}
           title={isCollapsed ? 'Sign Out' : undefined}

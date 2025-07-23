@@ -6,6 +6,7 @@ import { Euro } from "lucide-react";
 import type { FirmType, Invoice } from "../types";
 import CustomDropdown from "./common/CustomDropdown";
 import AutocompleteInput from "./common/AutocompleteInput";
+import { referralServices } from "../services/referralServices";
 
 interface FormData {
   clientName: string;
@@ -69,8 +70,7 @@ export default function InvoiceForm({ onSuccess }: InvoiceFormProps = {}) {
         invoicedByFirm: user?.firm || "SKALLARS",
         referredByFirm: formData.referredByFirm,
         isPaid: false,
-        createdBy: user?.id,
-        createdByName: user?.name,
+        invoicedByUserInitials: user?.name?.split(' ').map(n => n[0]).join('') || '',
       };
 
 
@@ -79,6 +79,40 @@ export default function InvoiceForm({ onSuccess }: InvoiceFormProps = {}) {
       }
 
       await addInvoice(invoiceData);
+      
+      // Auto-create referral firm if it's a new firm
+      if (formData.referredByFirm) {
+        try {
+          const firmExists = await referralServices.checkReferralFirmExists(user?.firm || "SKALLARS", formData.referredByFirm);
+          if (!firmExists) {
+            const newReferralFirm = {
+              id: formData.referredByFirm.toLowerCase().replace(/\s+/g, '-'),
+              name: formData.referredByFirm,
+              website: `https://${formData.referredByFirm.toLowerCase().replace(/\s+/g, '')}.com`,
+              contactPerson: 'Contact Person',
+              contactEmail: `contact@${formData.referredByFirm.toLowerCase().replace(/\s+/g, '')}.com`,
+              contactPhone: '+1 (555) 123-4567',
+              referralDate: formData.invoiceDate,
+              firstWorkDate: formData.invoiceDate,
+              totalInvoiced: amount,
+              totalCommissionsPaid: (amount * commissionPercentage) / 100,
+              referredBy: user?.name || '',
+              status: 'active' as const,
+              notes: 'Auto-created from invoice',
+              createdBy: user?.id,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+            
+            await referralServices.autoCreateReferralFirm(formData.referredByFirm, user?.id || '', formData.invoiceDate);
+            console.log(`Auto-created referral firm: ${formData.referredByFirm}`);
+          }
+        } catch (error) {
+          console.error('Failed to auto-create referral firm:', error);
+          // Don't fail the invoice creation if referral firm creation fails
+        }
+      }
+      
       setFormData(INITIAL_FORM_DATA(user?.firm || "SKALLARS"));
 
       // Call onSuccess callback if provided (for modal)

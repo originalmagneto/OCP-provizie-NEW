@@ -1,5 +1,18 @@
 export type FirmType = "SKALLARS" | "MKMs" | "Contax";
 
+export type UserRole = "admin" | "user";
+
+export interface FirmUser {
+  id: string;
+  name: string;
+  email: string;
+  firm: FirmType;
+  role: UserRole;
+  isActive: boolean;
+  createdAt: string;
+  createdBy?: string;
+}
+
 export interface Invoice {
   id: string;
   clientName: string;

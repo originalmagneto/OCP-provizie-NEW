@@ -40,7 +40,7 @@ export default function StatisticsOverview() {
       commissionPayable: 0,
     };
 
-    let pending = [];
+    let pending: typeof invoices = [];
     
     invoices.forEach((invoice) => {
       const date = new Date(invoice.date);
@@ -91,9 +91,10 @@ export default function StatisticsOverview() {
   });
 
   const currentQuarterKey = `${currentQuarter.year}-Q${currentQuarter.quarter}`;
-  const isCurrentQuarterSettled = isQuarterSettled(currentQuarterKey);
-
+  
   if (!user?.firm) return null;
+  
+  const isCurrentQuarterSettled = isQuarterSettled(currentQuarterKey, user.firm);
 
   return (
     <div className="space-y-6 p-6">
@@ -114,12 +115,12 @@ export default function StatisticsOverview() {
       {/* Main Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Create New Invoice Card */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-xl shadow-sm p-7 border border-gray-200">
+          <div className="flex items-center justify-between mb-5">
             <h2 className="text-xl font-semibold text-gray-900">Create New Invoice</h2>
             <PlusCircle className="w-8 h-8 text-indigo-600" />
           </div>
-          <button className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors">
+          <button className="w-full bg-indigo-600 text-white py-3 px-5 rounded-lg hover:bg-indigo-700 transition-colors">
             Create Invoice
           </button>
         </div>

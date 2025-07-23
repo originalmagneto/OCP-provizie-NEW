@@ -118,10 +118,10 @@ export default function SettingsModal({ isOpen, onClose, user, onSave }: Setting
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
           <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
           <button
             onClick={onClose}
@@ -131,9 +131,9 @@ export default function SettingsModal({ isOpen, onClose, user, onSave }: Setting
           </button>
         </div>
 
-        <div className="flex h-[calc(90vh-120px)]">
+        <div className="flex flex-1 min-h-0">
           {/* Sidebar */}
-          <div className="w-64 bg-gray-50 border-r border-gray-200 p-4">
+          <div className="w-64 bg-gray-50 border-r border-gray-200 p-4 flex-shrink-0">
             <nav className="space-y-2">
               <button
                 onClick={() => setActiveTab('appearance')}
@@ -196,56 +196,136 @@ export default function SettingsModal({ isOpen, onClose, user, onSave }: Setting
                 {/* Colors Section */}
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Interface Colors</h3>
+                  
+                  {/* Color Presets */}
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Quick Color Themes</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {[
+                        { name: 'Blue', primary: '#3B82F6', secondary: '#6B7280', accent: '#10B981' },
+                        { name: 'Purple', primary: '#8B5CF6', secondary: '#6B7280', accent: '#F59E0B' },
+                        { name: 'Green', primary: '#10B981', secondary: '#6B7280', accent: '#3B82F6' },
+                        { name: 'Red', primary: '#EF4444', secondary: '#6B7280', accent: '#8B5CF6' },
+                        { name: 'Orange', primary: '#F97316', secondary: '#6B7280', accent: '#10B981' },
+                        { name: 'Pink', primary: '#EC4899', secondary: '#6B7280', accent: '#3B82F6' },
+                        { name: 'Indigo', primary: '#6366F1', secondary: '#6B7280', accent: '#10B981' },
+                        { name: 'Teal', primary: '#14B8A6', secondary: '#6B7280', accent: '#F59E0B' }
+                      ].map((theme) => (
+                        <button
+                          key={theme.name}
+                          onClick={() => {
+                            setSettings(prev => ({
+                              ...prev,
+                              colors: {
+                                primary: theme.primary,
+                                secondary: theme.secondary,
+                                accent: theme.accent
+                              }
+                            }));
+                          }}
+                          className="p-3 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors group"
+                        >
+                          <div className="flex items-center space-x-2 mb-2">
+                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: theme.primary }}></div>
+                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: theme.secondary }}></div>
+                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: theme.accent }}></div>
+                          </div>
+                          <span className="text-xs font-medium text-gray-700 group-hover:text-gray-900">{theme.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Custom Color Pickers */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Primary Color</label>
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="color"
-                          value={settings.colors.primary}
-                          onChange={(e) => handleColorChange('primary', e.target.value)}
-                          className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
-                        />
-                        <input
-                          type="text"
-                          value={settings.colors.primary}
-                          onChange={(e) => handleColorChange('primary', e.target.value)}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="color"
+                            value={settings.colors.primary}
+                            onChange={(e) => handleColorChange('primary', e.target.value)}
+                            className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={settings.colors.primary}
+                            onChange={(e) => handleColorChange('primary', e.target.value)}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                            placeholder="#3B82F6"
+                          />
+                        </div>
+                        <div className="grid grid-cols-5 gap-1">
+                          {['#3B82F6', '#8B5CF6', '#10B981', '#EF4444', '#F97316'].map((color) => (
+                            <button
+                              key={color}
+                              onClick={() => handleColorChange('primary', color)}
+                              className="w-8 h-8 rounded border border-gray-200 hover:scale-110 transition-transform"
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
+                        </div>
                       </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Secondary Color</label>
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="color"
-                          value={settings.colors.secondary}
-                          onChange={(e) => handleColorChange('secondary', e.target.value)}
-                          className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
-                        />
-                        <input
-                          type="text"
-                          value={settings.colors.secondary}
-                          onChange={(e) => handleColorChange('secondary', e.target.value)}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="color"
+                            value={settings.colors.secondary}
+                            onChange={(e) => handleColorChange('secondary', e.target.value)}
+                            className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={settings.colors.secondary}
+                            onChange={(e) => handleColorChange('secondary', e.target.value)}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                            placeholder="#6B7280"
+                          />
+                        </div>
+                        <div className="grid grid-cols-5 gap-1">
+                          {['#6B7280', '#4B5563', '#374151', '#1F2937', '#111827'].map((color) => (
+                            <button
+                              key={color}
+                              onClick={() => handleColorChange('secondary', color)}
+                              className="w-8 h-8 rounded border border-gray-200 hover:scale-110 transition-transform"
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
+                        </div>
                       </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Accent Color</label>
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="color"
-                          value={settings.colors.accent}
-                          onChange={(e) => handleColorChange('accent', e.target.value)}
-                          className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
-                        />
-                        <input
-                          type="text"
-                          value={settings.colors.accent}
-                          onChange={(e) => handleColorChange('accent', e.target.value)}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="color"
+                            value={settings.colors.accent}
+                            onChange={(e) => handleColorChange('accent', e.target.value)}
+                            className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={settings.colors.accent}
+                            onChange={(e) => handleColorChange('accent', e.target.value)}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                            placeholder="#10B981"
+                          />
+                        </div>
+                        <div className="grid grid-cols-5 gap-1">
+                          {['#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6'].map((color) => (
+                            <button
+                              key={color}
+                              onClick={() => handleColorChange('accent', color)}
+                              className="w-8 h-8 rounded border border-gray-200 hover:scale-110 transition-transform"
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -344,24 +424,24 @@ export default function SettingsModal({ isOpen, onClose, user, onSave }: Setting
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
           <button
             onClick={handleReset}
-            className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+            className="flex items-center space-x-2 px-4 py-3 text-gray-600 hover:text-gray-800 transition-colors rounded-lg hover:bg-gray-100"
           >
             <RotateCcw className="h-4 w-4" />
             <span>Reset to Default</span>
           </button>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-4">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              className="px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors rounded-lg hover:bg-gray-100"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center space-x-2 px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
               <Save className="h-4 w-4" />
               <span>Save Changes</span>

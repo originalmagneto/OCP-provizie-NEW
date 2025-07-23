@@ -16,6 +16,8 @@ import UnpaidInvoicesList from "./UnpaidInvoicesList";
 import DashboardCharts from "./DashboardCharts";
 import QuarterlyCommissions from "./QuarterlyCommissions";
 import UserManagement from "./UserManagement";
+import CalendarView from "./CalendarView";
+import ReferralOverview from "./ReferralOverview";
 import { getFirmBranding } from "../config/firmBranding";
 import type { SettingsData } from "./SettingsModal";
 import type { FirmType } from "../types";
@@ -87,6 +89,10 @@ export default function Dashboard() {
         return { title: 'Analytics & Reports', subtitle: 'Performance insights and data visualization' };
       case 6:
         return { title: 'User Management', subtitle: 'Manage firm users and permissions' };
+      case 7:
+        return { title: 'Calendar View', subtitle: 'Commission events and settlement calendar' };
+      case 8:
+        return { title: 'Referral Overview', subtitle: 'Track and manage your referred firms' };
       default:
         return { title: 'Dashboard', subtitle: 'Commission management portal' };
     }
@@ -113,6 +119,10 @@ export default function Dashboard() {
         return <DashboardCharts />;
       case 6:
         return <UserManagement />;
+      case 7:
+        return <CalendarView />;
+      case 8:
+        return <ReferralOverview user={user} />;
       default:
         return <DashboardOverview customSettings={customSettings || undefined} />;
     }
@@ -141,7 +151,7 @@ export default function Dashboard() {
         user={user}
         title={title}
         subtitle={subtitle}
-        showSearch={selectedTab === 1 || selectedTab === 3}
+        showSearch={selectedTab === 1 || selectedTab === 3 || selectedTab === 8}
         showFilters={selectedTab === 1 || selectedTab === 5}
         customSettings={customSettings}
         actions={

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { userServices } from '../services/userServices';
-import type { FirmUser, UserRole } from '../types';
+import { FirmUser, UserRole } from '../types';
 import { Users, UserPlus, Shield, ShieldCheck, Eye, EyeOff, Trash2, Edit } from 'lucide-react';
 
 interface AddUserModalProps {
@@ -150,11 +150,71 @@ export default function UserManagement() {
 
     try {
       setIsLoading(true);
+      setError('');
+      
+      // Check if Firebase is properly configured
+      const isFirebaseConfigured = import.meta.env.VITE_FIREBASE_PROJECT_ID && 
+        import.meta.env.VITE_FIREBASE_PROJECT_ID !== 'demo-project';
+      
+      if (!isFirebaseConfigured) {
+        // Provide mock data when Firebase is not configured
+        const mockUsers: FirmUser[] = [
+          {
+            id: 'mock-admin-1',
+            name: user.name,
+            email: user.email,
+            firm: user.firm,
+            role: 'admin',
+            isActive: true,
+            createdAt: new Date().toISOString(),
+            createdBy: 'system'
+          },
+          {
+            id: 'mock-user-1',
+            name: 'Demo User',
+            email: 'demo@' + user.firm.toLowerCase() + '.com',
+            firm: user.firm,
+            role: 'user',
+            isActive: true,
+            createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+            createdBy: 'mock-admin-1'
+          },
+          {
+            id: 'mock-user-2',
+            name: 'Sample User',
+            email: 'sample@' + user.firm.toLowerCase() + '.com',
+            firm: user.firm,
+            role: 'user',
+            isActive: false,
+            createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+            createdBy: 'mock-admin-1'
+          }
+        ];
+        setUsers(mockUsers);
+        setError('Demo mode: Firebase not configured. Showing sample data.');
+        return;
+      }
+      
       const firmUsers = await userServices.getFirmUsers(user.firm);
       setUsers(firmUsers);
     } catch (error) {
-      setError('Failed to load users');
+      setError('Failed to load users. Please check your Firebase configuration.');
       console.error('Error loading users:', error);
+      
+      // Provide fallback mock data even on error
+      const fallbackUsers: FirmUser[] = [
+        {
+          id: 'fallback-admin',
+          name: user.name,
+          email: user.email,
+          firm: user.firm,
+          role: 'admin',
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          createdBy: 'system'
+        }
+      ];
+      setUsers(fallbackUsers);
     } finally {
       setIsLoading(false);
     }

@@ -96,14 +96,14 @@ export function QuarterlyCommissionCard({
 
         {/* Commission Summary */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-indigo-50 rounded-lg p-4">
-            <p className="text-sm text-indigo-600 font-medium">Receivable</p>
+          <div className="bg-indigo-50 rounded-lg p-5">
+            <p className="text-sm text-indigo-600 font-medium mb-1">Receivable</p>
             <p className="text-lg font-semibold text-indigo-700">
               {formatter.format(receivableCommissions)}
             </p>
           </div>
-          <div className="bg-amber-50 rounded-lg p-4">
-            <p className="text-sm text-amber-600 font-medium">Payable</p>
+          <div className="bg-amber-50 rounded-lg p-5">
+            <p className="text-sm text-amber-600 font-medium mb-1">Payable</p>
             <p className="text-lg font-semibold text-amber-700">
               {formatter.format(payableCommissions)}
             </p>
@@ -115,7 +115,7 @@ export function QuarterlyCommissionCard({
           {commissionsByFirm.map(({ firm, amount, isPaying, isSettled }) => (
             <div
               key={firm}
-              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
             >
               <div>
                 <p className="font-medium">{firm}</p>

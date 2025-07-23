@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Bell,
   Search,
@@ -7,6 +7,7 @@ import {
   RefreshCw,
   MoreHorizontal
 } from 'lucide-react';
+import NotificationDropdown from './NotificationDropdown';
 import { getFirmBranding } from '../config/firmBranding';
 import type { SettingsData } from './SettingsModal';
 import type { FirmType } from '../types';
@@ -32,6 +33,8 @@ export default function MainContent({
   showFilters = false,
   customSettings
 }: MainContentProps) {
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   if (!user) return null;
 
   const firmBranding = getFirmBranding(user.firm as FirmType);
@@ -100,17 +103,30 @@ export default function MainContent({
             )}
 
             {/* Notifications */}
-            <button 
-              className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              onClick={() => {
-                // Show notification dropdown or modal
-                alert('Notifications:\n\n• Commission settlement due for Q3 2024\n• 3 pending invoice payments\n• New referral from Partner Firm');
-              }}
-              title="View notifications"
-            >
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
+            <div className="relative">
+              <button 
+                className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                onClick={() => setNotificationOpen(!notificationOpen)}
+                title={`View notifications${unreadNotifications > 0 ? ` (${unreadNotifications} unread)` : ''}`}
+              >
+                <Bell className="h-5 w-5" />
+                {unreadNotifications > 0 && (
+                  <>
+                    {/* Red dot indicator */}
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                    {/* Notification count badge */}
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-xs font-medium rounded-full flex items-center justify-center px-1">
+                      {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                    </span>
+                  </>
+                )}
+              </button>
+              <NotificationDropdown 
+                isOpen={notificationOpen} 
+                onClose={() => setNotificationOpen(false)}
+                onNotificationChange={setUnreadNotifications}
+              />
+            </div>
 
             {/* User Menu */}
             <div className="flex items-center space-x-3">
@@ -153,7 +169,7 @@ export function HeaderActionButton({
   variant?: 'primary' | 'secondary';
   firmBranding?: any;
 }) {
-  const baseClasses = "flex items-center justify-center space-x-1.5 px-3 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 min-w-0";
+  const baseClasses = "flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 whitespace-nowrap";
   const variantClasses = variant === 'primary' && firmBranding
     ? `${firmBranding.theme.button.primary.bg} ${firmBranding.theme.button.primary.text} ${firmBranding.theme.button.primary.hover} focus:ring-2 focus:ring-offset-2 shadow-sm`
     : variant === 'primary'
@@ -167,7 +183,7 @@ export function HeaderActionButton({
       title={label}
     >
       <span className="flex-shrink-0">{icon}</span>
-      <span className="text-xs font-medium truncate">{label}</span>
+      <span className="text-sm font-medium">{label}</span>
     </button>
   );
 }

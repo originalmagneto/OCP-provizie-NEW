@@ -157,7 +157,7 @@ export default function LoginForm() {
                 Email address
               </label>
               <div className="flex items-center">
-                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
+                <span className="inline-flex items-center px-4 py-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
                   <Mail className="h-5 w-5" />
                 </span>
                 <input
@@ -168,7 +168,7 @@ export default function LoginForm() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-r-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                  className="appearance-none rounded-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-r-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 text-sm"
                   placeholder="Email address"
                 />
               </div>
@@ -181,7 +181,7 @@ export default function LoginForm() {
                   Password
                 </label>
                 <div className="flex items-center">
-                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
+                  <span className="inline-flex items-center px-4 py-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
                     <Lock className="h-5 w-5" />
                   </span>
                   <input
@@ -192,7 +192,7 @@ export default function LoginForm() {
                     required={!isResettingPassword}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-r-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    className="appearance-none rounded-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-r-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 text-sm"
                     placeholder="Password"
                   />
                 </div>
@@ -206,7 +206,7 @@ export default function LoginForm() {
                   Name
                 </label>
                 <div className="flex items-center">
-                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
+                  <span className="inline-flex items-center px-4 py-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
                     <User className="h-5 w-5" />
                   </span>
                   <input
@@ -217,7 +217,7 @@ export default function LoginForm() {
                     required={isRegistering}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-r-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    className="appearance-none rounded-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-r-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 text-sm"
                     placeholder="Full name"
                   />
                 </div>
@@ -240,14 +240,14 @@ export default function LoginForm() {
                         type="button"
                         onClick={() => setSelectedFirm(firmKey as FirmType)}
                         className={`
-                          relative flex items-center p-4 rounded-lg border-2 transition-all
+                          relative flex items-center p-5 rounded-lg border-2 transition-all
                           ${isSelected 
                             ? `${branding.theme.card} border-current` 
                             : 'bg-white border-gray-200 hover:border-gray-300'
                           }
                         `}
                       >
-                        <FirmLogoComponent className="h-8 w-8 mr-3" />
+                        <FirmLogoComponent className="h-10 w-10 mr-4" />
                         <div className="flex-1 text-left">
                           <div className={`font-medium ${
                             isSelected ? `text-${branding.colors.text}` : 'text-gray-900'
@@ -274,7 +274,7 @@ export default function LoginForm() {
               type="submit"
               disabled={isLoading}
               className={`
-                group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white
+                group relative w-full flex justify-center py-3 px-6 border border-transparent text-sm font-medium rounded-md text-white
                 ${isRegistering 
                   ? currentFirmBranding.theme.button 
                   : 'bg-indigo-600 hover:bg-indigo-700'
