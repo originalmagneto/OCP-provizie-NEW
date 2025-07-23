@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   X,
-  Upload,
   Palette,
   Layout,
   Save,
@@ -66,26 +65,16 @@ export default function SettingsModal({ isOpen, onClose, user, onSave }: Setting
     colors: defaultColors,
     dashboardCards: defaultDashboardCards
   });
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string>('');
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   if (!isOpen || !user) return null;
 
   const firmBranding = getFirmBranding(user.firm as FirmType);
 
-  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setLogoFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        setLogoPreview(result);
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleLogoUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setLogoUrl(event.target.value);
+    setUploadError(null);
   };
 
   const handleColorChange = (colorType: keyof typeof defaultColors, value: string) => {
@@ -110,20 +99,12 @@ export default function SettingsModal({ isOpen, onClose, user, onSave }: Setting
 
   const handleSave = async () => {
     try {
-      setIsUploadingLogo(true);
       setUploadError(null);
       let finalSettings = { ...settings };
       
-      // Upload logo if a new file was selected
-      if (logoFile) {
-        try {
-          const logoUrl = await firmServices.uploadLogo(user.firm, logoFile);
-          finalSettings.logo = logoUrl;
-        } catch (error: any) {
-          console.error('Error uploading logo:', error);
-          setUploadError(error.message || 'Failed to upload logo');
-          return;
-        }
+      // Add logo URL if provided
+      if (logoUrl.trim()) {
+        finalSettings.logo = logoUrl.trim();
       }
       
       onSave(finalSettings);
@@ -131,8 +112,6 @@ export default function SettingsModal({ isOpen, onClose, user, onSave }: Setting
     } catch (error: any) {
       console.error('Error saving settings:', error);
       setUploadError(error.message || 'Failed to save settings');
-    } finally {
-      setIsUploadingLogo(false);
     }
   };
 
@@ -141,7 +120,7 @@ export default function SettingsModal({ isOpen, onClose, user, onSave }: Setting
       colors: defaultColors,
       dashboardCards: defaultDashboardCards
     });
-    setLogoPreview(null);
+    setLogoUrl('');
   };
 
   return (
@@ -194,36 +173,36 @@ export default function SettingsModal({ isOpen, onClose, user, onSave }: Setting
                 {/* Logo Section */}
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Logo</h3>
-                  <div className="flex items-center space-x-6">
-                    <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
-                      {logoPreview ? (
-                        <img src={logoPreview} alt="Logo preview" className="w-full h-full object-contain rounded-lg" />
-                      ) : (
-                        <div className="h-16 w-16">
-                          <firmBranding.logo className="h-full w-full" />
-                        </div>
-                      )}
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-6">
+                      <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                        {logoUrl ? (
+                          <img src={logoUrl} alt="Logo preview" className="w-full h-full object-contain rounded-lg" onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }} />
+                        ) : (
+                          <div className="h-16 w-16">
+                            <firmBranding.logo className="h-full w-full" />
+                          </div>
+                        )}
+                        {logoUrl && (
+                          <div className="h-16 w-16 hidden">
+                            <firmBranding.logo className="h-full w-full" />
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div>
-                      <label className={`inline-flex items-center px-4 py-2 rounded-lg transition-colors ${
-                        isUploadingLogo 
-                          ? 'bg-gray-400 cursor-not-allowed' 
-                          : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
-                      } text-white`}>
-                        <Upload className="h-4 w-4 mr-2" />
-                        {isUploadingLogo ? 'Uploading...' : 'Upload New Logo'}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleLogoUpload}
-                          className="hidden"
-                          disabled={isUploadingLogo}
-                        />
-                      </label>
-                      <p className="text-sm text-gray-500 mt-2">Recommended: 200x200px, PNG or SVG</p>
-                      {logoFile && (
-                        <p className="text-sm text-green-600 mt-1">Selected: {logoFile.name}</p>
-                      )}
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
+                      <input
+                        type="url"
+                        placeholder="https://example.com/logo.png"
+                        value={logoUrl}
+                        onChange={handleLogoUrlChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <p className="text-sm text-gray-500 mt-2">Enter a direct link to your logo image (PNG, JPG, SVG)</p>
                       {uploadError && (
                         <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
                           <p className="text-sm text-red-600">{uploadError}</p>
@@ -481,15 +460,10 @@ export default function SettingsModal({ isOpen, onClose, user, onSave }: Setting
             </button>
             <button
               onClick={handleSave}
-              disabled={isUploadingLogo}
-              className={`flex items-center space-x-2 px-8 py-3 rounded-lg transition-colors font-medium ${
-                isUploadingLogo
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700'
-              } text-white`}
+              className="flex items-center space-x-2 px-8 py-3 rounded-lg transition-colors font-medium bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Save className="h-4 w-4" />
-              <span>{isUploadingLogo ? 'Saving...' : 'Save Changes'}</span>
+              <span>Save Changes</span>
             </button>
           </div>
         </div>

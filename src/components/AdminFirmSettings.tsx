@@ -8,7 +8,7 @@ export default function AdminFirmSettings() {
   const { user } = useAuth();
   const { theme, refresh } = useTheme();
   const [form, setForm] = useState<FirmTheme | null>(null);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string>('');
 
   useEffect(() => {
     if (theme) setForm(theme);
@@ -17,9 +17,8 @@ export default function AdminFirmSettings() {
   if (!user || !form) return null;
 
   const handleSave = async () => {
-    if (logoFile) {
-      const url = await firmServices.uploadLogo(user.firm, logoFile);
-      form.logoUrl = url;
+    if (logoUrl.trim()) {
+      form.logoUrl = logoUrl.trim();
     }
     await firmServices.updateFirmConfig(user.firm, form);
     await refresh();
@@ -36,11 +35,17 @@ export default function AdminFirmSettings() {
       {form.logoUrl && (
         <img src={form.logoUrl} alt="logo" className="h-12" />
       )}
-      <input
-        type="file"
-        accept="image/*"
-        onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
-      />
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
+        <input
+          type="url"
+          placeholder="https://example.com/logo.png"
+          value={logoUrl}
+          onChange={(e) => setLogoUrl(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+        <p className="text-sm text-gray-500 mt-1">Enter a direct link to your logo image</p>
+      </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm mb-1">Primary</label>
