@@ -3,6 +3,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
+import { getAnalytics } from 'firebase/analytics';
 
 // Check if Firebase environment variables are properly configured
 const isFirebaseConfigured = () => {
@@ -24,10 +25,9 @@ const isFirebaseConfigured = () => {
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  // TODO: Replace with your Firebase project configuration
-  // You'll need to create a Firebase project and add these values
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'demo-api-key',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'demo-project.firebaseapp.com',
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://demo-project-default-rtdb.firebaseio.com/',
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'demo-project',
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'demo-project.appspot.com',
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '123456789',
@@ -48,11 +48,19 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
-// Enable persistence - using proper enum from firebase/auth
+// Initialize Analytics (only in browser environment)
+let analytics;
+try {
+  if (typeof window !== 'undefined' && import.meta.env.VITE_FIREBASE_MEASUREMENT_ID) {
+    analytics = getAnalytics(app);
+  }
+} catch (error) {
+  console.warn('Analytics initialization failed:', error);
+}
 
 // Set persistence properly using the enum
 setPersistence(auth, browserLocalPersistence).catch(error => {
   console.error("Error setting auth persistence:", error);
 });
 
-export { app, db, auth, storage };
+export { app, db, auth, storage, analytics };

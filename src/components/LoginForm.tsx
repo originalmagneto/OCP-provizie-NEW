@@ -17,7 +17,15 @@ const isFirebaseConfigured = () => {
   
   return requiredVars.every(varName => {
     const value = import.meta.env[varName];
-    return value && value !== 'demo-api-key' && value !== 'demo-project' && !value.includes('demo-');
+    // Check if value exists and is not a demo/placeholder value
+    return value && 
+           value.trim() !== '' && 
+           value !== 'demo-api-key' && 
+           value !== 'demo-project' && 
+           !value.includes('demo-') &&
+           !value.includes('XXXXXXXXXX') &&
+           !value.includes('your-') &&
+           !value.includes('replace-');
   });
 };
 
