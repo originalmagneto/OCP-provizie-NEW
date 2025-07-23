@@ -41,9 +41,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Check if Firebase is properly configured
+  const isFirebaseConfigured = () => {
+    const requiredVars = [
+      'VITE_FIREBASE_API_KEY',
+      'VITE_FIREBASE_AUTH_DOMAIN',
+      'VITE_FIREBASE_PROJECT_ID',
+      'VITE_FIREBASE_STORAGE_BUCKET',
+      'VITE_FIREBASE_MESSAGING_SENDER_ID',
+      'VITE_FIREBASE_APP_ID'
+    ];
+    
+    return requiredVars.every(varName => {
+      const value = import.meta.env[varName];
+      return value && value !== 'demo-api-key' && value !== 'demo-project' && !value.includes('demo-');
+    });
+  };
+
   // Listen for auth state changes
   useEffect(() => {
+    // If Firebase is not configured, stop loading immediately
+    if (!isFirebaseConfigured()) {
+      console.warn('Firebase is not configured. Running in demo mode.');
+      setIsLoading(false);
+      setUser(null);
+      setFirebaseUser(null);
+      setIsAuthenticated(false);
+      return;
+    }
+
+    // Set a timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      console.warn('Auth state check timed out. Setting loading to false.');
+      setIsLoading(false);
+    }, 10000); // 10 second timeout
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      clearTimeout(loadingTimeout); // Clear timeout since we got a response
       setIsLoading(true);
       
       if (firebaseUser) {
@@ -106,7 +140,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(loadingTimeout);
+      unsubscribe();
+    };
   }, []);
 
   const register = async (email: string, password: string, name: string, firm: FirmType) => {
