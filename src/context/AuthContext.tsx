@@ -147,6 +147,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const register = async (email: string, password: string, name: string, firm: FirmType) => {
+    // Check if Firebase is configured before attempting registration
+    if (!isFirebaseConfigured()) {
+      const demoError = new Error(
+        'Firebase is not configured. Please check FIREBASE_SETUP.md for setup instructions. ' +
+        'This is a demo environment - authentication features are not available.'
+      );
+      demoError.name = 'FirebaseConfigError';
+      throw demoError;
+    }
+
     setIsLoading(true);
     try {
       // Create user in Firebase Authentication
@@ -191,6 +201,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = async (email: string, password: string) => {
+    // Check if Firebase is configured before attempting login
+    if (!isFirebaseConfigured()) {
+      const demoError = new Error(
+        'Firebase is not configured. Please check FIREBASE_SETUP.md for setup instructions. ' +
+        'This is a demo environment - authentication features are not available.'
+      );
+      demoError.name = 'FirebaseConfigError';
+      throw demoError;
+    }
+
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
