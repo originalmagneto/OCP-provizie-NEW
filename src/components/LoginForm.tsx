@@ -37,6 +37,15 @@ export default function LoginForm() {
     setError(null);
     setSuccessMessage(null);
     
+    // Check if Firebase is configured before attempting authentication
+    if (!isFirebaseConfigured()) {
+      setError(
+        "Firebase is not configured. Authentication features are disabled. " +
+        "Please check FIREBASE_SETUP.md for setup instructions."
+      );
+      return;
+    }
+    
     if (isResettingPassword) {
       if (!email) {
         setError("Please enter your email address to reset your password");
@@ -283,7 +292,7 @@ export default function LoginForm() {
           <div>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !isFirebaseConfigured()}
               className={`
                 group relative w-full flex justify-center py-3 px-6 border border-transparent text-sm font-medium rounded-md text-white
                 ${isRegistering 
@@ -293,7 +302,9 @@ export default function LoginForm() {
                 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50
               `}
             >
-              {isLoading
+              {!isFirebaseConfigured()
+                ? "Firebase Not Configured"
+                : isLoading
                 ? isResettingPassword
                   ? "Sending reset link..."
                   : isRegistering
