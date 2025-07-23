@@ -119,15 +119,7 @@ export default function LoginForm() {
   const currentFirmBranding = getFirmBranding(selectedFirm);
   const FirmLogo = currentFirmBranding.logo;
 
-  // Debug logging
-  console.log('LoginForm Debug:', {
-    isRegistering,
-    isFirebaseConfigured: isFirebaseConfigured(),
-    isLoading,
-    email,
-    password,
-    name
-  });
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
