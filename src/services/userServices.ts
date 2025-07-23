@@ -81,5 +81,21 @@ export const userServices = {
       console.error('Error fetching active firm users:', error);
       throw error;
     }
+  },
+
+  // Approve a pending user
+  async approveUser(userId: string): Promise<void> {
+    try {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        isActive: true,
+        pendingApproval: false,
+        approvedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error approving user:', error);
+      throw error;
+    }
   }
 };

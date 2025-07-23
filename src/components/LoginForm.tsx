@@ -65,12 +65,23 @@ export default function LoginForm() {
     try {
       if (isRegistering) {
         await register(email, password, name, selectedFirm);
+        setSuccessMessage(
+          "Account created successfully! Your account is pending approval from an administrator. " +
+          "You will receive access once your account has been approved."
+        );
+        setError(null);
+        // Reset form
+        setEmail('');
+        setPassword('');
+        setName('');
+        setSelectedFirm('SKALLARS');
       } else {
         await login(email, password);
       }
     } catch (err: any) {
       const errorMessage = err.message || "Authentication failed. Please try again.";
       setError(errorMessage);
+      setSuccessMessage(null);
     }
   };
 

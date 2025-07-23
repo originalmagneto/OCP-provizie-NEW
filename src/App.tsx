@@ -7,17 +7,18 @@ import { ClientProvider } from "./context/ClientContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import LoginForm from "./components/LoginForm";
 import Dashboard from "./components/Dashboard";
+import PendingApproval from "./components/PendingApproval";
 import { useAuth } from "./context/AuthContext";
 
 function AuthenticatedApp({ children }: { children: React.ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (!isLoading && user) {
+    if (!isLoading && user && isAuthenticated) {
       setIsInitialized(true);
     }
-  }, [isLoading, user]);
+  }, [isLoading, user, isAuthenticated]);
 
   if (isLoading) {
     return (
@@ -29,6 +30,11 @@ function AuthenticatedApp({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <LoginForm />;
+  }
+
+  // Show pending approval if user exists but is not authenticated (not active)
+  if (user && !isAuthenticated) {
+    return <PendingApproval />;
   }
 
   if (!isInitialized) {

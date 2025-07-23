@@ -54,18 +54,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
           
           if (userDoc.exists()) {
-            const userData = userDoc.data() as Omit<User, 'id'>;
-            
-            setUser({
+            const userData = userDoc.data();
+            const user = {
               id: firebaseUser.uid,
               name: userData.name || firebaseUser.displayName || 'User',
               email: userData.email || firebaseUser.email || '',
               firm: userData.firm || 'SKALLARS',
               role: userData.role || 'admin',
               isActive: userData.isActive !== undefined ? userData.isActive : true,
-            });
+            };
             
-            setIsAuthenticated(true);
+            setUser(user);
+            
+            // Only set authenticated if user is active
+            setIsAuthenticated(user.isActive);
           } else {
             // If user document doesn't exist but user is authenticated
             // Create a basic user profile
@@ -117,14 +119,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Update profile with display name
       await updateProfile(firebaseUser, { displayName: name });
       
-      // Create user document in Firestore
+      // Create user document in Firestore - requires admin approval
       await setDoc(doc(db, "users", firebaseUser.uid), {
         name,
         email,
         firm,
-        role: 'admin', // Default role for self-registered users
-        isActive: true,
-        createdAt: new Date().toISOString()
+        role: 'user', // Default role for self-registered users
+        isActive: false, // Requires admin approval
+        createdAt: new Date().toISOString(),
+        pendingApproval: true
       });
       
       // User will be set by the onAuthStateChanged listener

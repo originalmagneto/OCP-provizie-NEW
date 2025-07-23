@@ -11,6 +11,7 @@ export interface FirmUser {
   isActive: boolean;
   createdAt: string;
   createdBy?: string;
+  pendingApproval?: boolean;
 }
 
 export interface Client {
