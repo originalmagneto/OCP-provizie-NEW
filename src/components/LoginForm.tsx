@@ -4,6 +4,23 @@ import type { FirmType } from "../types";
 import { Building2, Mail, Lock, User } from "lucide-react";
 import { firmBranding, getFirmBranding } from "../config/firmBranding";
 
+// Check if Firebase is properly configured
+const isFirebaseConfigured = () => {
+  const requiredVars = [
+    'VITE_FIREBASE_API_KEY',
+    'VITE_FIREBASE_AUTH_DOMAIN',
+    'VITE_FIREBASE_PROJECT_ID',
+    'VITE_FIREBASE_STORAGE_BUCKET',
+    'VITE_FIREBASE_MESSAGING_SENDER_ID',
+    'VITE_FIREBASE_APP_ID'
+  ];
+  
+  return requiredVars.every(varName => {
+    const value = import.meta.env[varName];
+    return value && value !== 'demo-api-key' && value !== 'demo-project' && !value.includes('demo-');
+  });
+};
+
 export default function LoginForm() {
   const { login, register, resetPassword, isLoading } = useAuth();
   const [isRegistering, setIsRegistering] = useState(false);
@@ -94,20 +111,22 @@ export default function LoginForm() {
               : "Sign in to manage your commissions"}
           </p>
           
-          {/* Demo Mode Indicator */}
-          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-            <div className="flex">
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-yellow-800">
-                  ⚠️ Demo Mode
-                </h3>
-                <p className="text-xs text-yellow-700 mt-1">
-                  Firebase is not configured. Authentication features are disabled. 
-                  See FIREBASE_SETUP.md for setup instructions.
-                </p>
+          {/* Demo Mode Indicator - Only show if Firebase is not configured */}
+          {!isFirebaseConfigured() && (
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+              <div className="flex">
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-yellow-800">
+                    ⚠️ Demo Mode
+                  </h3>
+                  <p className="text-xs text-yellow-700 mt-1">
+                    Firebase is not configured. Authentication features are disabled. 
+                    See FIREBASE_SETUP.md for setup instructions.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
