@@ -19,6 +19,7 @@ interface User {
   firm: FirmType;
   role: UserRole;
   isActive: boolean;
+  pendingApproval?: boolean;
 }
 
 interface AuthContextType {
@@ -96,12 +97,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               firm: userData.firm || 'SKALLARS',
               role: userData.role || 'admin',
               isActive: userData.isActive !== undefined ? userData.isActive : true,
+              pendingApproval: userData.pendingApproval || false,
             };
             
             setUser(user);
             
-            // Only set authenticated if user is active
-            setIsAuthenticated(user.isActive);
+            // Only set authenticated if user is active AND not pending approval
+            setIsAuthenticated(user.isActive && !user.pendingApproval);
           } else {
             // If user document doesn't exist but user is authenticated
             // Create a basic user profile
