@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Admin Role</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #output {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fix Admin Role</h1>
+    <p>This tool will help fix admin role issues for the current user.</p>
+    
+    <button onclick="checkCurrentUser()">Check Current User</button>
+    <button onclick="fixAdminRole()">Fix Admin Role</button>
+    <button onclick="testAdminPermissions()">Test Admin Permissions</button>
+    
+    <div id="output"></div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, doc, updateDoc, getDoc, collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBbS-5vNyJpwqSKewlyr5OLpIAYA81FTwI",
+            authDomain: "ocp-provizie.firebaseapp.com",
+            projectId: "ocp-provizie",
+            storageBucket: "ocp-provizie.firebasestorage.app",
+            messagingSenderId: "878739646832",
+            appId: "1:878739646832:web:3428443c84c18a95b607b5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        function addResult(message, type = 'info') {
+            const output = document.getElementById('output');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            output.appendChild(div);
+            console.log(message);
+        }
+
+        window.checkCurrentUser = async function() {
+            try {
+                const user = auth.currentUser;
+                if (!user) {
+                    addResult('No user is currently signed in', 'error');
+                    return;
+                }
+
+                addResult(`Current user: ${user.email} (${user.uid})`, 'info');
+                
+                const userDocRef = doc(db, 'users', user.uid);
+                const userDoc = await getDoc(userDocRef);
+                
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    addResult(`User data: ${JSON.stringify(userData, null, 2)}`, 'info');
+                    addResult(`Role: ${userData.role}`, userData.role === 'admin' ? 'success' : 'error');
+                    addResult(`Active: ${userData.isActive}`, userData.isActive ? 'success' : 'error');
+                    addResult(`Pending Approval: ${userData.pendingApproval}`, userData.pendingApproval ? 'error' : 'success');
+                } else {
+                    addResult('User document does not exist', 'error');
+                }
+            } catch (error) {
+                addResult(`Error checking user: ${error.message}`, 'error');
+            }
+        };
+
+        window.fixAdminRole = async function() {
+            try {
+                const user = auth.currentUser;
+                if (!user) {
+                    addResult('No user is currently signed in', 'error');
+                    return;
+                }
+
+                const userDocRef = doc(db, 'users', user.uid);
+                
+                await updateDoc(userDocRef, {
+                    role: 'admin',
+                    isActive: true,
+                    pendingApproval: false,
+                    updatedAt: new Date().toISOString()
+                });
+                
+                addResult('User role updated to admin successfully!', 'success');
+                
+                // Verify the update
+                const updatedDoc = await getDoc(userDocRef);
+                const updatedData = updatedDoc.data();
+                addResult(`Updated user data: ${JSON.stringify(updatedData, null, 2)}`, 'info');
+                
+            } catch (error) {
+                addResult(`Error updating user role: ${error.message}`, 'error');
+            }
+        };
+
+        window.testAdminPermissions = async function() {
+            try {
+                const user = auth.currentUser;
+                if (!user) {
+                    addResult('No user is currently signed in', 'error');
+                    return;
+                }
+
+                // Test 1: Query all users
+                addResult('Testing query all users...', 'info');
+                const usersRef = collection(db, 'users');
+                const allUsersSnapshot = await getDocs(usersRef);
+                addResult(`Successfully queried all users: ${allUsersSnapshot.size} users found`, 'success');
+
+                // Test 2: Query pending users
+                addResult('Testing query pending users...', 'info');
+                const pendingQuery = query(usersRef, where('pendingApproval', '==', true));
+                const pendingSnapshot = await getDocs(pendingQuery);
+                addResult(`Successfully queried pending users: ${pendingSnapshot.size} pending users found`, 'success');
+
+                addResult('All admin permission tests passed!', 'success');
+                
+            } catch (error) {
+                addResult(`Admin permission test failed: ${error.message}`, 'error');
+            }
+        };
+
+        // Auto-check user on load
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                addResult(`User signed in: ${user.email}`, 'success');
+            } else {
+                addResult('No user signed in. Please sign in first.', 'error');
+            }
+        });
+    </script>
+</body>
+</html>

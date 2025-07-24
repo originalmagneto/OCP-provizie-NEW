@@ -196,7 +196,57 @@ async function testReadUserDocument(user) {
   }
 }
 
-// Test 6: Query Firm Users (Test Firestore Rules)
+// Test 6: Create Mock Pending Users for Testing
+async function testCreateMockPendingUsers() {
+  try {
+    const mockUsers = [
+      {
+        id: 'pending-user-1',
+        name: 'John Pending',
+        email: 'john.pending@contax.com',
+        firm: 'Contax',
+        role: 'user',
+        isActive: false,
+        pendingApproval: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'pending-user-2',
+        name: 'Jane Waiting',
+        email: 'jane.waiting@mkms.com',
+        firm: 'MKMs',
+        role: 'user',
+        isActive: false,
+        pendingApproval: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'pending-user-3',
+        name: 'Bob Approval',
+        email: 'bob.approval@skallars.com',
+        firm: 'SKALLARS',
+        role: 'user',
+        isActive: false,
+        pendingApproval: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+    ];
+
+    for (const mockUser of mockUsers) {
+      const userDocRef = doc(db, 'users', mockUser.id);
+      await setDoc(userDocRef, mockUser, { merge: true });
+    }
+
+    logTest('Create Mock Pending Users', true);
+  } catch (error) {
+    logTest('Create Mock Pending Users', false, error);
+  }
+}
+
+// Test 7: Query Firm Users (Test Firestore Rules)
 async function testQueryFirmUsers(currentUser) {
   try {
     if (!currentUser) {
@@ -292,7 +342,65 @@ async function testPermissionDenied() {
   }
 }
 
-// Test 10: Sign Out
+// Test 10: Admin Permission - Query All Users
+async function testAdminQueryAllUsers() {
+  try {
+    const usersRef = collection(db, 'users');
+    const querySnapshot = await getDocs(usersRef);
+    
+    const allUsers = [];
+    querySnapshot.forEach((doc) => {
+      allUsers.push({ id: doc.id, ...doc.data() });
+    });
+    
+    logTest('Admin Query All Users', true);
+    return allUsers;
+  } catch (error) {
+    logTest('Admin Query All Users', false, error);
+    return [];
+  }
+}
+
+// Test 11: Admin Permission - Query Pending Users
+async function testAdminQueryPendingUsers() {
+  try {
+    const usersRef = collection(db, 'users');
+    const pendingQuery = query(usersRef, where('pendingApproval', '==', true));
+    const querySnapshot = await getDocs(pendingQuery);
+    
+    const pendingUsers = [];
+    querySnapshot.forEach((doc) => {
+      pendingUsers.push({ id: doc.id, ...doc.data() });
+    });
+    
+    logTest('Admin Query Pending Users', true);
+    return pendingUsers;
+  } catch (error) {
+    logTest('Admin Query Pending Users', false, error);
+    return [];
+  }
+}
+
+// Test 12: Admin Permission - Approve User
+async function testAdminApproveUser() {
+  try {
+    const pendingUserId = 'pending-user-1';
+    const userDocRef = doc(db, 'users', pendingUserId);
+    
+    await updateDoc(userDocRef, {
+      isActive: true,
+      pendingApproval: false,
+      approvedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+    
+    logTest('Admin Approve User', true);
+  } catch (error) {
+    logTest('Admin Approve User', false, error);
+  }
+}
+
+// Test 13: Sign Out
 async function testSignOut() {
   try {
     await signOut(auth);
@@ -332,10 +440,24 @@ async function runAllTests() {
     await testReadUserDocument(currentUser);
     await delay(1000);
     
+    // Create mock pending users for testing
+    await testCreateMockPendingUsers();
+    await delay(1000);
+    
     await testQueryFirmUsers(currentUser);
     await delay(1000);
     
     await testUpdateUserDocument(currentUser);
+    await delay(1000);
+    
+    // Test admin permissions
+    await testAdminQueryAllUsers();
+    await delay(1000);
+    
+    await testAdminQueryPendingUsers();
+    await delay(1000);
+    
+    await testAdminApproveUser();
     await delay(1000);
     
     await testAuthStatePersistence();

@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { userServices } from '../services/userServices';
 import { FirmUser, UserRole } from '../types';
 import { Users, UserPlus, Shield, ShieldCheck, Eye, EyeOff, Trash2, Edit, Clock, CheckCircle } from 'lucide-react';
+import { db } from '../config/firebase';
+import { doc, getDoc, updateDoc, collection, getDocs, query, where } from 'firebase/firestore';
 
 interface AddUserModalProps {
   isOpen: boolean;
@@ -146,6 +148,7 @@ export default function UserManagement() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [error, setError] = useState('');
   const [showAllFirms, setShowAllFirms] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   const loadUsers = async () => {
     if (!user) return;
@@ -274,6 +277,67 @@ export default function UserManagement() {
     }
   };
 
+  const debugAdminPermissions = async () => {
+    try {
+      setDebugInfo('Starting admin debug...');
+      
+      if (!user) {
+        setDebugInfo('No user logged in');
+        return;
+      }
+      
+      // Check current user's role
+      const userDoc = await getDoc(doc(db, 'users', user.id));
+      if (!userDoc.exists()) {
+        setDebugInfo('User document does not exist');
+        return;
+      }
+      
+      const userData = userDoc.data();
+      let debugText = `Current user: ${user.email}\n`;
+      debugText += `User ID: ${user.id}\n`;
+      debugText += `Role: ${userData.role}\n`;
+      debugText += `Active: ${userData.isActive}\n`;
+      debugText += `Pending: ${userData.pendingApproval}\n`;
+      debugText += `Firm: ${userData.firm}\n`;
+      
+      if (userData.role !== 'admin') {
+        debugText += '\n❌ User is not admin. Updating role...';
+        
+        await updateDoc(doc(db, 'users', user.id), {
+          role: 'admin',
+          isActive: true,
+          pendingApproval: false,
+          updatedAt: new Date().toISOString()
+        });
+        
+        debugText += '\n✅ Role updated to admin';
+      }
+      
+      // Test permissions
+      debugText += '\n\nTesting permissions...';
+      
+      try {
+        const usersRef = collection(db, 'users');
+        const allUsersSnapshot = await getDocs(usersRef);
+        debugText += `\n✅ All users query: ${allUsersSnapshot.size} users`;
+        
+        const pendingQuery = query(usersRef, where('pendingApproval', '==', true));
+        const pendingSnapshot = await getDocs(pendingQuery);
+        debugText += `\n✅ Pending users query: ${pendingSnapshot.size} pending`;
+        
+        debugText += '\n\n🎉 All tests passed!';
+      } catch (permError: any) {
+        debugText += `\n❌ Permission test failed: ${permError.message}`;
+      }
+      
+      setDebugInfo(debugText);
+      
+    } catch (error: any) {
+      setDebugInfo(`Debug failed: ${error.message}`);
+    }
+  };
+
   if (!user || user.role !== 'admin') {
     return (
       <div className="p-6 text-center">
@@ -324,6 +388,13 @@ export default function UserManagement() {
             </label>
           </div>
           <button
+            onClick={debugAdminPermissions}
+            className="flex items-center px-3 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 mr-2"
+          >
+            <Shield className="h-4 w-4 mr-2" />
+            Debug Admin
+          </button>
+          <button
             onClick={() => setIsAddModalOpen(true)}
             className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
           >
@@ -336,6 +407,13 @@ export default function UserManagement() {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
           {error}
+        </div>
+      )}
+
+      {debugInfo && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded mb-4">
+          <h3 className="font-semibold mb-2">Debug Information:</h3>
+          <pre className="text-sm whitespace-pre-wrap">{debugInfo}</pre>
         </div>
       )}
 

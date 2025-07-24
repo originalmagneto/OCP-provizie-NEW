@@ -116,7 +116,71 @@ const FirebaseTestComponent: React.FC = () => {
           addTestResult('Firestore - Query Firm Users', 'error', error.message);
         }
 
-        // Test 6: Authentication - Sign Out
+        // Test 6: Admin Permission - Verify Role
+        addTestResult('Admin Permission - Verify Role', 'pending');
+        try {
+          const userDocRef = doc(db, 'users', auth.currentUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            console.log('Current user data:', userData);
+            console.log('User role:', userData.role);
+            console.log('Is admin:', userData.role === 'admin');
+            
+            if (userData.role === 'admin') {
+              addTestResult('Admin Permission - Verify Role', 'success', `User has admin role: ${userData.role}`);
+            } else {
+              addTestResult('Admin Permission - Verify Role', 'error', `User role is not admin: ${userData.role}. Full user data: ${JSON.stringify(userData)}`);
+            }
+          } else {
+            addTestResult('Admin Permission - Verify Role', 'error', 'User document not found');
+          }
+        } catch (error: any) {
+          console.error('Admin role verification failed:', error);
+          addTestResult('Admin Permission - Verify Role', 'error', error.message);
+        }
+
+        // Test 7: Admin Permission - Query All Users
+        addTestResult('Admin Permission - Query All Users', 'pending');
+        try {
+          console.log('Attempting to query all users...');
+          const usersRef = collection(db, 'users');
+          const querySnapshot = await getDocs(usersRef);
+          
+          const allUsers: any[] = [];
+          querySnapshot.forEach((doc) => {
+            allUsers.push({ id: doc.id, ...doc.data() });
+          });
+          
+          console.log('All users query successful, count:', allUsers.length);
+          addTestResult('Admin Permission - Query All Users', 'success', `Found ${allUsers.length} total users across all firms`);
+        } catch (error: any) {
+          console.error('Query all users failed:', error);
+          addTestResult('Admin Permission - Query All Users', 'error', error.message);
+        }
+
+        // Test 8: Admin Permission - Query Pending Users
+        addTestResult('Admin Permission - Query Pending Users', 'pending');
+        try {
+          console.log('Attempting to query pending users...');
+          const usersRef = collection(db, 'users');
+          const pendingQuery = query(usersRef, where('pendingApproval', '==', true));
+          const querySnapshot = await getDocs(pendingQuery);
+          
+          const pendingUsers: any[] = [];
+          querySnapshot.forEach((doc) => {
+            pendingUsers.push({ id: doc.id, ...doc.data() });
+          });
+          
+          console.log('Pending users query successful, count:', pendingUsers.length);
+          addTestResult('Admin Permission - Query Pending Users', 'success', `Found ${pendingUsers.length} pending users`);
+        } catch (error: any) {
+          console.error('Query pending users failed:', error);
+          addTestResult('Admin Permission - Query Pending Users', 'error', error.message);
+        }
+
+        // Test 9: Authentication - Sign Out
         addTestResult('Authentication - Sign Out', 'pending');
         try {
           await signOut(auth);
