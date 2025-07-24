@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Admin Permissions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .results {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 3px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Admin Permissions Test</h1>
+        <p>This tool tests the admin permissions after the Firestore rules update.</p>
+        
+        <div class="test-section info">
+            <h3>📋 Test Credentials</h3>
+            <p><strong>Email:</strong> marian.cuprik@icloud.com</p>
+            <p><strong>Password:</strong> 123456</p>
+        </div>
+
+        <div class="test-section">
+            <h3>🔐 Authentication Test</h3>
+            <button onclick="testLogin()">Test Login</button>
+            <button onclick="testLogout()">Logout</button>
+            <div id="auth-results" class="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>👥 Admin Permissions Test</h3>
+            <button onclick="testGetAllUsers()">Test Get All Users</button>
+            <button onclick="testGetPendingUsers()">Test Get Pending Users</button>
+            <button onclick="testAdminRole()">Test Admin Role Check</button>
+            <div id="admin-results" class="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Test Results Summary</h3>
+            <div id="summary-results" class="results"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, collection, getDocs, query, where, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBpZmhI8E_rXOKKF-qXOKKF-qXOKKF-qXOKKF",
+            authDomain: "ocp-provizie.firebaseapp.com",
+            projectId: "ocp-provizie",
+            storageBucket: "ocp-provizie.firebasestorage.app",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef123456789"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let testResults = [];
+
+        function logResult(test, success, message) {
+            const result = { test, success, message, timestamp: new Date().toISOString() };
+            testResults.push(result);
+            updateSummary();
+            return result;
+        }
+
+        function updateSummary() {
+            const summary = document.getElementById('summary-results');
+            const passed = testResults.filter(r => r.success).length;
+            const total = testResults.length;
+            const successRate = total > 0 ? ((passed / total) * 100).toFixed(1) : 0;
+            
+            summary.innerHTML = `
+Total Tests: ${total}
+Passed: ${passed}
+Failed: ${total - passed}
+Success Rate: ${successRate}%
+
+Recent Results:
+${testResults.slice(-5).map(r => 
+    `${r.success ? '✅' : '❌'} ${r.test}: ${r.message}`
+).join('\n')}`;
+        }
+
+        // Test functions
+        window.testLogin = async function() {
+            const results = document.getElementById('auth-results');
+            results.innerHTML = 'Testing login...';
+            
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, 'marian.cuprik@icloud.com', '123456');
+                const user = userCredential.user;
+                const message = `✅ Login successful!\nUser: ${user.email}\nUID: ${user.uid}`;
+                results.innerHTML = message;
+                logResult('Login', true, 'Login successful');
+            } catch (error) {
+                const message = `❌ Login failed: ${error.message}`;
+                results.innerHTML = message;
+                logResult('Login', false, error.message);
+            }
+        };
+
+        window.testLogout = async function() {
+            const results = document.getElementById('auth-results');
+            try {
+                await signOut(auth);
+                results.innerHTML = '✅ Logout successful!';
+                logResult('Logout', true, 'Logout successful');
+            } catch (error) {
+                results.innerHTML = `❌ Logout failed: ${error.message}`;
+                logResult('Logout', false, error.message);
+            }
+        };
+
+        window.testGetAllUsers = async function() {
+            const results = document.getElementById('admin-results');
+            results.innerHTML = 'Testing get all users...';
+            
+            try {
+                const usersRef = collection(db, 'users');
+                const querySnapshot = await getDocs(usersRef);
+                const users = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                const message = `✅ Successfully fetched ${users.length} users\n${users.slice(0, 3).map(u => `- ${u.email || u.id} (${u.role || 'no role'})`).join('\n')}${users.length > 3 ? '\n... and more' : ''}`;
+                results.innerHTML = message;
+                logResult('Get All Users', true, `Fetched ${users.length} users`);
+            } catch (error) {
+                const message = `❌ Failed to get all users: ${error.message}`;
+                results.innerHTML = message;
+                logResult('Get All Users', false, error.message);
+            }
+        };
+
+        window.testGetPendingUsers = async function() {
+            const results = document.getElementById('admin-results');
+            results.innerHTML = 'Testing get pending users...';
+            
+            try {
+                const usersRef = collection(db, 'users');
+                const q = query(usersRef, where('pendingApproval', '==', true));
+                const querySnapshot = await getDocs(q);
+                const users = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                const message = `✅ Successfully fetched ${users.length} pending users\n${users.map(u => `- ${u.email || u.id} (${u.firm || 'no firm'})`).join('\n')}`;
+                results.innerHTML = message;
+                logResult('Get Pending Users', true, `Fetched ${users.length} pending users`);
+            } catch (error) {
+                const message = `❌ Failed to get pending users: ${error.message}`;
+                results.innerHTML = message;
+                logResult('Get Pending Users', false, error.message);
+            }
+        };
+
+        window.testAdminRole = async function() {
+            const results = document.getElementById('admin-results');
+            results.innerHTML = 'Testing admin role check...';
+            
+            try {
+                const currentUser = auth.currentUser;
+                if (!currentUser) {
+                    throw new Error('No user is currently authenticated');
+                }
+                
+                const userDocRef = doc(db, 'users', currentUser.uid);
+                const userDoc = await getDoc(userDocRef);
+                
+                if (!userDoc.exists()) {
+                    throw new Error('User document does not exist');
+                }
+                
+                const userData = userDoc.data();
+                const message = `✅ User role check successful\nEmail: ${currentUser.email}\nRole: ${userData.role}\nActive: ${userData.isActive}\nFirm: ${userData.firm}`;
+                results.innerHTML = message;
+                logResult('Admin Role Check', true, `Role: ${userData.role}`);
+            } catch (error) {
+                const message = `❌ Admin role check failed: ${error.message}`;
+                results.innerHTML = message;
+                logResult('Admin Role Check', false, error.message);
+            }
+        };
+
+        // Auto-run basic tests on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                console.log('🔧 Admin Permissions Test Tool loaded');
+                updateSummary();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

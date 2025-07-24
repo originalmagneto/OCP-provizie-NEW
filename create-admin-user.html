@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Admin User - Firebase Setup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .test-credentials {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Create Admin User - Firebase Setup</h1>
+        <p>This tool helps you create an admin user account for your Firebase application.</p>
+        
+        <div class="warning status">
+            <strong>⚠️ Important:</strong> This tool should only be used during initial setup or for testing purposes.
+        </div>
+
+        <div class="test-credentials">
+            <h3>📋 Quick Test Credentials</h3>
+            <p>For quick testing, you can use these pre-filled credentials:</p>
+            <ul>
+                <li><strong>Email:</strong> admin@test.com</li>
+                <li><strong>Password:</strong> admin123456</li>
+                <li><strong>Name:</strong> Admin User</li>
+            </ul>
+        </div>
+
+        <form id="createUserForm">
+            <div class="form-group">
+                <label for="email">Email Address:</label>
+                <input type="email" id="email" value="admin@test.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password (min 6 characters):</label>
+                <input type="password" id="password" value="admin123456" required minlength="6">
+            </div>
+            
+            <div class="form-group">
+                <label for="name">Full Name:</label>
+                <input type="text" id="name" value="Admin User" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="firm">Firm:</label>
+                <select id="firm" required>
+                    <option value="SKALLARS">SKALLARS</option>
+                    <option value="KELLER_WILLIAMS">KELLER WILLIAMS</option>
+                    <option value="REMAX">RE/MAX</option>
+                    <option value="COLDWELL_BANKER">COLDWELL BANKER</option>
+                    <option value="CENTURY_21">CENTURY 21</option>
+                    <option value="COMPASS">COMPASS</option>
+                    <option value="SOTHEBYS">SOTHEBY'S</option>
+                    <option value="BERKSHIRE_HATHAWAY">BERKSHIRE HATHAWAY</option>
+                    <option value="BETTER_HOMES">BETTER HOMES</option>
+                    <option value="WEICHERT">WEICHERT</option>
+                    <option value="REALOGY">REALOGY</option>
+                    <option value="HOWARD_HANNA">HOWARD HANNA</option>
+                    <option value="LONG_FOSTER">LONG & FOSTER</option>
+                    <option value="JOHN_L_SCOTT">JOHN L. SCOTT</option>
+                    <option value="WINDERMERE">WINDERMERE</option>
+                </select>
+            </div>
+            
+            <button type="submit" id="createBtn">Create Admin User</button>
+            <button type="button" id="testLoginBtn" disabled>Test Login</button>
+        </form>
+        
+        <div id="status"></div>
+        
+        <div class="info status">
+            <h3>📝 Next Steps:</h3>
+            <ol>
+                <li>Create the admin user using the form above</li>
+                <li>Test the login to ensure it works</li>
+                <li>Go back to your main application and login with these credentials</li>
+                <li>Use the "Debug Admin" button in User Management to verify permissions</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Firebase configuration - using your actual config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBbS-5vNyJpwqSKewlyr5OLpIAYA81FTwI",
+            authDomain: "ocp-provizie.firebaseapp.com",
+            databaseURL: "https://ocp-provizie-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "ocp-provizie",
+            storageBucket: "ocp-provizie.firebasestorage.app",
+            messagingSenderId: "878739646832",
+            appId: "1:878739646832:web:3428443c84c18a95b607b5",
+            measurementId: "G-TVKQZ1D7RJ"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const statusDiv = document.getElementById('status');
+        const createBtn = document.getElementById('createBtn');
+        const testLoginBtn = document.getElementById('testLoginBtn');
+        const form = document.getElementById('createUserForm');
+
+        function showStatus(message, type = 'info') {
+            statusDiv.innerHTML = `<div class="${type} status">${message}</div>`;
+        }
+
+        async function createAdminUser(email, password, name, firm) {
+            try {
+                showStatus('Creating user account...', 'info');
+                
+                // Create user in Firebase Authentication
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                // Update profile with display name
+                await updateProfile(user, { displayName: name });
+                
+                // Create user document in Firestore with admin privileges
+                await setDoc(doc(db, "users", user.uid), {
+                    name: name,
+                    email: email,
+                    firm: firm,
+                    role: 'admin',
+                    isActive: true,
+                    pendingApproval: false,
+                    createdAt: new Date().toISOString(),
+                    createdBy: 'setup-tool'
+                });
+                
+                showStatus(`✅ Admin user created successfully!<br><strong>Email:</strong> ${email}<br><strong>Password:</strong> ${password}<br><strong>Role:</strong> admin`, 'success');
+                testLoginBtn.disabled = false;
+                
+                return true;
+            } catch (error) {
+                console.error('Error creating user:', error);
+                
+                if (error.code === 'auth/email-already-in-use') {
+                    showStatus(`⚠️ User with email ${email} already exists. You can try logging in with this email, or use a different email address.`, 'warning');
+                    testLoginBtn.disabled = false;
+                } else {
+                    showStatus(`❌ Error creating user: ${error.message}`, 'error');
+                }
+                
+                return false;
+            }
+        }
+
+        async function testLogin(email, password) {
+            try {
+                showStatus('Testing login...', 'info');
+                
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                showStatus(`✅ Login test successful!<br><strong>User:</strong> ${user.email}<br><strong>UID:</strong> ${user.uid}`, 'success');
+                
+                // Sign out after test
+                await signOut(auth);
+                
+                return true;
+            } catch (error) {
+                console.error('Login test failed:', error);
+                showStatus(`❌ Login test failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const name = document.getElementById('name').value;
+            const firm = document.getElementById('firm').value;
+            
+            createBtn.disabled = true;
+            createBtn.textContent = 'Creating...';
+            
+            await createAdminUser(email, password, name, firm);
+            
+            createBtn.disabled = false;
+            createBtn.textContent = 'Create Admin User';
+        });
+
+        testLoginBtn.addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            testLoginBtn.disabled = true;
+            testLoginBtn.textContent = 'Testing...';
+            
+            await testLogin(email, password);
+            
+            testLoginBtn.disabled = false;
+            testLoginBtn.textContent = 'Test Login';
+        });
+
+        // Initial status
+        showStatus('Ready to create admin user. Fill in the form and click "Create Admin User".', 'info');
+    </script>
+</body>
+</html>

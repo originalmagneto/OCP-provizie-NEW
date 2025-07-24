@@ -13,8 +13,11 @@ service cloud.firestore {
       allow update: if request.auth != null && 
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-      // Allow admin users to list all users across all firms
-      allow list: if request.auth != null && 
+    }
+    
+    // Allow admin users to query and list all users across all firms
+    match /users/{document=**} {
+      allow read: if request.auth != null && 
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
