@@ -1,0 +1,41 @@
+{
+  "name": "firebase-database-tests",
+  "version": "1.0.0",
+  "description": "Comprehensive Firebase database functionality tests",
+  "main": "firebase-test-node.js",
+  "scripts": {
+    "test": "node firebase-test-node.js",
+    "test:node": "node firebase-test-node.js",
+    "test:browser": "echo 'Open firebase-test.html in your browser to run browser tests'",
+    "test:emulator": "firebase emulators:start --only firestore,auth & sleep 5 && node firebase-test-node.js && firebase emulators:stop",
+    "install-deps": "npm install firebase-admin",
+    "setup": "npm run install-deps && echo 'Setup complete. Update Firebase config and run tests.'"
+  },
+  "keywords": [
+    "firebase",
+    "firestore",
+    "authentication",
+    "testing",
+    "database"
+  ],
+  "author": "OCP Provizie Team",
+  "license": "MIT",
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  },
+  "devDependencies": {
+    "firebase-tools": "^13.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/ocp-provizie.git",
+    "directory": "tests"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/ocp-provizie/issues"
+  },
+  "homepage": "https://github.com/your-org/ocp-provizie#readme"
+}

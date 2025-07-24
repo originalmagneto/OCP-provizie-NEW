@@ -11,7 +11,12 @@
     "update": "./update-repo.sh",
     "netlify:login": "netlify login",
     "netlify:init": "netlify init",
-    "netlify:deploy": "netlify deploy --prod"
+    "netlify:deploy": "netlify deploy --prod",
+    "test:firebase": "./tests/run-tests.sh all",
+    "test:firebase:node": "./tests/run-tests.sh node",
+    "test:firebase:browser": "./tests/run-tests.sh browser",
+    "test:firebase:emulator": "./tests/run-tests.sh emulator",
+    "test:firebase:setup": "./tests/run-tests.sh setup"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",

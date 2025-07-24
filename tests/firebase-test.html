@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Database Functionality Tests</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .test-passed {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-failed {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .test-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .config-section {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .summary {
+            background-color: #e9ecef;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #28a745;
+            transition: width 0.3s ease;
+        }
+        .config-input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Firebase Database Functionality Tests</h1>
+        
+        <div class="config-section">
+            <h3>Firebase Configuration</h3>
+            <p>Update the Firebase configuration below with your project details:</p>
+            <input type="text" id="apiKey" class="config-input" placeholder="API Key" value="AIzaSyBpZmLqpBOdJhqOqOqOqOqOqOqOqOqOqOq">
+            <input type="text" id="authDomain" class="config-input" placeholder="Auth Domain" value="ocp-provizie.firebaseapp.com">
+            <input type="text" id="projectId" class="config-input" placeholder="Project ID" value="ocp-provizie">
+            <input type="text" id="storageBucket" class="config-input" placeholder="Storage Bucket" value="ocp-provizie.appspot.com">
+            <input type="text" id="messagingSenderId" class="config-input" placeholder="Messaging Sender ID" value="123456789">
+            <input type="text" id="appId" class="config-input" placeholder="App ID" value="1:123456789:web:abcdefghijklmnop">
+        </div>
+        
+        <div class="test-section">
+            <h3>Test Controls</h3>
+            <button onclick="runAllTests()">🚀 Run All Tests</button>
+            <button onclick="clearResults()">🧹 Clear Results</button>
+            <button onclick="runIndividualTest()">🔍 Run Individual Test</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test Progress</h3>
+            <div class="progress">
+                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+            </div>
+            <div id="progressText">Ready to start tests...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test Results</h3>
+            <div id="testResults"></div>
+        </div>
+        
+        <div class="summary" id="testSummary" style="display: none;">
+            <h3>📊 Test Summary</h3>
+            <div id="summaryContent"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword,
+            signOut,
+            onAuthStateChanged 
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            setDoc, 
+            collection, 
+            query, 
+            where, 
+            getDocs,
+            updateDoc,
+            deleteDoc 
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Global variables
+        let app, auth, db;
+        let testResults = { passed: 0, failed: 0, tests: [] };
+        let currentTestIndex = 0;
+        let totalTests = 10;
+
+        // Test configuration
+        const TEST_CONFIG = {
+            testUser: {
+                email: 'test@example.com',
+                password: 'testPassword123',
+                name: 'Test User',
+                firm: 'SKALLARS',
+                role: 'admin'
+            },
+            testFirm: 'SKALLARS'
+        };
+
+        // Utility functions
+        function getFirebaseConfig() {
+            return {
+                apiKey: document.getElementById('apiKey').value,
+                authDomain: document.getElementById('authDomain').value,
+                projectId: document.getElementById('projectId').value,
+                storageBucket: document.getElementById('storageBucket').value,
+                messagingSenderId: document.getElementById('messagingSenderId').value,
+                appId: document.getElementById('appId').value
+            };
+        }
+
+        function logTest(testName, passed, error = null) {
+            const result = {
+                name: testName,
+                passed,
+                error: error?.message || null,
+                timestamp: new Date().toISOString()
+            };
+            
+            testResults.tests.push(result);
+            
+            if (passed) {
+                testResults.passed++;
+            } else {
+                testResults.failed++;
+            }
+
+            // Update UI
+            const resultsDiv = document.getElementById('testResults');
+            const testDiv = document.createElement('div');
+            testDiv.className = `test-result ${passed ? 'test-passed' : 'test-failed'}`;
+            testDiv.innerHTML = `
+                ${passed ? '✅' : '❌'} ${testName}
+                ${error ? `<br><small>Error: ${error.message}</small>` : ''}
+            `;
+            resultsDiv.appendChild(testDiv);
+
+            // Update progress
+            currentTestIndex++;
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const progress = (currentTestIndex / totalTests) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+            document.getElementById('progressText').textContent = 
+                `Test ${currentTestIndex}/${totalTests} - ${progress.toFixed(1)}% complete`;
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Test functions
+        async function testFirebaseConfig() {
+            try {
+                const config = getFirebaseConfig();
+                app = initializeApp(config);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                
+                if (!app || !auth || !db) {
+                    throw new Error('Firebase initialization failed');
+                }
+                
+                logTest('Firebase Configuration', true);
+            } catch (error) {
+                logTest('Firebase Configuration', false, error);
+            }
+        }
+
+        async function testUserSignUp() {
+            try {
+                const userCredential = await createUserWithEmailAndPassword(
+                    auth, 
+                    TEST_CONFIG.testUser.email, 
+                    TEST_CONFIG.testUser.password
+                );
+                
+                if (!userCredential.user) {
+                    throw new Error('User creation failed');
+                }
+                
+                logTest('User Sign Up', true);
+                return userCredential.user;
+            } catch (error) {
+                if (error.code === 'auth/email-already-in-use') {
+                    logTest('User Sign Up', true, new Error('User already exists (expected)'));
+                    return null;
+                }
+                logTest('User Sign Up', false, error);
+                return null;
+            }
+        }
+
+        async function testUserSignIn() {
+            try {
+                const userCredential = await signInWithEmailAndPassword(
+                    auth, 
+                    TEST_CONFIG.testUser.email, 
+                    TEST_CONFIG.testUser.password
+                );
+                
+                if (!userCredential.user) {
+                    throw new Error('User sign in failed');
+                }
+                
+                logTest('User Sign In', true);
+                return userCredential.user;
+            } catch (error) {
+                logTest('User Sign In', false, error);
+                return null;
+            }
+        }
+
+        async function testCreateUserDocument(user) {
+            try {
+                if (!user) {
+                    throw new Error('No authenticated user provided');
+                }
+                
+                const userDocRef = doc(db, 'users', user.uid);
+                const userData = {
+                    name: TEST_CONFIG.testUser.name,
+                    email: TEST_CONFIG.testUser.email,
+                    firm: TEST_CONFIG.testUser.firm,
+                    role: TEST_CONFIG.testUser.role,
+                    isActive: true,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                
+                await setDoc(userDocRef, userData, { merge: true });
+                
+                logTest('Create User Document', true);
+            } catch (error) {
+                logTest('Create User Document', false, error);
+            }
+        }
+
+        async function testReadUserDocument(user) {
+            try {
+                if (!user) {
+                    throw new Error('No authenticated user provided');
+                }
+                
+                const userDocRef = doc(db, 'users', user.uid);
+                const userDoc = await getDoc(userDocRef);
+                
+                if (!userDoc.exists()) {
+                    throw new Error('User document does not exist');
+                }
+                
+                const userData = userDoc.data();
+                if (!userData.name || !userData.email || !userData.firm) {
+                    throw new Error('User document missing required fields');
+                }
+                
+                logTest('Read User Document', true);
+                return userData;
+            } catch (error) {
+                logTest('Read User Document', false, error);
+                return null;
+            }
+        }
+
+        async function testQueryFirmUsers(currentUser) {
+            try {
+                if (!currentUser) {
+                    throw new Error('No authenticated user provided');
+                }
+                
+                const usersRef = collection(db, 'users');
+                const firmQuery = query(
+                    usersRef, 
+                    where('firm', '==', TEST_CONFIG.testFirm)
+                );
+                
+                const querySnapshot = await getDocs(firmQuery);
+                
+                if (querySnapshot.empty) {
+                    throw new Error('No firm users found');
+                }
+                
+                const firmUsers = [];
+                querySnapshot.forEach((doc) => {
+                    firmUsers.push({ id: doc.id, ...doc.data() });
+                });
+                
+                logTest('Query Firm Users', true);
+                return firmUsers;
+            } catch (error) {
+                logTest('Query Firm Users', false, error);
+                return [];
+            }
+        }
+
+        async function testUpdateUserDocument(user) {
+            try {
+                if (!user) {
+                    throw new Error('No authenticated user provided');
+                }
+                
+                const userDocRef = doc(db, 'users', user.uid);
+                const updateData = {
+                    updatedAt: new Date().toISOString(),
+                    lastLogin: new Date().toISOString()
+                };
+                
+                await updateDoc(userDocRef, updateData);
+                
+                logTest('Update User Document', true);
+            } catch (error) {
+                logTest('Update User Document', false, error);
+            }
+        }
+
+        async function testAuthStatePersistence() {
+            try {
+                return new Promise((resolve) => {
+                    const unsubscribe = onAuthStateChanged(auth, (user) => {
+                        if (user) {
+                            logTest('Auth State Persistence', true);
+                        } else {
+                            logTest('Auth State Persistence', false, new Error('No user in auth state'));
+                        }
+                        unsubscribe();
+                        resolve(user);
+                    });
+                });
+            } catch (error) {
+                logTest('Auth State Persistence', false, error);
+                return null;
+            }
+        }
+
+        async function testPermissionDenied() {
+            try {
+                const fakeUserId = 'fake-user-id-12345';
+                const fakeUserDocRef = doc(db, 'users', fakeUserId);
+                
+                try {
+                    await getDoc(fakeUserDocRef);
+                    logTest('Permission Denied Test', false, new Error('Should not be able to access other user data'));
+                } catch (permissionError) {
+                    if (permissionError.code === 'permission-denied') {
+                        logTest('Permission Denied Test', true);
+                    } else {
+                        throw permissionError;
+                    }
+                }
+            } catch (error) {
+                logTest('Permission Denied Test', false, error);
+            }
+        }
+
+        async function testSignOut() {
+            try {
+                await signOut(auth);
+                
+                if (auth.currentUser) {
+                    throw new Error('User still signed in after signOut');
+                }
+                
+                logTest('User Sign Out', true);
+            } catch (error) {
+                logTest('User Sign Out', false, error);
+            }
+        }
+
+        // Main test runner
+        window.runAllTests = async function() {
+            // Reset results
+            testResults = { passed: 0, failed: 0, tests: [] };
+            currentTestIndex = 0;
+            document.getElementById('testResults').innerHTML = '';
+            document.getElementById('testSummary').style.display = 'none';
+            
+            const resultsDiv = document.getElementById('testResults');
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'test-result test-info';
+            infoDiv.textContent = '🚀 Starting Firebase Database Functionality Tests...';
+            resultsDiv.appendChild(infoDiv);
+            
+            let currentUser = null;
+            
+            // Run tests in sequence
+            await testFirebaseConfig();
+            await delay(1000);
+            
+            currentUser = await testUserSignUp();
+            await delay(1000);
+            
+            if (!currentUser) {
+                currentUser = await testUserSignIn();
+            }
+            await delay(1000);
+            
+            if (currentUser) {
+                await testCreateUserDocument(currentUser);
+                await delay(1000);
+                
+                await testReadUserDocument(currentUser);
+                await delay(1000);
+                
+                await testQueryFirmUsers(currentUser);
+                await delay(1000);
+                
+                await testUpdateUserDocument(currentUser);
+                await delay(1000);
+                
+                await testAuthStatePersistence();
+                await delay(1000);
+                
+                await testPermissionDenied();
+                await delay(1000);
+            }
+            
+            await testSignOut();
+            
+            // Show summary
+            showTestSummary();
+        };
+
+        function showTestSummary() {
+            const summaryDiv = document.getElementById('testSummary');
+            const summaryContent = document.getElementById('summaryContent');
+            
+            const total = testResults.passed + testResults.failed;
+            const successRate = total > 0 ? ((testResults.passed / total) * 100).toFixed(1) : 0;
+            
+            summaryContent.innerHTML = `
+                <p><strong>✅ Passed:</strong> ${testResults.passed}</p>
+                <p><strong>❌ Failed:</strong> ${testResults.failed}</p>
+                <p><strong>📈 Success Rate:</strong> ${successRate}%</p>
+                ${testResults.failed > 0 ? `
+                    <h4>Failed Tests:</h4>
+                    <ul>
+                        ${testResults.tests
+                            .filter(test => !test.passed)
+                            .map(test => `<li>${test.name}: ${test.error}</li>`)
+                            .join('')}
+                    </ul>
+                ` : ''}
+            `;
+            
+            summaryDiv.style.display = 'block';
+        }
+
+        window.clearResults = function() {
+            document.getElementById('testResults').innerHTML = '';
+            document.getElementById('testSummary').style.display = 'none';
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('progressText').textContent = 'Ready to start tests...';
+            testResults = { passed: 0, failed: 0, tests: [] };
+            currentTestIndex = 0;
+        };
+
+        window.runIndividualTest = function() {
+            alert('Individual test runner not implemented yet. Use "Run All Tests" for now.');
+        };
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Firebase Test Suite loaded successfully');
+        });
+    </script>
+</body>
+</html>

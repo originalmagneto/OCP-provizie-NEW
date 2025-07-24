@@ -8,6 +8,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import LoginForm from "./components/LoginForm";
 import Dashboard from "./components/Dashboard";
 import PendingApproval from "./components/PendingApproval";
+import FirebaseTestComponent from "./components/FirebaseTestComponent";
 import { useAuth } from "./context/AuthContext";
 
 function AuthenticatedApp({ children }: { children: React.ReactNode }) {
@@ -103,6 +104,20 @@ export default function App() {
   // Check if Firebase is configured
   if (!isFirebaseConfigured()) {
     return <FirebaseConfigNotice />;
+  }
+
+  // Check if we're in test mode
+  const urlParams = new URLSearchParams(window.location.search);
+  const isTestMode = urlParams.get('test') === 'firebase';
+
+  if (isTestMode) {
+    return (
+      <AuthProvider>
+        <div className="min-h-screen bg-gray-50 py-8">
+          <FirebaseTestComponent />
+        </div>
+      </AuthProvider>
+    );
   }
 
   return (
