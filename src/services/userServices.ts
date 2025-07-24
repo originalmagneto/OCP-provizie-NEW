@@ -14,8 +14,19 @@ export const userServices = {
         id: doc.id,
         ...doc.data()
       })) as FirmUser[];
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching firm users:', error);
+      
+      // Handle permission denied errors specifically
+      if (error?.code === 'permission-denied') {
+        throw new Error('Permission denied: You may not have admin privileges or your user document may be incomplete. Please try logging out and back in.');
+      }
+      
+      // Handle other Firebase errors
+      if (error?.code) {
+        throw new Error(`Firebase error (${error.code}): ${error.message}`);
+      }
+      
       throw error;
     }
   },
@@ -77,8 +88,19 @@ export const userServices = {
         id: doc.id,
         ...doc.data()
       })) as FirmUser[];
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching active firm users:', error);
+      
+      // Handle permission denied errors specifically
+      if (error?.code === 'permission-denied') {
+        throw new Error('Permission denied: You may not have admin privileges or your user document may be incomplete. Please try logging out and back in.');
+      }
+      
+      // Handle other Firebase errors
+      if (error?.code) {
+        throw new Error(`Firebase error (${error.code}): ${error.message}`);
+      }
+      
       throw error;
     }
   },

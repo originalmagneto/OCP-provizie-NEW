@@ -84,21 +84,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (firebaseUser) {
         setFirebaseUser(firebaseUser);
         
-        // Get additional user data from Firestore
+        // Get additional user data from Firestore with retry logic
         try {
-          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+          let userDoc;
+          let retryCount = 0;
+          const maxRetries = 3;
           
-          if (userDoc.exists()) {
+          // Retry logic for user document fetch
+          while (retryCount < maxRetries) {
+            try {
+              userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+              break; // Success, exit retry loop
+            } catch (fetchError: any) {
+              retryCount++;
+              console.warn(`User document fetch attempt ${retryCount} failed:`, fetchError);
+              
+              if (retryCount >= maxRetries) {
+                throw fetchError;
+              }
+              
+              // Wait before retry (exponential backoff)
+              await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+            }
+          }
+          
+          if (userDoc && userDoc.exists()) {
             const userData = userDoc.data();
-            const user = {
-              id: firebaseUser.uid,
-              name: userData.name || firebaseUser.displayName || 'User',
-              email: userData.email || firebaseUser.email || '',
-              firm: userData.firm || 'SKALLARS',
-              role: userData.role || 'admin',
-              isActive: userData.isActive !== undefined ? userData.isActive : true,
-              pendingApproval: userData.pendingApproval || false,
-            };
+            
+            // Validate required user data fields
+            if (!userData.firm || !userData.role) {
+              console.warn('User document missing required fields, updating...');
+              
+              // Update user document with missing fields
+              const updateData: any = {
+                updatedAt: new Date().toISOString()
+              };
+              
+              if (!userData.firm) updateData.firm = 'SKALLARS';
+              if (!userData.role) updateData.role = 'admin';
+              if (!userData.name) updateData.name = firebaseUser.displayName || 'User';
+              if (!userData.email) updateData.email = firebaseUser.email || '';
+              
+              await setDoc(doc(db, "users", firebaseUser.uid), updateData, { merge: true });
+              
+              // Refetch the updated document
+              userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+            }
+            
+            const finalUserData = userDoc.data();
+             if (!finalUserData) {
+               throw new Error('User document data is empty');
+             }
+             
+             const user = {
+               id: firebaseUser.uid,
+               name: finalUserData.name || firebaseUser.displayName || 'User',
+               email: finalUserData.email || firebaseUser.email || '',
+               firm: (finalUserData.firm || 'SKALLARS') as FirmType,
+               role: (finalUserData.role || 'admin') as UserRole,
+               isActive: finalUserData.isActive !== undefined ? finalUserData.isActive : true,
+               pendingApproval: finalUserData.pendingApproval || false,
+             };
             
             setUser(user);
             
@@ -106,30 +152,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setIsAuthenticated(user.isActive && !user.pendingApproval);
           } else {
             // If user document doesn't exist but user is authenticated
-            // Create a basic user profile
-            setUser({
-              id: firebaseUser.uid,
+            console.log('Creating new user document for authenticated user');
+            
+            const newUserData = {
               name: firebaseUser.displayName || 'User',
               email: firebaseUser.email || '',
               firm: 'SKALLARS', // Default firm
               role: 'admin', // Default role for new users
               isActive: true,
-            });
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
             
             // Create user document in Firestore
-            await setDoc(doc(db, "users", firebaseUser.uid), {
-              name: firebaseUser.displayName || 'User',
-              email: firebaseUser.email || '',
-              firm: 'SKALLARS',
-              role: 'admin',
-              isActive: true,
-              createdAt: new Date().toISOString()
+            await setDoc(doc(db, "users", firebaseUser.uid), newUserData);
+            
+            setUser({
+              id: firebaseUser.uid,
+              ...newUserData,
+              firm: newUserData.firm as FirmType,
+              role: newUserData.role as UserRole
             });
             
             setIsAuthenticated(true);
           }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
+        } catch (error: any) {
+          console.error("Error fetching/creating user data:", error);
+          
+          // For permission errors, provide more specific guidance
+          if (error?.code === 'permission-denied') {
+            console.error('Permission denied when accessing user document. This may indicate Firestore rules issues.');
+          }
+          
           setUser(null);
           setIsAuthenticated(false);
         }
