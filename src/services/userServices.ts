@@ -119,5 +119,64 @@ export const userServices = {
       console.error('Error approving user:', error);
       throw error;
     }
+  },
+
+  // Get all users across all firms (admin only)
+  async getAllUsers(): Promise<FirmUser[]> {
+    try {
+      const usersRef = collection(db, 'users');
+      const querySnapshot = await getDocs(usersRef);
+      
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as FirmUser[];
+    } catch (error: any) {
+      console.error('Error fetching all users:', error);
+      
+      // Handle permission denied errors specifically
+      if (error?.code === 'permission-denied') {
+        throw new Error('Permission denied: You may not have admin privileges or your user document may be incomplete. Please try logging out and back in.');
+      }
+      
+      // Handle other Firebase errors
+      if (error?.code) {
+        throw new Error(`Firebase error (${error.code}): ${error.message}`);
+      }
+      
+      throw error;
+    }
+  },
+
+  // Get all pending users across all firms (admin only)
+  async getAllPendingUsers(): Promise<FirmUser[]> {
+    try {
+      const usersRef = collection(db, 'users');
+      const q = query(
+        usersRef,
+        where('isActive', '==', false),
+        where('pendingApproval', '!=', false)
+      );
+      const querySnapshot = await getDocs(q);
+      
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as FirmUser[];
+    } catch (error: any) {
+      console.error('Error fetching pending users:', error);
+      
+      // Handle permission denied errors specifically
+      if (error?.code === 'permission-denied') {
+        throw new Error('Permission denied: You may not have admin privileges or your user document may be incomplete. Please try logging out and back in.');
+      }
+      
+      // Handle other Firebase errors
+      if (error?.code) {
+        throw new Error(`Firebase error (${error.code}): ${error.message}`);
+      }
+      
+      throw error;
+    }
   }
 };

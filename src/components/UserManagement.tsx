@@ -141,9 +141,11 @@ function AddUserModal({ isOpen, onClose, onUserAdded }: AddUserModalProps) {
 export default function UserManagement() {
   const { user } = useAuth();
   const [users, setUsers] = useState<FirmUser[]>([]);
+  const [pendingUsers, setPendingUsers] = useState<FirmUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [error, setError] = useState('');
+  const [showAllFirms, setShowAllFirms] = useState(false);
 
   const loadUsers = async () => {
     if (!user) return;
@@ -206,8 +208,18 @@ export default function UserManagement() {
         return;
       }
       
-      const firmUsers = await userServices.getFirmUsers(user.firm);
-      setUsers(firmUsers);
+      // Load users based on current view mode
+      if (showAllFirms) {
+        const allUsers = await userServices.getAllUsers();
+        setUsers(allUsers);
+      } else {
+        const firmUsers = await userServices.getFirmUsers(user.firm);
+        setUsers(firmUsers);
+      }
+      
+      // Always load pending users from all firms for approval
+      const allPendingUsers = await userServices.getAllPendingUsers();
+      setPendingUsers(allPendingUsers);
     } catch (error) {
       setError('Failed to load users. Please check your Firebase configuration.');
       console.error('Error loading users:', error);
@@ -233,7 +245,7 @@ export default function UserManagement() {
 
   useEffect(() => {
     loadUsers();
-  }, [user]);
+  }, [user, showAllFirms]);
 
   const handleToggleUserStatus = async (userId: string, currentStatus: boolean) => {
     try {
@@ -286,15 +298,39 @@ export default function UserManagement() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-600">Manage users for {user.firm}</p>
+          <p className="text-gray-600">
+            {showAllFirms ? 'Manage users across all firms' : `Manage users for ${user.firm}`}
+          </p>
         </div>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-        >
-          <UserPlus className="h-4 w-4 mr-2" />
-          Add User
-        </button>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showAllFirms}
+                onChange={(e) => setShowAllFirms(e.target.checked)}
+                className="sr-only"
+              />
+              <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                showAllFirms ? 'bg-indigo-600' : 'bg-gray-200'
+              }`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  showAllFirms ? 'translate-x-6' : 'translate-x-1'
+                }`} />
+              </div>
+              <span className="ml-2 text-sm text-gray-700">
+                Show all firms
+              </span>
+            </label>
+          </div>
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Add User
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -303,35 +339,39 @@ export default function UserManagement() {
         </div>
       )}
 
-      {/* Pending Approvals Section */}
-      {users.filter(u => !u.isActive && u.pendingApproval !== false).length > 0 && (
+      {/* Pending Approvals Section - Shows all pending users across all firms */}
+      {pendingUsers.length > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
           <div className="flex items-center mb-3">
             <Clock className="h-5 w-5 text-yellow-600 mr-2" />
-            <h2 className="text-lg font-semibold text-yellow-800">Pending Approvals</h2>
+            <h2 className="text-lg font-semibold text-yellow-800">
+              Pending Approvals ({pendingUsers.length})
+            </h2>
+            <span className="ml-2 text-sm text-yellow-600">
+              - All firms
+            </span>
           </div>
           <div className="space-y-3">
-            {users
-              .filter(u => !u.isActive && u.pendingApproval !== false)
-              .map((pendingUser) => (
-                <div key={pendingUser.id} className="flex items-center justify-between bg-white p-3 rounded border">
-                  <div>
-                    <div className="font-medium text-gray-900">{pendingUser.name}</div>
-                    <div className="text-sm text-gray-500">{pendingUser.email}</div>
-                    <div className="text-xs text-gray-400">
-                      Requested: {new Date(pendingUser.createdAt).toLocaleDateString()}
-                    </div>
+            {pendingUsers.map((pendingUser) => (
+              <div key={pendingUser.id} className="flex items-center justify-between bg-white p-3 rounded border">
+                <div>
+                  <div className="font-medium text-gray-900">{pendingUser.name}</div>
+                  <div className="text-sm text-gray-500">{pendingUser.email}</div>
+                  <div className="flex items-center space-x-2 text-xs text-gray-400">
+                    <span>Firm: <span className="font-medium text-gray-600">{pendingUser.firm}</span></span>
+                    <span>•</span>
+                    <span>Requested: {new Date(pendingUser.createdAt).toLocaleDateString()}</span>
                   </div>
-                  <button
-                    onClick={() => handleApproveUser(pendingUser.id)}
-                    className="flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-1" />
-                    Approve
-                  </button>
                 </div>
-              ))
-            }
+                <button
+                  onClick={() => handleApproveUser(pendingUser.id)}
+                  className="flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Approve
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -343,6 +383,11 @@ export default function UserManagement() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 User
               </th>
+              {showAllFirms && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Firm
+                </th>
+              )}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Role
               </th>
@@ -370,6 +415,13 @@ export default function UserManagement() {
                     </div>
                   </div>
                 </td>
+                {showAllFirms && (
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {firmUser.firm}
+                    </span>
+                  </td>
+                )}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <select
                     value={firmUser.role}
