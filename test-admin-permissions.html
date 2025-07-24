@@ -53,8 +53,8 @@
         
         <div class="test-section info">
             <h3>📋 Test Credentials</h3>
-            <p><strong>Email:</strong> marian.cuprik@icloud.com</p>
-            <p><strong>Password:</strong> 123456</p>
+            <p><strong>Email:</strong> admin@test.com</p>
+            <p><strong>Password:</strong> admin123456</p>
         </div>
 
         <div class="test-section">
@@ -86,12 +86,12 @@
 
         // Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyBpZmhI8E_rXOKKF-qXOKKF-qXOKKF-qXOKKF",
+            apiKey: "AIzaSyBbS-5vNyJpwqSKewlyr5OLpIAYA81FTwI",
             authDomain: "ocp-provizie.firebaseapp.com",
             projectId: "ocp-provizie",
             storageBucket: "ocp-provizie.firebasestorage.app",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abcdef123456789"
+            messagingSenderId: "878739646832",
+            appId: "1:878739646832:web:3428443c84c18a95b607b5"
         };
 
         // Initialize Firebase
@@ -132,7 +132,7 @@ ${testResults.slice(-5).map(r =>
             results.innerHTML = 'Testing login...';
             
             try {
-                const userCredential = await signInWithEmailAndPassword(auth, 'marian.cuprik@icloud.com', '123456');
+                const userCredential = await signInWithEmailAndPassword(auth, 'admin@test.com', 'admin123456');
                 const user = userCredential.user;
                 const message = `✅ Login successful!\nUser: ${user.email}\nUID: ${user.uid}`;
                 results.innerHTML = message;
