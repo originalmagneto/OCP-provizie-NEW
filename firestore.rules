@@ -54,6 +54,7 @@ service cloud.firestore {
         resource.data.createdBy == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.firm;
       allow create: if request.auth != null &&
         request.resource.data.createdBy == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.firm;
+      allow list: if request.auth != null;
     }
   }
 }

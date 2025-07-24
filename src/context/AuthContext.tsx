@@ -254,6 +254,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Only admins can create firm users');
     }
     
+    // Store current admin user info before creating new user
+    const currentAdminEmail = firebaseUser?.email;
+    
     try {
       // Create user in Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -276,9 +279,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Sign out the newly created user to keep current admin logged in
       await signOut(auth);
       
-      // Re-authenticate the admin user
-      // Note: In a real app, you'd want to use Firebase Admin SDK for this
-      // For now, we'll just refresh the auth state
+      // Note: In a production app, you should use Firebase Admin SDK to create users
+      // without affecting the current user's authentication state.
+      // For now, the admin will need to sign back in after creating a user.
       
     } catch (error) {
       console.error("User creation failed:", error);
