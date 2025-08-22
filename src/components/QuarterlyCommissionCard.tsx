@@ -1,6 +1,6 @@
 import React from "react";
 import { CheckCircle, TrendingUp, TrendingDown, Euro } from "lucide-react";
-import type { FirmType } from "../types";
+import type { FirmType } from "../types/index";
 import { useCommissions } from "../context/CommissionContext";
 
 const COLORS = {
@@ -48,7 +48,7 @@ export function QuarterlyCommissionCard({
   onSettleCommission,
 }: QuarterlyCommissionCardProps) {
   const { isQuarterSettled, settleQuarter } = useCommissions();
-  const isCurrentQuarterSettled = isQuarterSettled(quarterKey);
+  const isCurrentQuarterSettled = isQuarterSettled(quarterKey, userFirm);
 
   const formatter = new Intl.NumberFormat("en-US", {
     style: "currency",

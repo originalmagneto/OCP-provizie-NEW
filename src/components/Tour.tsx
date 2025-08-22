@@ -1,102 +1,182 @@
-import React from "react";
-import Joyride, { CallBackProps, Step, STATUS } from "react-joyride";
+import React, { useState, useEffect } from "react";
+import CustomTour, { TourType } from "./CustomTour";
+import CustomTourControls from "./CustomTourControls";
+import { tourSteps } from "./TourSteps";
 
-const steps: Step[] = [
-  {
-    target: ".dashboard-header",
-    content:
-      "Welcome to the Commission Dashboard! This is where you can manage all your commission-related activities.",
-    placement: "bottom",
-    disableBeacon: true,
-  },
-  {
-    target: "#invoice-form",
-    content:
-      "Create new invoices here. Enter client details, amount, and commission percentage.",
-    placement: "right",
-    disableBeacon: true,
-  },
-  {
-    target: "#invoice-list",
-    content:
-      "View and manage all invoices. Track payment status and commission details.",
-    placement: "left",
-    disableBeacon: true,
-  },
-  {
-    target: "#quarterly-overview",
-    content: "Monitor quarterly commission summaries and trends.",
-    placement: "top",
-    disableBeacon: true,
-  },
-  {
-    target: "#payment-tracker",
-    content: "Track commission payments between firms and manage settlements.",
-    placement: "top",
-    disableBeacon: true,
-  },
-];
+// Tour persistence utilities
+const TOUR_STORAGE_KEY = 'commission-app-tours';
+
+interface TourProgress {
+  hasSeenTour: Record<TourType, boolean>;
+  completedSteps: Record<TourType, number>;
+  lastTourDate: Record<TourType, string>;
+}
+
+interface TourState {
+  isRunning: boolean;
+  currentTour: TourType | null;
+  stepIndex: number;
+  hasSeenTour: Record<TourType, boolean>;
+}
 
 interface TourProps {
   isRunning: boolean;
+  tourType: TourType;
   onTourEnd: () => void;
+  onTourChange?: (tourType: TourType) => void;
+  userRole?: string;
 }
 
-export default function Tour({ isRunning, onTourEnd }: TourProps) {
-  const handleJoyrideCallback = (data: CallBackProps) => {
-    const { status } = data;
+interface TourControlsProps {
+  onStartTour: (tourType: TourType) => void;
+  onRestartTour: () => void;
+  availableTours: TourType[];
+  currentTour: TourType | null;
+  isRunning: boolean;
+  userRole?: string;
+}
 
-    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
-      onTourEnd();
+const loadTourProgress = (): TourProgress => {
+  try {
+    const stored = localStorage.getItem(TOUR_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
     }
+  } catch (error) {
+    console.warn('Failed to load tour progress:', error);
+  }
+  
+  return {
+    hasSeenTour: {
+      overview: false,
+      'invoice-workflow': false,
+      'commission-workflow': false,
+      analytics: false,
+      admin: false,
+      referrals: false,
+    },
+    completedSteps: {
+      overview: 0,
+      'invoice-workflow': 0,
+      'commission-workflow': 0,
+      analytics: 0,
+      admin: 0,
+      referrals: 0,
+    },
+    lastTourDate: {
+      overview: '',
+      'invoice-workflow': '',
+      'commission-workflow': '',
+      analytics: '',
+      admin: '',
+      referrals: '',
+    },
   };
+};
 
+const saveTourProgress = (progress: TourProgress): void => {
+  try {
+    localStorage.setItem(TOUR_STORAGE_KEY, JSON.stringify(progress));
+  } catch (error) {
+    console.warn('Failed to save tour progress:', error);
+  }
+};
+
+const getAvailableToursForRole = (userRole?: string, allTours: TourType[] = []): TourType[] => {
+  if (userRole === 'admin') {
+    return allTours;
+  }
+  return allTours.filter(tour => tour !== 'admin');
+};
+
+export function TourControls({ onStartTour, onRestartTour, availableTours, currentTour, isRunning, userRole }: TourControlsProps) {
   return (
-    <Joyride
-      steps={steps}
-      run={isRunning}
-      continuous
-      showProgress
-      showSkipButton
-      scrollToFirstStep
-      spotlightClicks
-      disableScrolling={false}
-      callback={handleJoyrideCallback}
-      styles={{
-        options: {
-          primaryColor: "#4F46E5",
-          textColor: "#111827",
-          zIndex: 1000,
-        },
-        spotlight: {
-          borderRadius: "8px",
-        },
-        tooltip: {
-          padding: 20,
-          borderRadius: "8px",
-        },
-        buttonNext: {
-          backgroundColor: "#4F46E5",
-          padding: "8px 16px",
-          borderRadius: "6px",
-        },
-        buttonBack: {
-          marginRight: 10,
-          padding: "8px 16px",
-          borderRadius: "6px",
-        },
-        buttonSkip: {
-          padding: "8px 16px",
-          borderRadius: "6px",
-        },
-      }}
-      locale={{
-        back: "Previous",
-        close: "Close",
-        last: "Finish",
-        next: "Next",
-        skip: "Skip tour",
-      }}
+    <CustomTourControls
+      onStartTour={onStartTour}
+      onRestartTour={onRestartTour}
+      availableTours={availableTours}
+      currentTour={currentTour}
+      isRunning={isRunning}
+      userRole={userRole}
     />
   );
 }
+
+export default function Tour({ isRunning, tourType, onTourEnd, onTourChange, userRole }: TourProps) {
+  const [tourProgress, setTourProgress] = useState<TourProgress>(loadTourProgress);
+  const [tourState, setTourState] = useState<TourState>({
+    isRunning: false,
+    currentTour: null,
+    stepIndex: 0,
+    hasSeenTour: {
+      overview: false,
+      'invoice-workflow': false,
+      'commission-workflow': false,
+      analytics: false,
+      admin: false,
+      referrals: false,
+    },
+  });
+
+  useEffect(() => {
+    setTourState(prev => ({
+      ...prev,
+      isRunning,
+      currentTour: isRunning ? tourType : null,
+    }));
+  }, [isRunning, tourType]);
+
+  const handleTourEnd = () => {
+    // Mark tour as completed
+    const updatedProgress = {
+      ...tourProgress,
+      hasSeenTour: {
+        ...tourProgress.hasSeenTour,
+        [tourType]: true,
+      },
+      completedSteps: {
+        ...tourProgress.completedSteps,
+        [tourType]: tourSteps[tourType]?.length || 0,
+      },
+      lastTourDate: {
+        ...tourProgress.lastTourDate,
+        [tourType]: new Date().toISOString(),
+      },
+    };
+    
+    setTourProgress(updatedProgress);
+    saveTourProgress(updatedProgress);
+    
+    setTourState(prev => ({
+      ...prev,
+      isRunning: false,
+      currentTour: null,
+      stepIndex: 0,
+    }));
+    
+    onTourEnd();
+  };
+
+  const handleStepChange = (stepIndex: number) => {
+    setTourState(prev => ({
+      ...prev,
+      stepIndex,
+    }));
+  };
+
+  if (!isRunning || !tourSteps[tourType]) {
+    return null;
+  }
+
+  return (
+    <CustomTour
+      isRunning={isRunning}
+      tourType={tourType}
+      onTourEnd={handleTourEnd}
+      onStepChange={handleStepChange}
+    />
+  );
+}
+
+// Export types for use in other components
+export type { TourType, TourProps, TourControlsProps };

@@ -125,10 +125,12 @@ export default function DashboardOverview({ customSettings }: DashboardOverviewP
   const quarterLabel = `Q${currentQuarter} ${currentYear}`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" id="dashboard-overview">
       {/* Quarterly Commission Overview */}
       {(!customSettings?.dashboardCards || customSettings.dashboardCards.quarterlyOverview) && (
-        <CompactQuarterlyOverview />
+        <div id="quarterly-overview">
+          <CompactQuarterlyOverview />
+        </div>
       )}
 
       {/* Key Performance Indicators */}
@@ -137,6 +139,7 @@ export default function DashboardOverview({ customSettings }: DashboardOverviewP
           title="Key Performance Indicators" 
           subtitle={`Performance metrics for ${quarterLabel}`}
         >
+        <div id="kpi-cards">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {(!customSettings?.dashboardCards || customSettings.dashboardCards.totalRevenue) && (
               <StatsCard
@@ -176,6 +179,7 @@ export default function DashboardOverview({ customSettings }: DashboardOverviewP
               />
             )}
           </div>
+        </div>
         </ContentSection>
       )}
 

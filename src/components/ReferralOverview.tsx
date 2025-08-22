@@ -217,7 +217,7 @@ export default function ReferralOverview({ user }: ReferralOverviewProps) {
   });
 
   return (
-    <div className="space-y-6">
+    <div id="referral-overview" className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

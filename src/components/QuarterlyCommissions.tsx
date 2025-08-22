@@ -3,7 +3,7 @@ import { useInvoices } from "../context/InvoiceContext";
 import { useAuth } from "../context/AuthContext";
 import { useCommissions } from "../context/CommissionContext";
 import { Euro, FileText, TrendingUp, Calendar } from "lucide-react";
-import type { FirmType } from "../types";
+import type { FirmType } from "../types/index";
 import { QuarterlyCommissionCard } from "./QuarterlyCommissionCard";
 import QuarterlyCommissionSummary from "./QuarterlyCommissionSummary";
 
@@ -115,7 +115,7 @@ function QuarterlyCommissions() {
   const quarter = parseInt(quarterStr.replace("Q", ""));
 
   return (
-    <div className="space-y-8">
+    <div id="quarterly-commissions" className="space-y-8">
       {/* Commission Summary Overview */}
       <QuarterlyCommissionSummary />
       

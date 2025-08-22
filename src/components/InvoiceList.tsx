@@ -14,7 +14,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import type { FirmType, Invoice } from "../types";
+import type { FirmType, Invoice } from "../types/index";
 import { firmThemes } from "../config/themes";
 
 interface FilterState {
@@ -168,7 +168,7 @@ function InvoiceCard({
                   {invoice.invoicedByFirm}
                   {invoice.createdByName && (
                     <span className="ml-2 bg-gray-100 text-gray-500 rounded-full px-2 py-0.5 text-[10px] font-semibold border border-gray-200" title={`Created by: ${invoice.createdByName}`}>
-                      {invoice.createdByName.split(' ').map(part => part[0]?.toUpperCase() || '').join('')}
+                      {invoice.createdByName.split(' ').map((part: string) => part[0]?.toUpperCase() || '').join('')}
                     </span>
                   )}
                 </div>
@@ -358,7 +358,7 @@ export default function InvoiceList() {
 
   // Only render list if we have processed invoices
   return (
-    <div className="space-y-4">
+    <div id="invoice-list" className="space-y-4">
       <FilterBar
         filters={filters}
         onFilterChange={setFilters}

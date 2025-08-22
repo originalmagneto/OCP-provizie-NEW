@@ -3,7 +3,7 @@ import { useInvoices } from "../context/InvoiceContext";
 import { useYear, isInQuarter } from "../context/YearContext";
 import { useAuth } from "../context/AuthContext";
 import { Euro, CheckCircle2, XCircle, CalendarDays, ChevronDown } from "lucide-react";
-import type { Invoice } from "../types";
+import type { Invoice, FirmType } from "../types/index";
 import { useCommissions } from "../context/CommissionContext";
 
 interface CommissionsByFirm {
@@ -234,7 +234,7 @@ export default function QuarterlySnapshot() {
               <span className="text-sm font-medium text-gray-600">{firm}</span>
               <span className="text-sm font-semibold text-gray-900 flex items-center">
                 <Euro className="w-4 h-4 mr-1 text-gray-400" />
-                {formatCurrency(amount)}
+                {formatCurrency(amount || 0)}
               </span>
             </div>
           ))}
@@ -247,7 +247,7 @@ export default function QuarterlySnapshot() {
               <span className="text-sm font-medium text-gray-600">{firm}</span>
               <span className="text-sm font-semibold text-gray-900 flex items-center">
                 <Euro className="w-4 h-4 mr-1 text-gray-400" />
-                {formatCurrency(amount)}
+                {formatCurrency(amount || 0)}
               </span>
             </div>
           ))}

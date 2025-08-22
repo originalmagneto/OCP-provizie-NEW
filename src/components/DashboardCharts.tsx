@@ -26,7 +26,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from "lucide-react";
-import type { FirmType } from "../types";
+import type { FirmType } from "../types/index";
 import { firmThemes } from "../config/themes";
 
 interface ChartMetric {
@@ -382,7 +382,7 @@ export default function DashboardCharts() {
                   <Cell
                     key={`cell-${index}`}
                     fill={
-                      [theme.primary, theme.secondary, theme.tertiary][
+                      [theme.chartPrimary, theme.chartSecondary, theme.chartTertiary][
                         index % 3
                       ]
                     }

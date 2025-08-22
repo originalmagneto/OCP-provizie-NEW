@@ -18,9 +18,10 @@ import QuarterlyCommissions from "./QuarterlyCommissions";
 import UserManagement from "./UserManagement";
 import CalendarView from "./CalendarView";
 import ReferralOverview from "./ReferralOverview";
+import Tour, { TourType, TourControls } from "./Tour";
 import { getFirmBranding } from "../config/firmBranding";
 import type { SettingsData } from "./SettingsModal";
-import type { FirmType } from "../types";
+import type { FirmType } from "../types/index";
 
 function InvoiceModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   if (!isOpen) return null;
@@ -49,6 +50,55 @@ export default function Dashboard() {
   const { user, logout } = useAuth();
   const { invoices } = useInvoices();
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+  const [tourType, setTourType] = useState<TourType>('overview');
+  const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
+
+  // Check if user is first-time visitor
+  React.useEffect(() => {
+    const hasSeenTour = localStorage.getItem('hasSeenTour');
+    if (!hasSeenTour && user) {
+      setIsFirstTimeUser(true);
+      setShowTour(true);
+    }
+  }, [user]);
+
+  const startTour = (type: TourType = 'overview') => {
+    setTourType(type);
+    setShowTour(true);
+    
+    // Navigate to appropriate panel based on tour type
+    switch (type) {
+      case 'overview':
+        setSelectedTab(0); // Dashboard Overview
+        break;
+      case 'invoice-workflow':
+        setSelectedTab(1); // All Invoices
+        break;
+      case 'commission-workflow':
+        setSelectedTab(4); // Commission Settlement
+        break;
+      case 'analytics':
+        setSelectedTab(5); // Analytics & Reports
+        break;
+      case 'admin':
+        setSelectedTab(6); // User Management
+        break;
+      case 'referrals':
+        setSelectedTab(8); // Referral Overview
+        break;
+      default:
+        setSelectedTab(0); // Default to Dashboard Overview
+    }
+  };
+
+  const endTour = () => {
+    setShowTour(false);
+    if (isFirstTimeUser) {
+      localStorage.setItem('hasSeenTour', 'true');
+      setIsFirstTimeUser(false);
+    }
+  };
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -172,6 +222,7 @@ export default function Dashboard() {
               }}
               variant="secondary"
             />
+
             <HeaderActionButton
               icon={<Trash2 className="h-4 w-4" />}
               label="Reset Data"
@@ -231,6 +282,32 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Tour Component */}
+      {showTour && (
+        <Tour
+          isRunning={showTour}
+          tourType={tourType}
+          onTourEnd={endTour}
+          onTourChange={(newTourType) => setTourType(newTourType)}
+          userRole={user?.role}
+        />
+      )}
+
+      {/* Tour Controls - Fixed Bottom */}
+      <div className="fixed bottom-4 right-4 z-40">
+        <TourControls
+          onStartTour={startTour}
+          onRestartTour={() => {
+            setShowTour(false);
+            setTimeout(() => setShowTour(true), 100);
+          }}
+          availableTours={['overview', 'invoice-workflow', 'commission-workflow', 'analytics', 'admin', 'referrals']}
+          currentTour={showTour ? tourType : null}
+          isRunning={showTour}
+          userRole={user?.role}
+        />
+      </div>
     </div>
   );
 }

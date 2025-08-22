@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
-import type { Invoice } from "../types";
+import type { Invoice } from "../types/index";
 import { db } from "../config/firebase";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { invoiceServices } from "../services/firebaseServices";

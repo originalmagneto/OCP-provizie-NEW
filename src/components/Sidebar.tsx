@@ -150,7 +150,7 @@ export default function Sidebar({
   };
 
   return (
-    <div className={`relative bg-white border-r border-gray-200 transition-all duration-300 ease-in-out ${
+    <div id="sidebar" className={`relative bg-white border-r border-gray-200 transition-all duration-300 ease-in-out ${
       isCollapsed ? 'w-16' : 'w-64'
     } flex flex-col h-screen`}>
       {/* Header */}
@@ -205,6 +205,7 @@ export default function Sidebar({
           return (
             <button
               key={item.id}
+              id={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
               onClick={() => onTabChange(item.id)}
               className={`w-full flex items-center transition-all duration-200 group rounded-lg ${
                 isCollapsed 

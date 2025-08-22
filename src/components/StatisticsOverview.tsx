@@ -97,7 +97,7 @@ export default function StatisticsOverview() {
   const isCurrentQuarterSettled = isQuarterSettled(currentQuarterKey, user.firm);
 
   return (
-    <div className="space-y-6 p-6">
+    <div id="statistics-overview" className="space-y-6 p-6">
       {/* Partner Banner */}
       <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 text-white p-6 rounded-xl shadow-lg">
         <div className="flex items-center justify-between">

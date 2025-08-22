@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import type { FirmType } from "../types";
+import type { FirmType } from "../types/index";
 import { Building2, Mail, Lock, User } from "lucide-react";
 import { firmBranding, getFirmBranding } from "../config/firmBranding";
 

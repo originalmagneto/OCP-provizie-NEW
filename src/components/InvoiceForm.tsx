@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { useInvoices } from "../context/InvoiceContext";
 import { useClient } from "../context/ClientContext";
 import { Euro } from "lucide-react";
-import type { FirmType, Invoice } from "../types";
+import type { FirmType, Invoice } from "../types/index";
 import CustomDropdown from "./common/CustomDropdown";
 import AutocompleteInput from "./common/AutocompleteInput";
 import { referralServices } from "../services/referralServices";
@@ -70,7 +70,8 @@ export default function InvoiceForm({ onSuccess }: InvoiceFormProps = {}) {
         invoicedByFirm: user?.firm || "SKALLARS",
         referredByFirm: formData.referredByFirm,
         isPaid: false,
-        invoicedByUserInitials: user?.name?.split(' ').map(n => n[0]).join('') || '',
+        createdBy: user?.id || '',
+        createdByName: user?.name || '',
       };
 
 
@@ -127,7 +128,7 @@ export default function InvoiceForm({ onSuccess }: InvoiceFormProps = {}) {
   };
 
   return (
-    <>
+    <div id="invoice-form" className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       {/* Show current user and firm at the top of the form */}
       <div className="mb-4 text-sm text-gray-600">
         Creating as <span className="font-semibold">{user?.name}</span> (<span className="font-semibold">{user?.firm}</span>)
@@ -235,6 +236,6 @@ export default function InvoiceForm({ onSuccess }: InvoiceFormProps = {}) {
         Create Invoice
       </button>
     </form>
-    </>
+    </div>
   );
 }
